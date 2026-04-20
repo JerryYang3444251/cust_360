@@ -34,6 +34,11 @@ yarn-error.log*
 *.tmp
 *.temp
 
+# Build output logs
+build_out.txt
+stdout.txt
+stderr.txt
+
 # Generated analysis/report outputs
 *_analysis*.html
 *_analysis*.txt

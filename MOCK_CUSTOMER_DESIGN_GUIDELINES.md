@@ -1,287 +1,392 @@
-# 模擬客戶資料設計準則 (CUS360 Demo)
+# 模擬客戶資料設計準則（CUS360 Demo）
+
+> 本文件依據台灣金融市場實際情況制定，供開發與演示用途。所有資料均為虛構，不涉及真實個人資訊。
+
+---
 
 ## 一、資料架構層面
 
-### 1.1 基本身份信息
-- **必填字段**：id, name, age, phone, email, address
-- **數據要求**：
-  - ID應保持唯一且連續(C001-C182+)
-  - 姓名應為真實台灣人名，避免重複
-  - 年齡範圍：18-80歲，分佈要均衡
-  - 電話格式統一為 0XXX-XXX-XXX
-  - 地址應涵蓋不同城市（台北、新北、台中、高雄等）
+### 1.1 基本身分資訊
 
-### 1.2 財務信息關聯性
-**重要規則**：客戶的財務數據應形成完整的「財務肖像」
+- **必填欄位**：`id`、`name`、`age`、`phone`、`email`、`address`
+- **資料規範**：
+  - `id`：必須唯一且有序（C001–C999）
+  - `name`：使用真實台灣人名，全資料集中不得重複
+  - `age`：範圍 18–80 歲，各年齡層應均衡分佈
+  - `phone`：格式統一為 `09XX-XXX-XXX`（台灣行動電話 10 碼制）
+  - `address`：涵蓋台灣各主要城市（台北市、新北市、台中市、高雄市、桃園市等）
+  - `idCard`：格式為 1 個英文字母 + 9 位數字（台灣身分證字號格式）
+
+### 1.2 財務資訊關聯性
+
+**重要原則**：客戶的財務資料應形成完整且前後一致的「財務輪廓」
+
+參考台灣銀行業實際分層標準：
+
 ```
-VIP等級 → 資產淨值 → 月收入 → 消費類別 → 產品偏好
+VIP 等級 → 可投資資產（AUM） → 月收入 → 消費偏好 → 產品偏好
 
-VVVIP級: netWorth NT$500-1500萬 → 月收NT$30-80萬 → 投資/理財產品為主
-VVIP級:  netWorth NT$200-800萬  → 月收NT$15-40萬  → 投資/信用卡並重
-VIP級:   netWorth NT$80-300萬   → 月收NT$8-20萬   → 信用卡/存款並重
-Normal:  netWorth NT$20-100萬   → 月收NT$3-10萬   → 一般消費/存款為主
+VVVIP（私人銀行）：    AUM ≥ NT$3,000 萬      → 月收 NT$50–150 萬 → 投資/信託/理財為主
+VVIP（財富管理VIP）：  AUM NT$1,000–2,999 萬  → 月收 NT$15–50 萬  → 投資/信用卡並重
+VIP（理財優先客戶）：  AUM NT$300–999 萬      → 月收 NT$6–20 萬   → 信用卡/存款/基金並重
+Normal（一般客戶）：   AUM NT$300 萬以下      → 月收 NT$3–8 萬    → 一般消費/定存為主
 ```
 
-### 1.3 VIP等級內部一致性
-- **必須滿足**：
-  - VVVIP客戶 → 必須風險等級為「low」
-  - VVIP客戶 → 風險等級通常為「low」，極少「medium」
-  - VIP客戶 → 風險等級「low」或「medium」
-  - Normal客戶 → 風險等級「medium」或「high」
-  - 高VIP客戶账户状态必须是「active」
+> 說明：台灣主要銀行（國泰世華、富邦、中信）的私人銀行門檻通常為可投資資產 NT$3,000 萬以上；財富管理 VIP 門檻為 NT$1,000 萬以上。
+
+### 1.3 VIP 等級與風險一致性
+
+**必須滿足的對應規則**：
+
+| VIP 等級 | 風險等級要求 | 帳戶狀態 |
+|----------|------------|--------|
+| VVVIP    | 必須為 `low` | 必須為 `active` |
+| VVIP     | 通常為 `low`，極少 `medium` | 必須為 `active` |
+| VIP      | `low` 或 `medium` | 通常為 `active` |
+| Normal   | `medium` 或 `high` | `active` 或 `失效戶` |
 
 ---
 
 ## 二、產品與偏好設計
 
 ### 2.1 產品偏好權重設計
-每個客戶應有4個產品偏好，權重應形成層級差異：
-```
+
+每位客戶應具備 4 個產品偏好欄位，權重須反映其 VIP 等級差異：
+
+```javascript
 productPreferences: {
-  creditCard: 0.4-0.98,    // 信用卡
-  loans: 0.05-0.8,         // 貸款
-  deposits: 0.3-0.95,      // 存款
-  investment: 0.1-0.98     // 投資
+  creditCard: 0.4–0.98,  // 信用卡
+  loans:      0.05–0.8,  // 貸款（房貸、信貸）
+  deposits:   0.3–0.95,  // 存款（含定存、外幣存款）
+  investment: 0.1–0.98   // 投資（基金、ETF、債券、信託）
 }
 ```
-**關鍵原則**：
-- VVVIP/VVIP → investment 和 creditCard 權重應≥0.8
-- VIP → 權重分佈更均衡（0.5-0.8範圍）
-- Normal → 權重應相對較低（大多0.3-0.7）
-- **避免反向邏輯**：VIP客戶不應該investment權重是0.1
+
+**各等級設計原則**：
+
+| VIP 等級 | investment | creditCard | 說明 |
+|----------|-----------|-----------|------|
+| VVVIP / VVIP | ≥ 0.85 | ≥ 0.75 | 以財富管理與高端卡權益為核心 |
+| VIP | 0.5–0.8 | 0.5–0.8 | 均衡分佈，信用卡與基金並重 |
+| Normal | 0.1–0.5 | 0.3–0.7 | 偏重基本消費與定存 |
+
+- **避免反向邏輯**：VIP 以上客戶不應出現 `investment < 0.3`
+- **台灣特色**：台灣民眾對保險與外幣定存接受度高，可反映於 `deposits` 較高權重
 
 ### 2.2 消費類別偏好分佈
-```
+
+```javascript
 spendingCategories: {
-  dining: 0.4-0.9,         // 餐飲（必有）
-  travel: 0.3-0.95,        // 旅遊（高端客戶應高）
-  groceries: 0.4-0.8,      // 日常（應均衡分佈）
-  entertainment: 0.3-0.7,  // 娛樂
-  luxury: 0.1-0.8,         // 奢侈品（VIP專有）
-  tech: 0.2-0.7,           // 科技產品
-  healthcare: 0.3-0.6      // 醫療健康
+  dining:        0.4–0.9,   // 餐飲（全客群必有）
+  travel:        0.3–0.95,  // 旅遊（高端客戶應偏高）
+  groceries:     0.4–0.8,   // 日常民生（均衡分佈）
+  entertainment: 0.3–0.7,   // 娛樂
+  luxury:        0.1–0.85,  // 精品奢侈品（VIP 以上專有）
+  tech:          0.2–0.75,  // 科技產品（台灣科技業比例高）
+  healthcare:    0.3–0.7,   // 醫療健康
+  education:     0.3–0.9,   // 教育（子女教育投入高為台灣特色）
+  overseas:      0.3–0.9    // 海外消費（出國旅遊意圖指標）
 }
 ```
-**一致性檢查**：
-- high spender(月花費>10萬) → 應有高VIP等級或至少credit limit >50萬
-- travel權重高 → 應在意圖標籤中有「出國旅遊意圖」
+
+**一致性規則**：
+- `travel > 0.7` 且為 VVIP 以上 → 標籤應含「出國旅遊意圖」
+- `education > 0.7` 且 age 30–45 → 標籤應含「留學意圖」或「教育金規劃需求」
+- `luxury > 0.6` → 必須對應 VIP 以上等級，否則資料不一致
 
 ---
 
 ## 三、意圖與標籤管理
 
 ### 3.1 意圖標籤設計
-**可用意圖列表**：
-- 出國旅遊意圖(score 0.65-0.95)
-- 信用卡申辦意圖(score 0.50-0.85)
-- 投資理財意圖(score 0.60-0.95)
-- 房貸/信貸需求(score 0.40-0.80)
-- 留學意圖(score 0.30-0.75)
-- 創業融資需求(score 0.20-0.70)
+
+**台灣市場常見意圖列表**：
+
+| 意圖標籤 | 信心分數範圍 | 觸發條件 |
+|---------|-----------|--------|
+| 出國旅遊意圖 | 0.65–0.95 | `travel > 0.7` 或近期海外刷卡增加 |
+| 信用卡申辦意圖 | 0.50–0.85 | 近期詢問卡片權益或刷卡額度不足 |
+| 投資理財意圖 | 0.60–0.95 | `investment > 0.8` 或近期查閱基金/ETF |
+| 房貸需求 | 0.40–0.80 | age ≥ 30 且 `deposits > 0.7` |
+| 留學意圖 | 0.30–0.75 | `education > 0.7` 且 age 28–45 |
+| 信貸需求 | 0.30–0.70 | `loans > 0.65` 且帳戶異常波動 |
+| 創業融資需求 | 0.20–0.70 | 自雇者或小企業主標籤 |
 
 **分配邏輯**：
 ```
-IF travel消費>0.7 AND VIP >= VVIP THEN 出國旅遊意圖 (score 0.80-0.95)
-IF investment偏好>0.8 THEN 投資理財意圖 (score 0.75-0.95)
-IF age >= 35 AND deposits偏好>0.6 THEN 房貸需求 (score 0.60-0.80)
+IF travel > 0.7  AND vipLevel >= VVIP   → 出國旅遊意圖（0.80–0.95）
+IF investment > 0.8                     → 投資理財意圖（0.75–0.95）
+IF age >= 30 AND deposits > 0.7         → 房貸需求（0.60–0.80）
+IF education > 0.7 AND age IN [28,45]  → 留學意圖（0.50–0.75）
 ```
 
 ### 3.2 結構化標籤系統
-**TAG_CATEGORIES** 應覆蓋：
-```
+
+`TAG_CATEGORIES` 應涵蓋以下四大維度：
+
+```javascript
 {
-  "行為洞察": ["高頻交易客", "數位通路使用者", "..."],
-  "帳戶狀態": ["有效戶", "失效戶", "新開戶", "..."],
-  "信用狀態": ["信用良好", "信用觀察", "逾期記錄", "..."],
-  "需求信號": ["升額意願", "轉帳需求", "..."]
+  "行為洞察": ["高頻交易客戶", "數位通路使用者", "信用卡活躍用戶", "理財產品偏好"],
+  "帳戶狀態": ["有效戶", "失效戶", "新開戶", "帳戶提醒", "狀態調整-有效戶"],
+  "信用狀態": ["信用良好", "信用狀態觀察", "信用使用偏高", "逾期記錄", "催收中", "呆帳風險"],
+  "需求信號": ["升額意願", "換匯需求", "教育金規劃需求", "財富管理需求", "退休規劃"]
 }
 ```
 
-### 3.3 tags 字段設計
-每個客戶應有 2-5 個tags，需要與VIP等級、風險等級相呼應：
+### 3.3 標籤設計規則
+
+每位客戶應有 **2–5 個**標籤，標籤需與 VIP 等級、風險等級相呼應：
+
 ```
-VVVIP客戶 → tags不應包含「失效戶」「逾期記錄」
-high風險客戶 → 應包含「信用觀察」「逾期記錄」「催收中」
-新客戶 → 應標記「新開戶」「賬戶提醒」
-```
-
----
-
-## 四、通路與生命週期
-
-### 4.1 通路偏好與客戶特徵相關性
-```
-preferredChannels 應與 lifecycleStage 一致：
-
-- 退休族 → ["branch", "phone", "sms"] 
-- 上班族 → ["mobile_app", "email", "sms"]
-- 高端客 → ["wealth_portal", "email", "phone"]
-- 一般客 → ["mobile_app", "branch", "sms"]
-```
-
-### 4.2 生命週期階段覆蓋
-應均衡分佈各階段：
-- `young_professional` (25-35歲, Normal/VIP): 20%
-- `established_professional` (35-50歲, VIP/VVIP): 20%
-- `family_oriented` (30-45歲, Normal/VIP): 20%
-- `pre_retirement` (50-65歲, VIP/VVIP): 20%
-- `retired` (65+歲, Normal/VIP): 10%
-- `debt_management` (all ages): 10%
-
----
-
-## 五、風險管理與合規
-
-### 5.1 風險等級分佈
-```
-Low: 35-40%    (VIP/VVIP客戶多)
-Medium: 40-45% (Normal/VIP客戶混合)
-High: 15-20%   (Normal客戶為主，含失效戶)
-```
-
-### 5.2 與風險等級關聯的字段
-```
-risk = "high" 必須：
-  - accountStatus 可為 "失效戶" 或 "active"
-  - tags 應包含 "信用觀察" 或 "逾期記錄"
-  - productPreferences.loans 應 ≤ 0.2
-  - creditLimit 應相對較低
-
-risk = "low" 必須：
-  - accountStatus = "active"
-  - creditLimit 應相對較高 (相對netWorth)
-  - vipLevel 應至少為 "VIP"
+VVVIP / VVIP 客戶 → 不得含「失效戶」「逾期記錄」「催收中」「呆帳風險」
+high 風險客戶     → 必須含「信用狀態觀察」或「逾期記錄」
+新開戶客戶        → 應標記「新開戶」「帳戶提醒」
+Normal + high 風險 → 可含「失效戶」「催收中」
 ```
 
 ---
 
-## 六、數據一致性檢驗清單
+## 四、通路偏好與生命週期
 
-在添加新客戶時，應檢查：
+### 4.1 通路偏好與客戶特徵對應
 
-- [ ] **VIP-風險一致性**：VVVIP應100%為risk:low；VVIP應≥90%為risk:low
-- [ ] **財務關聯性**：monthlyIncome和netWorth應形成合理比例（通常60:1到100:1）
-- [ ] **產品-偏好一致**：high productPreferences與VIP等級相呼應
-- [ ] **消費-收入一致**：月消費應≤月收入的60%
-- [ ] **意圖-行為一致**：意圖標籤應與消費類別和產品偏好相關
-- [ ] **標籤-等級一致**：失效戶、逾期記錄不應出現在高VIP客戶
-- [ ] **通路偏好-年齡相符**：退休族應優先選branch/phone
-- [ ] **生命週期-年齡匹配**：lifecycle_stage應與年齡段合理對應
-- [ ] **賬戶狀態合理性**：失效戶通常應為低VIP且high風險
+```
+preferredChannels 應與 lifecycleStage 及年齡相符：
+
+退休族（65+歲）      → ["branch", "phone", "sms"]
+高齡熟齡族（55–65歲）→ ["branch", "phone", "email"]
+高端財管客           → ["wealth_portal", "email", "phone"]
+上班族（30–55歲）    → ["mobile_app", "email", "sms"]
+年輕世代（18–30歲）  → ["mobile_app", "sms"]
+一般客戶             → ["mobile_app", "branch", "sms"]
+```
+
+### 4.2 生命週期階段分佈
+
+應均衡涵蓋各人生階段（參考台灣人口結構）：
+
+| lifecycleStage | 年齡區間 | 典型 VIP 等級 | 建議比例 |
+|---------------|--------|------------|--------|
+| `young_professional` | 22–34 歲 | Normal / VIP | 20% |
+| `young_family` | 28–42 歲 | Normal / VIP | 20% |
+| `established_professional` | 35–52 歲 | VIP / VVIP | 20% |
+| `affluent` | 40–60 歲 | VVIP / VVVIP | 10% |
+| `pre_retirement` | 50–65 歲 | VIP / VVIP | 15% |
+| `retired` | 62 歲以上 | Normal / VIP | 10% |
+| `debt_management` | 不限 | Normal | 5% |
+
+---
+
+## 五、風險管理
+
+### 5.1 風險等級分佈目標
+
+```
+low（低風險）：   40–50%  → 以 VIP/VVIP/VVVIP 為主
+medium（中風險）：35–45%  → Normal / VIP 混合
+high（高風險）：  10–15%  → Normal 為主，含失效戶
+```
+
+> 台灣銀行實務中高風險客戶比例通常在 5–15%，比例過高會影響資料集整體可信度。
+
+### 5.2 riskScore 與 riskLevel 對應規範
+
+`riskScore` 是資料的**唯一權威來源**，`riskLevel` 必須由 `riskScore` 推導，不得獨立設定：
+
+| riskScore | riskLevel | 意義 | 徽章顏色 |
+|-----------|-----------|------|--------|
+| `"A+"` | `"low"` | 信用優良，無違約紀錄 | 青綠色 |
+| `"A"` | `"low"` | 信用良好 | 青綠色 |
+| `"B"` | `"medium"` | 信用一般，需持續觀察 | 黃色 |
+| `"C"` | `"high"` | 信用異常，有逾期或催收紀錄 | 紅色 |
+
+**設計規則**：
+- ✅ 設定 `riskScore` → `riskLevel` 由系統自動推導，禁止手動設定 `riskLevel`
+- ✅ VIP/VVIP/VVVIP 客戶 → `riskScore` 只能為 `"A+"` 或 `"A"`
+- ✅ `riskScore: "C"` 客戶 → `vipLevel` 不得為 `VVVIP` 或 `VVIP`
+- ❌ 禁止 `riskScore: "A"` 但 `riskLevel: "high"` 的矛盾組合
+
+### 5.3 風險等級對應欄位規範
+
+```
+riskLevel = "high" 時，必須滿足：
+  - accountStatus：可為「失效戶」或「active」（異常觀察中）
+  - tags：必須含「信用狀態觀察」或「逾期記錄」其中一項
+  - vipLevel：不得為 VVVIP 或 VVIP
+  - productPreferences.loans：應 ≤ 0.3（信用額度受限）
+
+riskLevel = "low" 時，必須滿足：
+  - accountStatus：必須為「active」
+  - vipLevel：通常為 VIP 以上
+  - tags：不得含任何信用異常標籤
+```
+
+---
+
+## 六、資料一致性檢驗清單
+
+新增或修改客戶資料時，依序確認以下項目：
+
+- [ ] **riskScore 與 riskLevel 一致**：`riskLevel` 必須由 `riskScore` 推導（A+/A→low、B→medium、C→high），不得矛盾
+- [ ] **VIP 與風險一致性**：VVVIP 必須 100% 為 `riskScore: A` 以上；VVIP 應 ≥ 90% 為 `riskScore: A` 以上
+- [ ] **帳戶 ID 唯一性**：全資料集中 `id`、`idCard`、`creditCard`、`accountNumber` 均不重複
+- [ ] **財務合理性**：`monthlyIncome` 與 AUM 比例合理（約 100:1 至 200:1）
+- [ ] **產品偏好一致**：`investment` 權重與 VIP 等級正相關
+- [ ] **消費與收入一致**：月消費估算應 ≤ 月收入的 60%
+- [ ] **意圖與行為一致**：意圖標籤應與 `spendingCategories` 及 `productPreferences` 相符
+- [ ] **標籤與等級一致**：`失效戶`、`逾期記錄` 等負向標籤不應出現於高 VIP 客戶
+- [ ] **通路與年齡相符**：退休族優先 `branch/phone`；年輕族群優先 `mobile_app`
+- [ ] **生命週期與年齡匹配**：`lifecycleStage` 應對應合理年齡區間
+- [ ] **帳戶狀態合理性**：`失效戶` 通常應為 Normal 等級且 `riskLevel: high`
 
 ---
 
 ## 七、多維度覆蓋要求
 
-### 7.1 VIP分佈
+### 7.1 VIP 等級分佈（以 200 人樣本池為例）
+
 ```
-VVVIP: 3-5%    (3-9個客戶)
-VVIP: 5-10%    (9-18個客戶)
-VIP: 20-25%    (36-45個客戶)
-Normal: 60-70% (109-127個客戶)
+VVVIP（私人銀行）：   3–5%   → 6–10 人
+VVIP（財富管理VIP）： 8–12%  → 16–24 人
+VIP（理財優先）：     20–25% → 40–50 人
+Normal（一般客戶）：  60–65% → 120–130 人
 ```
 
-### 7.2 年齡分佈（範例182人池）
+### 7.2 年齡分佈（200 人）
+
 ```
-18-25: 10% (18人)
-26-35: 25% (45人)
-36-45: 25% (45人)
-46-55: 20% (36人)
-56-65: 15% (27人)
-65+: 5% (9人)
+18–25 歲：8%  → 16 人
+26–35 歲：25% → 50 人
+36–45 歲：25% → 50 人
+46–55 歲：20% → 40 人
+56–65 歲：15% → 30 人
+65 歲以上：7% → 14 人
 ```
 
 ### 7.3 地理分佈（台灣主要城市）
+
 ```
-台北市: 25-30%  (提高金融中心比例)
-新北市: 15-20%
-台中市: 15-20%
-高雄市: 10-15%
-其他: 10-15%
+台北市：  28–32%（金融與商業中心）
+新北市：  16–20%
+台中市：  14–18%
+桃園市：   8–12%
+高雄市：  10–14%
+其他縣市： 8–12%（台南、新竹、彰化等）
 ```
 
 ---
 
 ## 八、實務建議
 
-### 8.1 資料生成過程
-1. **第一步**：決定VIP分佈 → 決定age/lifecycle → 決定city
-2. **第二步**：根據VIP級別生成netWorth → 根據netWorth生成monthlyIncome
-3. **第三步**：根據age+VIP生成productPreferences權重
-4. **第四步**：根據productPreferences和VIP生成consumingCategories
-5. **第五步**：根據consuming確定intentTags
-6. **第六步**：根據age+VIP+risk生成tags和structuredTags
-7. **第七步**：驗證一致性
+### 8.1 資料生成流程
 
-### 8.2 常見的設計陷阱
-- ❌ **陷阱1**：Normal客戶的investment權重很高 → 應降至0.1-0.5
-- ❌ **陷阱2**：high risk客戶的VIP等級是VVVIP → 應改為Normal或VIP
-- ❌ **陷阱3**：所有客戶月收都低於5萬 → 應分化，高端客應80萬+
-- ❌ **陷阱4**：意圖標籤都是0.5左右 → 應形成0.3-0.9的差異
-- ❌ **陷阱5**：失效戶客戶的creditLimit仍然很高 → 應相對降低
-- ❌ **陷阱6**：所有客戶都有相同的5個tags → 應依VIP/risk動態變化
+1. **第一步**：決定 VIP 分佈比例 → 確定年齡/生命週期 → 分配城市
+2. **第二步**：依 VIP 等級估算 AUM → 推算合理月收入
+3. **第三步**：依 age + VIP 設定 `productPreferences` 權重
+4. **第四步**：依 `productPreferences` 設定 `spendingCategories`
+5. **第五步**：依消費類別確認意圖標籤
+6. **第六步**：依 VIP + risk + 行為設定 `tags`
+7. **第七步**：逐一核對一致性檢驗清單
+
+### 8.2 常見設計陷阱
+
+- ❌ **陷阱 1**：Normal 客戶的 `investment` 權重 > 0.8 → 應壓低至 0.1–0.5
+- ❌ **陷阱 2**：`riskLevel: high` 客戶的 VIP 等級為 VVVIP → 必須更正為 Normal 或 VIP
+- ❌ **陷阱 3**：全體客戶月收均低於 NT$5 萬 → 應分化，私人銀行客戶應 NT$50 萬以上
+- ❌ **陷阱 4**：意圖分數集中在 0.5 左右 → 應形成 0.3–0.95 的明顯差異
+- ❌ **陷阱 5**：`失效戶` 客戶的信用額度仍維持原本高值 → 應相應調低
+- ❌ **陷阱 6**：所有客戶有相同的 5 個標籤 → 應依 VIP / risk / 生命週期動態配置
+- ❌ **陷阱 7**：同一 ID 段（如 C183–C192）出現重複 → 每次新增客戶群前必須確認 ID 唯一性
 
 ### 8.3 最佳實踐
-- ✅ 定期抽查客戶資料的一致性
-- ✅ 建立產品偏好、消費類別、意圖標籤的映射表
-- ✅ 對每個VIP級別定義「典型客戶畫像」並參照
-- ✅ 確保高、中、低端客的數據比例符合真實銀行分佈
-- ✅ 使用決定性的seed生成確保可重現性
+
+- ✅ 每次新增客戶批次後，執行全資料集 ID 重複性檢查
+- ✅ 建立 VIP 等級 → 產品偏好 → 消費類別 → 意圖標籤的標準映射表
+- ✅ 每個 VIP 等級定義 2–3 個「典型客戶畫像」作為設計參照
+- ✅ 確保高、中、低端客戶資料的比例符合台灣銀行業實際分佈
+- ✅ 信用卡號、身分證字號、帳號等識別碼全程維持唯一性
 
 ---
 
 ## 九、與系統功能的適配
 
-### 9.1 搜索功能要求
-- 客戶名字應支持中文和英文混合搜索
-- ID、電話、郵箱應保持唯一性，便於精確搜索
+### 9.1 搜尋功能需求
 
-### 9.2 過濾功能要求
-- **VIP級別過濾**：需要足夠的VVIP/VVIP樣本（≥20人）
-- **風險等級過濾**：三個風險級別應均有代表（各≥10人）
-- **意圖標籤過濾**：各意圖應至少有5-10個客戶
-- **產品偏好過濾**：各產品應有不同偏好級別的客戶
+- 客戶姓名應支援中英文混合搜尋（如英文名 `Lin Yi-Jun`）
+- `id`、`idCard`、`creditCard`、`accountNumber` 必須全域唯一，支援精確比對
+- 快速搜尋應能自動辨識輸入格式（中文 → 姓名；字母+9碼 → 身分證；16碼 → 信用卡）
 
-### 9.3 報告與分析要求
-- 高VIP客戶的LTV應明顯高於普通客戶
-- 風險等級應與風險指標(逾期率、默認率)相關聯
-- 意圖標籤應能預測產品銷售傾向
+### 9.2 篩選功能需求
+
+- **VIP 等級篩選**：VVIP 以上樣本至少各 ≥ 15 人以供有意義篩選
+- **風險等級篩選**：三個風險等級各至少 ≥ 15 人
+- **意圖標籤篩選**：每個主要意圖至少有 8–10 位客戶
+- **產品偏好篩選**：各產品類型應覆蓋高、中、低偏好客戶
+
+### 9.3 報表與分析需求
+
+- 高 VIP 客戶的終身價值（LTV）應明顯高於一般客戶
+- 風險等級應與逾期率、信用使用率等指標正相關
+- 意圖標籤應能預測對應產品的銷售傾向
 
 ---
 
-## 十、範本檢查清單（新增客戶時使用）
+## 十、驗證函式範本（新增客戶時使用）
 
 ```javascript
-// 檢驗函數範本
 const validateCustomerData = (customer) => {
   const issues = [];
-  
-  // 基本檢查
-  if (!customer.id || !customer.name) issues.push("缺少ID或姓名");
-  
-  // VIP-風險一致性
-  if (customer.vipLevel === "VVVIP" && customer.riskLevel !== "low") {
-    issues.push("VVVIP不應為" + customer.riskLevel + "風險");
+
+  // 基本必填欄位
+  if (!customer.id || !customer.name) issues.push("缺少 id 或 name");
+
+  // ID 格式
+  if (!/^C\d{3}$/.test(customer.id)) issues.push("id 格式應為 C001–C999");
+
+  // 身分證字號格式
+  if (customer.idCard && !/^[A-Z][0-9]{9}$/i.test(customer.idCard)) {
+    issues.push("idCard 格式應為 1 英文字母 + 9 數字");
   }
-  
-  // 財務合理性
-  const finance = getCustomerFinance(customer);
-  if (finance.monthlyIncome < 30000 && customer.vipLevel === "VVVIP") {
-    issues.push("VVVIP月收應≥30萬");
+
+  // riskScore 對應 riskLevel（riskScore 為唯一權威來源）
+  if (customer.riskScore === "C" && ["VVVIP", "VVIP"].includes(customer.vipLevel)) {
+    issues.push("riskScore C（高風險）不應為 VVVIP 或 VVIP 等級");
   }
-  
-  // 標籤合理性
-  if (customer.riskLevel === "high" && !customer.tags?.some(t => /信用|逾期/.test(t))) {
-    issues.push("高風險客戶應有信用相關標籤");
+  const expectedRiskLevel = { "A+": "low", "A": "low", "B": "medium", "C": "high" }[customer.riskScore];
+  if (expectedRiskLevel && customer.riskLevel && customer.riskLevel !== expectedRiskLevel) {
+    issues.push(`riskLevel(${customer.riskLevel}) 與 riskScore(${customer.riskScore}) 不一致，應為 ${expectedRiskLevel}`);
   }
-  
+
+  // VIP 與風險一致性（以 riskScore 為準）
+  if (customer.vipLevel === "VVVIP" && !["A+", "A"].includes(customer.riskScore)) {
+    issues.push(`VVVIP 的 riskScore 應為 A+ 或 A，目前為 ${customer.riskScore}`);
+  }
+  if (["VVVIP", "VVIP"].includes(customer.vipLevel) && customer.accountStatus !== "active") {
+    issues.push(`${customer.vipLevel} 帳戶狀態必須為 active`);
+  }
+
+  // 高風險客戶標籤
+  if (customer.riskScore === "C") {
+    const hasCreditTag = customer.tags?.some(t => /信用|逾期|催收|呆帳/.test(t));
+    if (!hasCreditTag) issues.push("riskScore C（高風險）客戶應含信用異常相關標籤");
+  }
+
+  // 高風險客戶不得為 VVVIP / VVIP
+  if (customer.riskScore === "C" && ["VVVIP", "VVIP"].includes(customer.vipLevel)) {
+    issues.push("riskScore C（高風險）不應為 VVVIP 或 VVIP 等級");
+  }
+
   return { valid: issues.length === 0, issues };
 };
 ```
 
 ---
 
-## 更新日期
-- 2026-04-20 初版制定
-- 基於182人客戶樣本進行優化
+## 更新紀錄
+
+| 日期 | 版本 | 說明 |
+|------|------|------|
+| 2026-04-20 | v1.0 | 初版制定，基於 182 人客戶樣本 |
+| 2026-04-21 | v1.1 | 依台灣金融市場實際情況修訂財務門檻；統一繁體中文用語；補充 ID 唯一性警示；新增驗證函式範本 |
+| 2026-04-21 | v1.2 | 確立 riskScore 為唯一權威來源，新增對應表（A+/A→low、B→medium、C→high）；更新驗證函式與檢驗清單 |
 

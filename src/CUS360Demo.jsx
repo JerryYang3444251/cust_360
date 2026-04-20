@@ -40,11 +40,12 @@ const CUS360Demo = () => {
       textColor: "text-fuchsia-800",
       accentColor: "text-fuchsia-600",
       borderColor: "border-fuchsia-300",
-      // Financial wealth brackets
+      // Financial wealth brackets (AUM, 符合台灣金融市場標準)
+      // VVVIP: AUM ≥ NT$3,000萬
       financialRange: {
-        min: 5000000,
-        max: 15000000,
-        rangeWidth: 10000000,
+        min: 30000000,
+        max: 100000000,
+        rangeWidth: 70000000,
       },
     },
     VVIP: {
@@ -57,10 +58,11 @@ const CUS360Demo = () => {
       textColor: "text-purple-800",
       accentColor: "text-purple-600",
       borderColor: "border-purple-300",
+      // VVIP: AUM NT$1,000萬-2,999萬
       financialRange: {
-        min: 2000000,
-        max: 8000000,
-        rangeWidth: 6000000,
+        min: 10000000,
+        max: 29999999,
+        rangeWidth: 20000000,
       },
     },
     VIP: {
@@ -73,10 +75,11 @@ const CUS360Demo = () => {
       textColor: "text-blue-800",
       accentColor: "text-blue-600",
       borderColor: "border-blue-300",
+      // VIP: AUM NT$300萬-999萬
       financialRange: {
-        min: 800000,
-        max: 3000000,
-        rangeWidth: 2200000,
+        min: 3000000,
+        max: 9999999,
+        rangeWidth: 7000000,
       },
     },
     normal: {
@@ -89,10 +92,11 @@ const CUS360Demo = () => {
       textColor: "text-gray-800",
       accentColor: "text-gray-600",
       borderColor: "border-gray-300",
+      // 一般: AUM < NT$300萬
       financialRange: {
-        min: 200000,
-        max: 1000000,
-        rangeWidth: 800000,
+        min: 300000,
+        max: 2999999,
+        rangeWidth: 2700000,
       },
     },
   };
@@ -343,114 +347,91 @@ const CUS360Demo = () => {
     // unified KPI number size for teal numbers
     const KPI_NUM = "text-2xl font-bold";
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 relative">
+        {/* 1s 載入動畫覆蓋層 — 固定高度遮罩，內容模糊隱藏在下方 */}
+        {dashLoading ? (
+          <div className="min-h-[70vh] flex flex-col items-center justify-center">
+            <svg className="animate-spin" width="48" height="48" viewBox="0 0 40 40" fill="none">
+              <circle cx="20" cy="20" r="16" stroke="#99f6e4" strokeWidth="4" />
+              <path d="M36 20a16 16 0 0 0-16-16" stroke="#0d9488" strokeWidth="4" strokeLinecap="round" />
+            </svg>
+            <div className="mt-4 text-base font-semibold text-teal-700">資料更新中…</div>
+            <div className="mt-1 text-xs text-gray-400">請稍候</div>
+          </div>
+        ) : (<>
         {/* 報表區間選單 */}
-        <div className="flex items-end gap-3">
-          <div className="text-sm font-bold text-gray-700">報表區間</div>
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 bg-white rounded-xl px-4 py-2 shadow-sm border border-teal-50">
+          <div className="text-sm font-bold text-teal-700">報表區間</div>
+          <div className="flex items-center gap-2 ml-1">
             <input
               type="month"
               value={rangeStart}
               onChange={(e) => setRangeStart(e.target.value)}
-              className="px-2 py-1 border rounded"
+              className="px-2 py-1 border border-teal-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-300"
             />
-            <span className="text-gray-600">至</span>
+            <span className="text-gray-400 font-medium">—</span>
             <input
               type="month"
               value={rangeEnd}
               onChange={(e) => setRangeEnd(e.target.value)}
-              className="px-2 py-1 border rounded"
+              className="px-2 py-1 border border-teal-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-300"
             />
           </div>
-          <div className="text-xs text-gray-500">所有圖表依月份區間更新</div>
+          <div className="text-xs text-gray-400 ml-2">所有圖表依月份區間更新</div>
         </div>
         <div className="grid grid-cols-6 gap-4">
           <div
-            className={
-              CARD +
-              " col-span-2 border border-teal-100 hover:shadow-lg transition-shadow"
-            }
+            className="col-span-2 rounded-2xl shadow-md hover:shadow-xl transition-shadow overflow-hidden"
+            style={{ background: "linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 100%)", border: "1px solid #99f6e4" }}
           >
-            <div className="space-y-2">
-              <div className="text-sm font-bold text-gray-700 tracking-wide">
-                總客戶數
+            <div className="p-4 h-full flex flex-col justify-between">
+              <div>
+                <div className="text-xs font-bold text-teal-600 uppercase tracking-widest mb-1">總客戶數</div>
+                <div className="text-4xl font-extrabold text-teal-700 leading-none">
+                  {scaled.total.toLocaleString()}
+                </div>
               </div>
-              <div className={`${KPI_NUM} text-teal-600`}>
-                {scaled.total.toLocaleString()}
-              </div>
-              {/* 移除以樣本比例推估銀行規模 */}
-              <div className="mt-3 text-sm font-bold text-gray-700">
-                活躍客戶 (最近 3 個月有交易)
-              </div>
-              <div className={`${KPI_NUM} text-teal-600`}>
-                {scaled.active.toLocaleString()}
+              <div className="mt-4 pt-3 border-t border-teal-100">
+                <div className="text-xs font-bold text-teal-600 uppercase tracking-widest mb-1">活躍客戶（最近 3 個月有交易）</div>
+                <div className="text-3xl font-extrabold text-cyan-600 leading-none">
+                  {scaled.active.toLocaleString()}
+                </div>
+                <div className="mt-1 text-xs text-gray-400">佔總客戶 {Math.round(scaled.active / scaled.total * 100)}%</div>
               </div>
             </div>
           </div>
           <div
-            className={
-              CARD +
-              " col-span-2 border border-teal-100 hover:shadow-lg transition-shadow"
-            }
+            className="col-span-2 bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow border border-teal-50 p-4"
           >
-            <div className="text-sm font-bold text-gray-700 tracking-wide">
-              收益與 KPI
-            </div>
-            <div className="mt-3 space-y-2">
-              <div className="text-xs font-bold text-gray-600">
-                收益趨勢 (月)
-              </div>
-              <div className="mt-1">
-                <MonthlyBarHover
-                  values={revSeries}
-                  color="#0d9488"
-                  height={64}
-                  labels={monthLabels}
-                />
-              </div>
-              {/* 移除 季均收益 (估) */}
-            </div>
+            <div className="text-xs font-bold text-teal-600 uppercase tracking-widest mb-3">收益與 KPI</div>
+            <div className="text-[11px] font-semibold text-gray-400 mb-1">收益趨勢（月）</div>
+            <MonthlyBarHover
+              values={revSeries}
+              color="#0d9488"
+              height={72}
+              labels={monthLabels}
+            />
           </div>
           <div
-            className={
-              CARD +
-              " col-span-2 border border-teal-100 hover:shadow-lg transition-shadow"
-            }
+            className="col-span-2 bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow border border-teal-50 p-4"
           >
-            <div className="text-sm font-bold text-gray-700 tracking-wide">
-              產品收益佔比
-            </div>
-            <div className="mt-3 flex items-center gap-4">
+            <div className="text-xs font-bold text-teal-600 uppercase tracking-widest mb-2">產品收益佔比</div>
+            <div className="flex items-center gap-3">
               <div className="flex-shrink-0">
                 <DonutInteractive
-                  data={Object.entries(productShare).map(([label, value]) => ({
-                    label,
-                    value,
-                  }))}
+                  data={Object.entries(productShare).map(([label, value]) => ({ label, value }))}
                   colors={["#0d9488", "#06b6d4", "#34d399", "#7dd3fc"]}
-                  size={96}
+                  size={140}
                 />
               </div>
-              <div className="flex-1 text-sm">
-                <div className="grid grid-cols-2 gap-2">
+              <div className="flex-1">
+                <div className="grid grid-cols-2 gap-x-3 gap-y-2">
                   {Object.entries(productShare).map(([k, v], idx) => (
                     <div key={k} className="flex items-center gap-2">
-                      <span
-                        className="w-3 h-3 rounded-full"
-                        style={{
-                          background: [
-                            "#0d9488",
-                            "#06b6d4",
-                            "#34d399",
-                            "#7dd3fc",
-                          ][idx % 4],
-                        }}
-                      ></span>
-                      <div className="flex-1">
-                        <div className="text-xs font-bold text-gray-600">
-                          {k}
-                        </div>
-                        <div className={`${KPI_NUM} text-teal-600`}>{v}%</div>
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: ["#0d9488","#06b6d4","#34d399","#7dd3fc"][idx % 4] }} />
+                      <div>
+                        <div className="text-[11px] text-gray-500 leading-none">{k}</div>
+                        <div className="text-xl font-extrabold text-teal-700 leading-none mt-0.5">{v}%</div>
                       </div>
                     </div>
                   ))}
@@ -461,72 +442,39 @@ const CUS360Demo = () => {
         </div>
 
         <div className="grid grid-cols-6 gap-4">
-          <div
-            className={
-              CARD +
-              " col-span-3 border border-teal-100 hover:shadow-lg transition-shadow"
-            }
-          >
-            <div className="text-sm font-bold text-gray-700 tracking-wide">
-              授信與風險重點
-            </div>
-            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-              <div>
-                <div className="text-xs font-bold text-gray-600">DPD30</div>
-                <div className={`${KPI_NUM} text-teal-600`}>
-                  {credit.dpd30}%
+          <div className="col-span-3 rounded-2xl shadow-md hover:shadow-xl transition-shadow border border-teal-50 bg-white p-4">
+            <div className="text-xs font-bold text-teal-600 uppercase tracking-widest mb-3">授信與風險重點</div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              {[
+                { label: "DPD30", value: `${credit.dpd30}%`, sub: "逰期30日" },
+                { label: "不良率", value: `${credit.nplRate}%`, sub: "NPL Rate" },
+                { label: "平均使用率", value: `${credit.avgUtil}%`, sub: "Avg. Util." },
+              ].map((item) => (
+                <div key={item.label} className="bg-gradient-to-b from-teal-50 to-white rounded-xl p-3">
+                  <div className="text-[10px] font-bold text-teal-500 uppercase tracking-wide">{item.label}</div>
+                  <div className="text-3xl font-extrabold text-teal-700 mt-1 leading-none">{item.value}</div>
+                  <div className="text-[10px] text-gray-400 mt-1">{item.sub}</div>
                 </div>
-              </div>
-              <div>
-                <div className="text-xs font-bold text-gray-600">不良率</div>
-                <div className={`${KPI_NUM} text-teal-600`}>
-                  {credit.nplRate}%
-                </div>
-              </div>
-              <div>
-                <div className="text-xs font-bold text-gray-600">
-                  平均使用率
-                </div>
-                <div className={`${KPI_NUM} text-teal-600`}>
-                  {credit.avgUtil}%
-                </div>
-              </div>
+              ))}
             </div>
           </div>
-          <div
-            className={
-              CARD +
-              " col-span-3 border border-teal-100 hover:shadow-lg transition-shadow"
-            }
-          >
-            <div className="text-sm font-bold text-gray-700 tracking-wide">
-              授信活動趨勢 (月)
-            </div>
-            <div className="mt-2 -mx-1">
-              <MonthlyBarHover
-                values={Array.from({ length: monthCount }, (_, i) =>
-                  Math.round(
-                    1000 + 200 * Math.sin((i / 12) * 2 * Math.PI) + i * 10
-                  )
-                )}
-                color="#0f766e"
-                height={64}
-                labels={monthLabels}
-              />
-            </div>
+          <div className="col-span-3 bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow border border-teal-50 p-4">
+            <div className="text-xs font-bold text-teal-600 uppercase tracking-widest mb-1">授信活動趨勢（月）</div>
+            <MonthlyBarHover
+              values={Array.from({ length: monthCount }, (_, i) =>
+                Math.round(1000 + 200 * Math.sin((i / 12) * 2 * Math.PI) + i * 10)
+              )}
+              color="#0f766e"
+              height={72}
+              labels={monthLabels}
+            />
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-4">
-          <div
-            className={
-              CARD + " border border-teal-100 hover:shadow-lg transition-shadow"
-            }
-          >
-            <div className="text-sm font-bold text-gray-700 tracking-wide">
-              客戶等級分布
-            </div>
-            <div className="mt-3">
+          <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow border border-teal-50 p-4">
+            <div className="text-xs font-bold text-teal-600 uppercase tracking-widest mb-2">客戶等級分布</div>
+            <div className="mt-1">
               {/* compute counts and render pie */}
               {(() => {
                 // 使用集中管理的 VIP 等級配置
@@ -584,26 +532,19 @@ const CUS360Demo = () => {
                 });
                 const colors = ["#0d9488", "#06b6d4", "#34d399", "#7dd3fc"];
                 return (
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <DonutInteractive
                       data={segs.map((s) => ({ label: s.label, value: s.pct }))}
                       colors={colors}
-                      size={96}
+                      size={140}
                     />
                     <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                       {segs.map((s, i) => (
-                        <div key={s.key} className="flex items-start gap-2">
-                          <span
-                            className="inline-block w-3 h-3 rounded-full flex-shrink-0"
-                            style={{ background: colors[i % colors.length] }}
-                          ></span>
+                        <div key={s.key} className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: colors[i % colors.length] }} />
                           <div>
-                            <div className="text-xs font-bold text-gray-600 leading-tight">
-                              {s.label}
-                            </div>
-                            <div className={`${KPI_NUM} text-teal-600 leading-none mt-0.5`}>
-                              {s.pct}%
-                            </div>
+                            <div className="text-[10px] text-gray-400 leading-none">{s.label}</div>
+                            <div className="text-xl font-extrabold text-teal-700 leading-none mt-0.5">{s.pct}%</div>
                           </div>
                         </div>
                       ))}
@@ -614,78 +555,40 @@ const CUS360Demo = () => {
             </div>
           </div>
 
-          <div
-            className={
-              CARD + " border border-teal-100 hover:shadow-lg transition-shadow"
-            }
-          >
-            <div className="text-sm font-bold text-gray-700 tracking-wide">
-              近 3 個月互動趨勢
-            </div>
-            <div className="mt-2">
-              <MonthlyBarHover
-                values={Array.from(
-                  { length: 3 },
-                  (_, i) =>
-                    (getCustomerFinance(mockCustomers[i % mockCustomers.length])
-                      .monthlyIncome || 0) +
-                    i * 500
-                )}
-                color="#0ea5a3"
-                height={64}
-                labels={["1月", "2月", "3月"]}
-              />
-            </div>
+          <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow border border-teal-50 p-4">
+            <div className="text-xs font-bold text-teal-600 uppercase tracking-widest mb-1">近 3 個月互動趨勢</div>
+            <MonthlyBarHover
+              values={Array.from(
+                { length: 3 },
+                (_, i) =>
+                  (getCustomerFinance(mockCustomers[i % mockCustomers.length]).monthlyIncome || 0) + i * 500
+              )}
+              color="#0ea5a3"
+              height={72}
+              labels={["1月", "2月", "3月"]}
+            />
           </div>
-          <div
-            className={
-              CARD + " border border-teal-100 hover:shadow-lg transition-shadow"
-            }
-          >
-            <div className="text-sm font-bold text-gray-700 tracking-wide">
-              重點指標快覽
-            </div>
-            <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-              <div>
-                <div className="text-xs text-gray-600">本月新戶</div>
-                <div className={`${KPI_NUM} text-teal-600`}>
-                  {Math.round(BASE_TOTAL * 0.002).toLocaleString()}
+          <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow border border-teal-50 p-4">
+            <div className="text-xs font-bold text-teal-600 uppercase tracking-widest mb-3">重點指標快覽</div>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: "本月新戶", value: Math.round(BASE_TOTAL * 0.002).toLocaleString() },
+                { label: "本月貸款申請", value: Math.round(BASE_TOTAL * 0.004).toLocaleString() },
+                { label: "月均刷卡額", value: `NT$ ${Math.round(revSeries.reduce((a,b)=>a+b,0)/Math.max(1,revSeries.length)/1000).toLocaleString()}` },
+                { label: "預估流失率", value: `${Math.round(((mockCustomers.length*0.02)/totalSample)*100)}%` },
+              ].map((item) => (
+                <div key={item.label} className="bg-teal-50/60 rounded-xl p-2">
+                  <div className="text-[10px] text-gray-500 font-medium">{item.label}</div>
+                  <div className="text-lg font-extrabold text-teal-700 leading-tight mt-0.5">{item.value}</div>
                 </div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-600">本月貸款申請</div>
-                <div className={`${KPI_NUM} text-teal-600`}>
-                  {Math.round(BASE_TOTAL * 0.004).toLocaleString()}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-600">月均刷卡額</div>
-                <div className={`${KPI_NUM} text-teal-600`}>
-                  NT${" "}
-                  {Math.round(
-                    revSeries.reduce((a, b) => a + b, 0) /
-                      Math.max(1, revSeries.length) /
-                      1000
-                  ).toLocaleString()}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-600">預估流失率</div>
-                <div className={`${KPI_NUM} text-teal-600`}>
-                  {Math.round(
-                    ((mockCustomers.length * 0.02) / totalSample) * 100
-                  )}
-                  %
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
+        </>)}
       </div>
     );
   };
-
-  // deterministic mock customers (small, used to derive proportions)
   const mockCustomers = [
     {
       id: "C001",
@@ -777,7 +680,7 @@ const CUS360Demo = () => {
       idCard: "C111223334",
       creditCard: "4559-XX-XXXX-1003",
       accountNumber: "004-3456789-3",
-      tags: ["投資理財", "狀態調整-有效戶", "信用使用偏高", "賬戶提醒"],
+      tags: ["投資理財", "狀態調整-有效戶", "信用使用偏高", "帳戶提醒"],
       email: "chen.dw@example.com",
       address: "台中市西屯區",
       city: "台中市",
@@ -1913,6 +1816,7 @@ const CUS360Demo = () => {
       age: 32,
       industry: "外商行銷企劃",
       nationality: "中華民國",
+      maritalStatus: "已婚",
       vipLevel: "VIP",
       riskScore: "A",
       riskLevel: "low",
@@ -1963,7 +1867,7 @@ const CUS360Demo = () => {
       ],
     },
     {
-      id: "C183",
+      id: "C197",
       name: "曾建文",
       nameEn: "",
       age: 52,
@@ -1972,7 +1876,7 @@ const CUS360Demo = () => {
       riskLevel: "low",
       accountStatus: "active",
       phone: "0956-789-012",
-      idCard: "J888990001",
+      idCard: "J197197197",
       creditCard: "4559-XX-XXXX-0183",
       accountNumber: "004-9901234-0",
       tags: ["有投資經驗用戶", "投資意圖", "高淨值客戶", "財富管理需求"],
@@ -2004,7 +1908,7 @@ const CUS360Demo = () => {
       lifetimeValueTier: "platinum",
     },
     {
-      id: "C184",
+      id: "C198",
       name: "吳燕如",
       nameEn: "",
       age: 45,
@@ -2045,7 +1949,7 @@ const CUS360Demo = () => {
       lifetimeValueTier: "gold",
     },
     {
-      id: "C185",
+      id: "C199",
       name: "蔡明珠",
       nameEn: "",
       age: 58,
@@ -2086,7 +1990,7 @@ const CUS360Demo = () => {
       lifetimeValueTier: "gold",
     },
     {
-      id: "C186",
+      id: "C200",
       name: "邱德財",
       nameEn: "",
       age: 48,
@@ -2127,7 +2031,7 @@ const CUS360Demo = () => {
       lifetimeValueTier: "diamond",
     },
     {
-      id: "C187",
+      id: "C201",
       name: "黃思涵",
       nameEn: "",
       age: 41,
@@ -2168,7 +2072,7 @@ const CUS360Demo = () => {
       lifetimeValueTier: "gold",
     },
     {
-      id: "C188",
+      id: "C202",
       name: "廖俊宇",
       nameEn: "",
       age: 32,
@@ -2209,7 +2113,7 @@ const CUS360Demo = () => {
       lifetimeValueTier: "silver",
     },
     {
-      id: "C189",
+      id: "C203",
       name: "鄭美玲",
       nameEn: "",
       age: 47,
@@ -2250,7 +2154,7 @@ const CUS360Demo = () => {
       lifetimeValueTier: "gold",
     },
     {
-      id: "C190",
+      id: "C204",
       name: "林昊天",
       nameEn: "",
       age: 55,
@@ -2291,7 +2195,7 @@ const CUS360Demo = () => {
       lifetimeValueTier: "platinum",
     },
     {
-      id: "C191",
+      id: "C205",
       name: "王素娥",
       nameEn: "",
       age: 63,
@@ -2332,7 +2236,7 @@ const CUS360Demo = () => {
       lifetimeValueTier: "silver",
     },
     {
-      id: "C192",
+      id: "C206",
       name: "陳俊傑",
       nameEn: "",
       age: 38,
@@ -3175,6 +3079,7 @@ const CUS360Demo = () => {
     setLoginError("");
     setShowExportModal(false);
     setShowLogoutConfirm(false);
+    setQueryHistory([]);
   };
 
   const renderLogoutConfirm = () => (
@@ -3251,7 +3156,9 @@ const CUS360Demo = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="text-sm text-white/90">林經理 (008)</div>
+            <div className="text-sm text-white/90">
+              {currentRole === "specialist" ? "楊專員（理財專員）" : "林經理 (008)"}
+            </div>
             <div className="text-sm bg-white bg-opacity-10 px-3 py-1 rounded-full">
               即時
             </div>
@@ -3382,6 +3289,8 @@ const CUS360Demo = () => {
 
   // Auth + UI state
   const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+  const [currentRole, setCurrentRole] = React.useState("manager"); // "manager" | "specialist"
+  const [queryHistory, setQueryHistory] = React.useState([]); // max 5 entries
   const [loginUser, setLoginUser] = React.useState("");
   const [loginPass, setLoginPass] = React.useState("");
   const [loginError, setLoginError] = React.useState("");
@@ -3544,6 +3453,33 @@ const CUS360Demo = () => {
   const [rangeEnd, setRangeEnd] = useState(
     `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, "0")}`
   );
+
+  // Dashboard refresh animation state (1 second spinner on load/range change/tab switch)
+  const [dashLoading, setDashLoading] = useState(true);
+  useEffect(() => {
+    if (activeModule !== "dashboard") return;
+    setDashLoading(true);
+    const t = setTimeout(() => setDashLoading(false), 1000);
+    return () => clearTimeout(t);
+  }, [activeModule, rangeStart, rangeEnd]);
+
+  // Scroll to top on every module/tab switch
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [activeModule, activeTab]);
+
+  // Track query history: record each time a customer detail is viewed (max 5)
+  useEffect(() => {
+    if (!selectedCustomer) return;
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const timestamp = `${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    setQueryHistory((prev) => {
+      if (prev.length > 0 && prev[0].customerId === selectedCustomer.id) return prev;
+      const entry = { timestamp, customerId: selectedCustomer.id, name: selectedCustomer.name };
+      return [entry, ...prev].slice(0, 5);
+    });
+  }, [selectedCustomer]);
 
   // Detail view tabs — align with keys in `detailedCustomerData`
   const tabs = [
@@ -3738,6 +3674,30 @@ const CUS360Demo = () => {
           },
         ],
         closing: `不如我先幫您模擬三種不同投入方案，今天不一定要決定，但可以先把「孩子未來教育基金的輪廓」建立起來。如果您覺得其中一個方式適合，我可以直接在財富管理網幫您設定，流程很簡單，之後也都有提醒與檢視頻率，可以隨時調整。`,
+        plans: [
+          {
+            type: "保守型",
+            monthlyAmount: "NT$3,000",
+            targetYears: 18,
+            estimatedTotal: "約 NT$90 萬（含保守預期報酬）",
+            note: "以定存、短期債券為主，波動最低，適合不接受任何風險的家庭。",
+          },
+          {
+            type: "穩健型（建議）",
+            monthlyAmount: "NT$5,000",
+            targetYears: 18,
+            estimatedTotal: "約 NT$180 萬（預期年化報酬 3-5%）",
+            note: "搭配定期定額基金＋部分保單，長期複利效果佳，兼顧風險保障，為最推薦方案。",
+            recommended: true,
+          },
+          {
+            type: "成長型",
+            monthlyAmount: "NT$8,000",
+            targetYears: 18,
+            estimatedTotal: "約 NT$320 萬（預期年化報酬 6-8%）",
+            note: "較高比例配置股票型基金，長期報酬潛力高，但需承擔短期波動，適合風險接受度較高者。",
+          },
+        ],
         compliance: "提醒您，本次說明僅為理財規劃建議，非保證收益；相關產品內容與費用將以正式說明文件與公告為準。本次諮詢將依規定進行紀錄。",
       };
     }
@@ -3783,6 +3743,15 @@ const CUS360Demo = () => {
       
       out.push('🤝 成交引導（Closing）');
       out.push(customConfig.closing);
+      
+      // Show plan simulation if available
+      if (customConfig.plans && customConfig.plans.length > 0) {
+        out.push('📊 個人化方案模擬（三種選擇）');
+        out.push(customConfig.plans.map(p => {
+          const badge = p.recommended ? ' ⭐ 建議方案' : '';
+          return `【${p.type}${badge}】\n每月投入：${p.monthlyAmount} ｜ 目標年限：${p.targetYears} 年\n預估累積：${p.estimatedTotal}\n說明：${p.note}`;
+        }).join('\n\n'));
+      }
       
       out.push('⚖️ 法遵提示');
       out.push(customConfig.compliance);
@@ -3974,18 +3943,10 @@ const CUS360Demo = () => {
     return chars.join("");
   };
   const maskValue = (label, value, force = false) => {
-    // Mask applies when toggle is ON or the field explicitly requests masking
-    if (!showMaskedData && !force) return value;
+    // When masking is disabled, always return raw value regardless of force flag
+    if (!showMaskedData) return value;
     if (!value) return value;
     const l = label || "";
-    if (force) {
-      // best-effort based on label types
-      if (/郵件|email/i.test(l)) return maskEmail(value);
-      if (/手機|電話/.test(l)) return maskPhone(value);
-      if (/地址/.test(l)) return maskAddress(value);
-      if (/證件號|身分證|ID|idCard/i.test(l)) return maskId(value);
-      return value;
-    }
     if (/郵件|email/i.test(l)) return maskEmail(value);
     if (/手機|電話/.test(l)) return maskPhone(value);
     if (/地址/.test(l)) return maskAddress(value);
@@ -4125,6 +4086,8 @@ const CUS360Demo = () => {
 
   // 客户行业映射 - 基于客户 ID 进行确定性分配
   const getCustomerIndustry = (customer) => {
+    // Use explicit industry field if set on the customer
+    if (customer && customer.industry) return customer.industry;
     const industries = [
       "科技/軟體", "製造業", "金融服務", "零售/電商", "醫療/健康",
       "房地產", "教育", "物流/運輸", "能源", "媒體/傳播",
@@ -4203,6 +4166,26 @@ const CUS360Demo = () => {
   };
 
   const generateCustomerInteractions = (customer, min = 3, max = 6) => {
+    // C196 林怡君 — 固定顯示近期通路互動（行動銀行、網銀等，不含人生大事）
+    if (customer && customer.id === "C196") {
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      const sixWeeksAgo = new Date();
+      sixWeeksAgo.setDate(sixWeeksAgo.getDate() - 42);
+      const twoWeeksAgo = new Date();
+      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+      const fourDaysAgo = new Date();
+      fourDaysAgo.setDate(fourDaysAgo.getDate() - 4);
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      return [
+        { channel: "行動銀行", time: threeMonthsAgo.toLocaleString(), detail: "查詢定存利率方案" },
+        { channel: "網銀", time: sixWeeksAgo.toLocaleString(), detail: "申請定存續存" },
+        { channel: "行動銀行", time: twoWeeksAgo.toLocaleString(), detail: "查詢子女教育金試算" },
+        { channel: "行動銀行", time: oneWeekAgo.toLocaleString(), detail: "查詢帳戶餘額與近期交易" },
+        { channel: "行動銀行", time: fourDaysAgo.toLocaleString(), detail: "登入並查詢餘額" },
+      ];
+    }
     const seed = seedFromId(customer) + 201;
     const count = min + (seed % (max - min + 1));
     const channels = [
@@ -4257,19 +4240,66 @@ const CUS360Demo = () => {
     });
   })();
 
-  // Enrichment: derive dynamic riskLevel, accountStatus, preferences and tag scores for realism
-  const deriveRiskLevel = (f) => {
-    const loanRatio = f.loan / Math.max(1, f.netWorth);
-    const utilRatio = f.creditUtilPct / 100; // 0-1
-    const spendRatio = f.cardSpend3M / Math.max(1, f.avgMonthlySpend * 3);
-    const composite = loanRatio * 0.5 + utilRatio * 0.3 + spendRatio * 0.2;
-    if (composite < 0.33) return "low";
-    if (composite < 0.66) return "medium";
-    return "high";
+  // Gender map (based on name convention for Taiwan)
+  const GENDER_MAP = {
+    C001:"male",C002:"female",C003:"male",C004:"female",C005:"male",
+    C006:"female",C007:"male",C008:"female",C009:"male",C010:"female",
+    C011:"male",C012:"male",C013:"female",C014:"male",C015:"male",
+    C016:"female",C017:"male",
+    C181:"male",C182:"female",C183:"male",C184:"female",C185:"male",
+    C186:"female",C187:"male",C188:"female",C189:"male",C190:"female",
+    C191:"female",C192:"female",C193:"female",C194:"male",C195:"female",
+    C196:"female",C197:"male",C198:"female",C199:"female",C200:"male",
+    C201:"female",C202:"male",C203:"female",C204:"male",C205:"female",C206:"male",
+  };
+  // Spouse map — exactly 22 entries ≈ 50% of 43 customers.
+  // 4 cross-linked bank-customer pairs: C001↔C196, C203↔C204.
+  const SPOUSE_MAP = {
+    C001: { name: "林怡君",  customerId: "C196" },   // 本行客戶 ✓
+    C002: { name: "趙志明",  customerId: null },
+    C004: { name: "蕭建民",  customerId: null },
+    C007: { name: "林玉芳",  customerId: null },
+    C008: { name: "黃建宏",  customerId: null },
+    C009: { name: "黃秀蘭",  customerId: null },
+    C010: { name: "陳志鴻",  customerId: null },
+    C011: { name: "吳思穎",  customerId: null },
+    C012: { name: "劉佳慧",  customerId: null },
+    C014: { name: "張玉蓉",  customerId: null },
+    C017: { name: "張雅惠",  customerId: null },
+    C185: { name: "林佳芬",  customerId: null },
+    C193: { name: "呂建霖",  customerId: null },
+    C194: { name: "許雅惠",  customerId: null },
+    C196: { name: "王小明",  customerId: "C001" },   // 本行客戶 ✓
+    C197: { name: "蔣淑華",  customerId: null },
+    C198: { name: "謝承宏",  customerId: null },
+    C199: { name: "楊志成",  customerId: null },
+    C200: { name: "吳芳茹",  customerId: null },
+    C203: { name: "林昊天",  customerId: "C204" },   // 本行客戶 ✓
+    C204: { name: "鄭美玲",  customerId: "C203" },   // 本行客戶 ✓
+    C205: { name: "黃世雄",  customerId: null },
+  };
+  // Enrich each customer with gender and spouseInfo
+  mockCustomers.forEach((c) => {
+    if (!c.gender) c.gender = GENDER_MAP[c.id] || "unknown";
+    if (!c.spouseInfo && SPOUSE_MAP[c.id]) {
+      c.spouseInfo = SPOUSE_MAP[c.id];
+      // Customers with a spouse must be married
+      if (c.maritalStatus !== "已婚") c.maritalStatus = "已婚";
+    }
+  });
+
+  // Enrichment: derive riskLevel from riskScore (single source of truth), then accountStatus/preferences
+  // A+/A → low, B → medium, C → high
+  const deriveRiskLevelFromScore = (score) => {
+    if (score === "A+" || score === "A") return "low";
+    if (score === "B") return "medium";
+    if (score === "C") return "high";
+    return "medium"; // fallback
   };
   mockCustomers.forEach((c) => {
-    const f = getCustomerFinance(c);
-    c.riskLevel = deriveRiskLevel(f);
+    // riskScore is the authoritative field; riskLevel is always derived from it
+    if (!c.riskScore) c.riskScore = "A"; // default if missing
+    c.riskLevel = deriveRiskLevelFromScore(c.riskScore);
     // Account status recalc based on interactions recency (30d)
     // Preserve 結清 / 失效戶 statuses (do not auto-reactivate)
     if (!["closed", "結清", "失效戶"].includes(c.accountStatus)) {
@@ -4329,7 +4359,10 @@ const CUS360Demo = () => {
     ]);
     if (personaIds.has(c.id) && !["結清", "失效戶"].includes(c.accountStatus))
       c.accountStatus = "active";
-    if (personaIds.has(c.id)) c.riskLevel = "low";
+    if (personaIds.has(c.id)) {
+      c.riskLevel = "low";
+      if (!["A+", "A"].includes(c.riskScore)) c.riskScore = "A";
+    }
   });
 
   // Post-process: ensure a small portion of customers are high risk (10%-20%), excluding personas and closed
@@ -4360,6 +4393,7 @@ const CUS360Demo = () => {
         .sort((a, b) => b.composite - a.composite);
       for (let i = 0; i < scored.length && currentHigh < targetMin; i++) {
         scored[i].c.riskLevel = "high";
+        scored[i].c.riskScore = "C"; // keep riskScore in sync
         currentHigh++;
       }
     } else if (currentHigh > targetMax) {
@@ -4378,6 +4412,7 @@ const CUS360Demo = () => {
         .sort((a, b) => a.composite - b.composite);
       for (let i = 0; i < scored.length && currentHigh > targetMax; i++) {
         scored[i].c.riskLevel = "medium";
+        scored[i].c.riskScore = "B"; // keep riskScore in sync
         currentHigh--;
       }
     }
@@ -4425,6 +4460,27 @@ const CUS360Demo = () => {
 
   // Generate customer events: deposit maturity and life events
   const generateCustomerEvents = (customer, n = 4) => {
+    // C196 林怡君 — 固定顯示生子事件（寶寶 6 個月前）及定存即將到期
+    if (customer && customer.id === "C196") {
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      const twoMonthsLater = new Date();
+      twoMonthsLater.setMonth(twoMonthsLater.getMonth() + 2);
+      return [
+        {
+          channel: "人生大事",
+          time: sixMonthsAgo.toLocaleString(),
+          detail: "生子：新生兒相關教育基金與保險建議。",
+          status: "已發生",
+        },
+        {
+          channel: "定存到期",
+          time: twoMonthsLater.toLocaleString(),
+          detail: "您的定存即將到期，建議評估續存/轉存與利率方案。",
+          status: "提醒",
+        },
+      ];
+    }
     const seed = seedFromId(customer) + 1357;
     const events = [];
     const now = new Date();
@@ -4879,7 +4935,27 @@ const CUS360Demo = () => {
   }) => {
     const ref = React.useRef(null);
     const [w, setW] = React.useState(320);
-    const [hover, setHover] = React.useState(null); // index
+    const [hover, setHover] = React.useState(null);
+    // Animation: track a 0→1 progress that grows bars from the bottom
+    const [animPct, setAnimPct] = React.useState(0);
+    const animRef = React.useRef(null);
+    const startAnim = React.useCallback(() => {
+      setAnimPct(0);
+      const start = performance.now();
+      const dur = 700; // ms
+      const tick = (now) => {
+        const t = Math.min((now - start) / dur, 1);
+        // ease-out cubic
+        const eased = 1 - Math.pow(1 - t, 3);
+        setAnimPct(eased);
+        if (t < 1) animRef.current = requestAnimationFrame(tick);
+      };
+      animRef.current = requestAnimationFrame(tick);
+    }, []);
+    React.useEffect(() => {
+      startAnim();
+      return () => cancelAnimationFrame(animRef.current);
+    }, [values.join(","), startAnim]);
     React.useEffect(() => {
       if (!ref.current) return;
       const el = ref.current;
@@ -4901,10 +4977,12 @@ const CUS360Demo = () => {
     const innerH = height - PAD_Y * 2;
     const segW = innerW / values.length;
     const barW = Math.max(4, segW * 0.55);
+    const baseY = height - PAD_Y;
     const bars = values.map((v, i) => {
-      const h = (v / Math.max(1, max)) * (innerH - 4);
+      const fullH = (v / Math.max(1, max)) * (innerH - 4);
+      const h = fullH * animPct;
       const x = PAD_X + i * segW + (segW - barW) / 2;
-      const y = height - PAD_Y - h;
+      const y = baseY - h;
       return { x, y, h, v, i };
     });
     return (
@@ -4915,16 +4993,22 @@ const CUS360Demo = () => {
           height={height}
           preserveAspectRatio="none"
         >
+          <defs>
+            <linearGradient id={`barGrad-${color.replace('#','')}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity="0.9" />
+              <stop offset="100%" stopColor={color} stopOpacity="0.45" />
+            </linearGradient>
+          </defs>
           {bars.map((b) => (
             <rect
               key={b.i}
               x={b.x}
               y={b.y}
               width={barW}
-              height={b.h}
-              rx={2}
-              fill={color}
-              fillOpacity={hover === b.i ? 0.85 : 0.65}
+              height={Math.max(0, b.h)}
+              rx={3}
+              fill={hover === b.i ? color : `url(#barGrad-${color.replace('#','')})`}
+              fillOpacity={hover === b.i ? 1 : 0.85}
             />
           ))}
           {bars.map((b) => (
@@ -4942,24 +5026,24 @@ const CUS360Demo = () => {
         </svg>
         {hover != null && (
           <div
-            className="absolute z-10 px-2 py-1 bg-white border rounded shadow text-xs"
+            className="absolute z-10 px-2 py-1 bg-white border border-teal-100 rounded-lg shadow-md text-xs pointer-events-none"
             style={{
               left: Math.min(
                 Math.max(bars[hover].x + barW / 2 - 40, 4),
                 w - 84
               ),
-              top: 4,
+              top: 2,
             }}
           >
-            <div className="font-medium text-teal-700">
+            <div className="font-bold text-teal-700">
               {values[hover].toLocaleString()}
             </div>
-            <div className="text-gray-500">
+            <div className="text-gray-400">
               {labels[hover] || `${hover + 1}月`}
             </div>
           </div>
         )}
-        <div className="flex justify-between items-start text-xs mt-1 text-gray-600">
+        <div className="flex justify-between items-start text-xs mt-1">
           {(labels.length ? labels : values.map((_, i) => `${i + 1}月`)).map(
             (m, i) => (
               <div
@@ -4967,7 +5051,7 @@ const CUS360Demo = () => {
                 className="text-center"
                 style={{ width: `${100 / values.length}%` }}
               >
-                <div className="text-gray-500">{m}</div>
+                <div className="text-gray-400 text-[10px]">{m}</div>
               </div>
             )
           )}
@@ -4983,6 +5067,27 @@ const CUS360Demo = () => {
     innerRatio = 0.55,
   }) => {
     const [hoverIdx, setHoverIdx] = React.useState(null);
+    // Animation: 0→1 sweeps all segments from nothing to full size
+    const [animPct, setAnimPct] = React.useState(0);
+    const animRef = React.useRef(null);
+    const startAnim = React.useCallback(() => {
+      setAnimPct(0);
+      const start = performance.now();
+      const dur = 650;
+      const tick = (now) => {
+        const t = Math.min((now - start) / dur, 1);
+        // ease-out cubic
+        const eased = 1 - Math.pow(1 - t, 3);
+        setAnimPct(eased);
+        if (t < 1) animRef.current = requestAnimationFrame(tick);
+      };
+      animRef.current = requestAnimationFrame(tick);
+    }, []);
+    React.useEffect(() => {
+      startAnim();
+      return () => cancelAnimationFrame(animRef.current);
+    }, [data.map((d) => d.value).join(","), startAnim]);
+
     if (!data.length)
       return <div className="text-xs text-gray-500">無資料</div>;
     const total = data.reduce((s, d) => s + d.value, 0) || 1;
@@ -4990,6 +5095,7 @@ const CUS360Demo = () => {
     const cy = 21;
     const outerR = 15.9155;
     const innerR = outerR * innerRatio;
+    // Build segments with animated angular span
     let acc = 0;
     const segments = data.map((d, i) => {
       const pct = d.value / total;
@@ -4999,8 +5105,11 @@ const CUS360Demo = () => {
       return { ...d, pctFrac: pct, startFrac: start, endFrac: end, i };
     });
     const describeSeg = (startFrac, endFrac) => {
+      // Scale the end angle toward start by animPct (grows from 0 to full)
+      const animatedEnd = startFrac + (endFrac - startFrac) * animPct;
+      if (Math.abs(animatedEnd - startFrac) < 0.0001) return "";
       const startAngle = startFrac * Math.PI * 2 - Math.PI / 2;
-      const endAngle = endFrac * Math.PI * 2 - Math.PI / 2;
+      const endAngle = animatedEnd * Math.PI * 2 - Math.PI / 2;
       const x0 = cx + outerR * Math.cos(startAngle);
       const y0 = cy + outerR * Math.sin(startAngle);
       const x1 = cx + outerR * Math.cos(endAngle);
@@ -5010,7 +5119,7 @@ const CUS360Demo = () => {
       const x3 = cx + innerR * Math.cos(startAngle);
       const y3 = cy + innerR * Math.sin(startAngle);
       const largeArcOuter = endAngle - startAngle > Math.PI ? 1 : 0;
-      const largeArcInner = largeArcOuter; // same span
+      const largeArcInner = largeArcOuter;
       return `M ${x0} ${y0} A ${outerR} ${outerR} 0 ${largeArcOuter} 1 ${x1} ${y1} L ${x2} ${y2} A ${innerR} ${innerR} 0 ${largeArcInner} 0 ${x3} ${y3} Z`;
     };
     return (
@@ -5018,6 +5127,7 @@ const CUS360Demo = () => {
         <svg width={size} height={size} viewBox="0 0 42 42">
           {segments.map((s, i) => {
             const d = describeSeg(s.startFrac, s.endFrac);
+            if (!d) return null;
             const color = colors[i % colors.length];
             return (
               <path
@@ -5033,11 +5143,11 @@ const CUS360Demo = () => {
           })}
         </svg>
         {hoverIdx != null && (
-          <div className="absolute left-1 top-1 px-2 py-1 bg-white border rounded shadow text-xs">
-            <div className="font-medium text-teal-700">
+          <div className="absolute left-1 top-1 px-2 py-1 bg-white border border-teal-100 rounded-lg shadow-md text-xs pointer-events-none">
+            <div className="font-bold text-teal-700">
               {segments[hoverIdx].label}
             </div>
-            <div className="text-gray-500">
+            <div className="text-gray-400">
               {Math.round(segments[hoverIdx].pctFrac * 100)}%
             </div>
           </div>
@@ -5101,15 +5211,40 @@ const CUS360Demo = () => {
             </div>
           )}
 
-          {/* 提示：若尚未查詢，顯示建議客戶樣本供點選 */}
-          {!searchPerformed && (
-            <div className="p-2 text-sm text-gray-600">
-              建議客戶 (點選以查看明細)
-            </div>
-          )}
+          {/* 若尚未查詢，顯示最近往來客戶前 10 筆（按最新互動日期排序） */}
+          {!searchPerformed && (() => {
+            const withRecent = mockCustomers.map((c) => {
+              const interactions = generateCustomerInteractions(c, 3, 6);
+              const latest = interactions.reduce((best, it) => {
+                const t = new Date(it.time).getTime();
+                return t > best ? t : best;
+              }, 0);
+              return { c, latest };
+            });
+            withRecent.sort((a, b) => b.latest - a.latest);
+            const top10 = withRecent.slice(0, 10).map((x) => x.c);
+            return (
+              <div className="p-2 text-sm text-gray-600 font-medium">
+                最近往來客戶（前 10 筆，點選以查看明細）
+              </div>
+            );
+          })()}
 
           {uniqueById(
-            searchPerformed ? (searchResults || []) : mockCustomers.slice(0, 5)
+            searchPerformed
+              ? (searchResults || [])
+              : (() => {
+                  const withRecent = mockCustomers.map((c) => {
+                    const interactions = generateCustomerInteractions(c, 3, 6);
+                    const latest = interactions.reduce((best, it) => {
+                      const t = new Date(it.time).getTime();
+                      return t > best ? t : best;
+                    }, 0);
+                    return { c, latest };
+                  });
+                  withRecent.sort((a, b) => b.latest - a.latest);
+                  return withRecent.slice(0, 10).map((x) => x.c);
+                })()
           ).map((customer) => (
             <div
               key={customer.id}
@@ -5563,17 +5698,27 @@ const CUS360Demo = () => {
         <div>
           <h3 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
             資料遮罩模組
-            <button
-              onClick={() => setShowMaskedData(!showMaskedData)}
-              className="ml-auto px-3 py-1 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm flex items-center gap-2"
-            >
-              {showMaskedData ? (
-                <Eye className="w-4 h-4" />
-              ) : (
+            {currentRole === "specialist" ? (
+              <button
+                disabled
+                className="ml-auto px-3 py-1 bg-gray-400 text-white rounded-lg text-sm flex items-center gap-2 cursor-not-allowed opacity-70"
+              >
                 <EyeOff className="w-4 h-4" />
-              )}
-              {showMaskedData ? "顯示完整資料" : "隱藏敏感資料"}
-            </button>
+                隱藏敏感資料（鎖定）
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowMaskedData(!showMaskedData)}
+                className="ml-auto px-3 py-1 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm flex items-center gap-2"
+              >
+                {showMaskedData ? (
+                  <Eye className="w-4 h-4" />
+                ) : (
+                  <EyeOff className="w-4 h-4" />
+                )}
+                {showMaskedData ? "顯示完整資料" : "隱藏敏感資料"}
+              </button>
+            )}
           </h3>
           <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-sm text-yellow-800">
@@ -5586,20 +5731,20 @@ const CUS360Demo = () => {
 
         <div>
           <h3 className="font-bold mb-3">查詢歷程稽核</h3>
-          <div className="space-y-2">
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg text-sm">
-              <Clock className="w-4 h-4 text-gray-500" />
-              <span>2024/11/27 14:30:25</span>
-              <span className="text-gray-600">查詢客戶 C001</span>
-              <span className="ml-auto text-blue-600">使用者: E12345</span>
+          {queryHistory.length === 0 ? (
+            <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-500">本次登入尚未查詢任何客戶。</div>
+          ) : (
+            <div className="space-y-2">
+              {queryHistory.map((entry, i) => (
+                <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg text-sm">
+                  <Clock className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                  <span className="text-gray-500 whitespace-nowrap">{entry.timestamp}</span>
+                  <span className="text-gray-700">查詢客戶 <span className="font-medium">{entry.name}</span>（{entry.customerId}）</span>
+                  <span className="ml-auto text-blue-600 whitespace-nowrap">{currentRole === "specialist" ? "楊專員" : "林經理"}</span>
+                </div>
+              ))}
             </div>
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg text-sm">
-              <Clock className="w-4 h-4 text-gray-500" />
-              <span>2024/11/27 14:25:10</span>
-              <span className="text-gray-600">匯出客戶名單</span>
-              <span className="ml-auto text-blue-600">使用者: E12345</span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
@@ -5776,156 +5921,211 @@ const CUS360Demo = () => {
     );
   };
 
-  const renderRelationships = () => (
-    <div className={SUBCARD}>
-      <h4 className="text-lg font-semibold text-gray-800 mb-3">
-        客戶關係人資訊
-      </h4>
-      <div className="space-y-3">
-        <div className={SUBCARD}>
+  const renderRelationships = () => {
+    if (!selectedCustomer) return null;
+    const c = selectedCustomer;
+    const seed = seedFromId(c);
+    // --- Spouse card ---
+    const spouseCard = (() => {
+      if (c.maritalStatus !== "已婚") return null;
+      // Fallback: generate plausible opposite-gender spouse name for married customers without explicit spouseInfo
+      const maleGivenNames = ["建宏", "志明", "俊傑", "哲宇", "承翰", "志遠", "嘉豪", "文彥"];
+      const femaleGivenNames = ["雅惠", "佳芬", "美玲", "思婷", "怡婷", "淑華", "玫瑰", "素華"];
+      const maleSurnames = ["陳", "林", "黃", "吳", "張", "李", "劉", "楊"];
+      const femaleSurnames = ["陳", "林", "黃", "吳", "張", "李", "劉", "王"];
+      const fallbackSpouseInfo = c.gender === "female"
+        ? { name: `${maleSurnames[seed % 8]}${maleGivenNames[seed % 8]}`, customerId: null }
+        : { name: `${femaleSurnames[(seed >> 3) % 8]}${femaleGivenNames[(seed >> 3) % 8]}`, customerId: null };
+      const effectiveSpouseInfo = c.spouseInfo || fallbackSpouseInfo;
+      const { name: spouseName, customerId: spouseCid } = effectiveSpouseInfo;
+      const spouseCustomer = spouseCid ? mockCustomers.find((m) => m.id === spouseCid) : null;
+      const isBankCustomer = !!spouseCid;
+      const marriageYear = 2010 + (seed % 12);
+      const marriageDate = `${marriageYear}/${String((seed % 12) + 1).padStart(2, "0")}/15`;
+      return (
+        <div
+          key="spouse"
+          className={`${SUBCARD} ${isBankCustomer ? "border border-teal-200 bg-teal-50/40 cursor-pointer hover:bg-teal-50 hover:shadow-md transition-all" : ""}`}
+          onClick={isBankCustomer ? () => {
+            setSelectedCustomer(spouseCustomer);
+            setActiveTab("basic");
+            window.scrollTo({ top: 0, behavior: "instant" });
+          } : undefined}
+          title={isBankCustomer ? `點擊查看 ${spouseName} 的客戶資料` : undefined}
+        >
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <Users className="w-5 h-5 text-blue-600" />
-                <span className="font-bold text-md">李美珍</span>
-                <span className="px-2 py-1 bg-pink-100 text-pink-800 rounded text-sm">
-                  配偶
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm ml-8">
-                <div>
-                  <span className="text-gray-600">關係人客戶編號: </span>
-                  <span className="font-medium">C005</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">關係起日: </span>
-                  <span className="font-medium">2015/06/20</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">聯絡電話: </span>
-                  <span className="font-medium">0923-456-789</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">關係狀態: </span>
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">
-                    有效
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <Users className="w-5 h-5 text-pink-500 flex-shrink-0" />
+                <span className="font-bold text-md">{spouseName}</span>
+                <span className="px-2 py-1 bg-pink-100 text-pink-700 rounded text-xs font-medium">配偶</span>
+                {isBankCustomer && (
+                  <span className="flex items-center gap-1 px-2 py-1 bg-teal-100 text-teal-700 rounded text-xs font-bold border border-teal-300">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+                    本行客戶
                   </span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm ml-7">
+                {isBankCustomer && spouseCid && (
+                  <div>
+                    <span className="text-gray-500">客戶編號: </span>
+                    <span className="font-medium text-teal-700">{spouseCid}</span>
+                  </div>
+                )}
+                <div>
+                  <span className="text-gray-500">關係起日: </span>
+                  <span className="font-medium">{marriageDate}</span>
                 </div>
+                <div>
+                  <span className="text-gray-500">關係狀態: </span>
+                  <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">有效</span>
+                </div>
+                {isBankCustomer && spouseCustomer && (
+                  <div className="col-span-2 mt-1 text-xs text-teal-600 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                    查看關係人資訊
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
+      );
+    })();
 
-        <div className={SUBCARD}>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <Users className="w-5 h-5 text-blue-600" />
-                <span className="font-bold text-md">王志明</span>
-                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
-                  子女
-                </span>
+    // --- Children cards (deterministic based on seed, for family lifecycle stages) ---
+    const childCards = (() => {
+      // Curated children count for customers with spouses; others derive from seed
+      const CHILDREN_COUNT_MAP = {
+        C001: 1, C002: 2, C004: 2, C006: 1, C007: 2,
+        C008: 1, C009: 2, C010: 2, C011: 1, C012: 2,
+        C014: 2, C015: 1, C017: 2,
+        C183: 1, C185: 1, C186: 1, C189: 1, C191: 1,
+        C193: 1, C194: 2, C196: 1,
+        C197: 2, C198: 2, C199: 2, C200: 2, C201: 1,
+        C203: 2, C204: 2, C205: 2, C206: 1,
+      };
+      const familyStages = ["young_family", "pre_retirement", "affluent", "established_professional", "high_net_worth", "retired"];
+      // Only show children if married and in a life stage that implies children
+      if (c.maritalStatus !== "已婚" || !familyStages.includes(c.lifecycleStage)) return [];
+
+      // Shared children for cross-linked bank-customer couples (both partners see identical children)
+      const COUPLE_CHILDREN = {
+        "C001-C196": [
+          { name: "王品宸", isBoy: true, age: 0 },
+        ],
+        "C203-C204": [
+          { name: "林承恩", isBoy: true, age: 20 },
+          { name: "林子晴", isBoy: false, age: 17 },
+        ],
+      };
+      const coupleKey = c.spouseInfo?.customerId
+        ? [c.id, c.spouseInfo.customerId].sort().join("-")
+        : null;
+      const coupleChildren = coupleKey ? COUPLE_CHILDREN[coupleKey] : null;
+
+      if (coupleChildren) {
+        return coupleChildren.map((child, i) => {
+          const childBirthYear = new Date().getFullYear() - child.age;
+          const ageDisplay = `${child.age} 歲`;
+          return (
+            <div key={`child-${i}`} className={SUBCARD}>
+              <div className="flex items-start">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <Users className="w-5 h-5 text-blue-400 flex-shrink-0" />
+                    <span className="font-bold text-md">{child.name}</span>
+                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">子女</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm ml-7">
+                    <div><span className="text-gray-500">年齡: </span><span className="font-medium">{ageDisplay}</span></div>
+                    <div><span className="text-gray-500">出生年份: </span><span className="font-medium">{childBirthYear} 年</span></div>
+                    <div><span className="text-gray-500">受益人: </span><span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">是</span></div>
+                    <div><span className="text-gray-500">關係狀態: </span><span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">有效</span></div>
+                  </div>
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-4 text-sm ml-8">
-                <div>
-                  <span className="text-gray-600">年齡: </span>
-                  <span className="font-medium">8歲</span>
+            </div>
+          );
+        });
+      }
+
+      // Determine count: use map if defined, else derive from seed (1 or 2)
+      const numChildren = c.id in CHILDREN_COUNT_MAP
+        ? CHILDREN_COUNT_MAP[c.id]
+        : (1 + (seed % 2));
+      const maleChildNames = ["志豪", "承恩", "宸宇", "昊哲", "品豪"];
+      const femaleChildNames = ["芸榕", "思妤", "子晴", "依庭", "柔嫣"];
+      const spouseSurname = c.spouseInfo?.customerId
+        ? (mockCustomers.find((m) => m.id === c.spouseInfo.customerId)?.name?.charAt(0) || c.name?.charAt(0))
+        : c.name?.charAt(0) || "王";
+      return Array.from({ length: numChildren }, (_, i) => {
+        const childSeed = (seed + i * 31) % 97;
+        const isBoy = (childSeed % 2) === 0;
+        const childSurname = i === 0 && c.spouseInfo ? spouseSurname : (c.name?.charAt(0) || "王");
+        const childGivenName = (isBoy ? maleChildNames : femaleChildNames)[childSeed % 5];
+        const childName = `${childSurname}${childGivenName}`;
+        const ageBase = c.age || 35;
+        const childAge = Math.max(1, (ageBase - 26) - i * 3 + (childSeed % 3));
+        const childBirthYear = new Date().getFullYear() - childAge;
+        const ageDisplay = `${childAge} 歲`;
+        return (
+          <div key={`child-${i}`} className={SUBCARD}>
+            <div className="flex items-start">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <Users className="w-5 h-5 text-blue-400 flex-shrink-0" />
+                  <span className="font-bold text-md">{childName}</span>
+                  <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">子女</span>
                 </div>
-                <div>
-                  <span className="text-gray-600">關係起日: </span>
-                  <span className="font-medium">2017/03/15</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">受益人註記: </span>
-                  <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">
-                    是
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-600">關係狀態: </span>
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">
-                    有效
-                  </span>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm ml-7">
+                  <div><span className="text-gray-500">年齡: </span><span className="font-medium">{ageDisplay}</span></div>
+                  <div><span className="text-gray-500">出生年份: </span><span className="font-medium">{childBirthYear} 年</span></div>
+                  <div><span className="text-gray-500">受益人: </span><span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">是</span></div>
+                  <div><span className="text-gray-500">關係狀態: </span><span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">有效</span></div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        );
+      });
+    })();
 
-        <div className={SUBCARD}>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <Users className="w-5 h-5 text-blue-600" />
-                <span className="font-bold text-md">王小華</span>
-                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
-                  子女
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm ml-8">
-                <div>
-                  <span className="text-gray-600">年齡: </span>
-                  <span className="font-medium">5歲</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">關係起日: </span>
-                  <span className="font-medium">2020/08/22</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">受益人註記: </span>
-                  <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">
-                    是
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-600">關係狀態: </span>
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">
-                    有效
-                  </span>
-                </div>
-              </div>
+    // --- Manager card (always shown) ---
+    const managerNames = ["張麗雯", "林志傑", "陳慧芬", "吳俊賢", "黃佳慧"];
+    const managerName = managerNames[seed % managerNames.length];
+    const managerBranches = ["信義分行", "大安分行", "中山分行", "板橋分行", "新竹分行"];
+    const managerBranch = managerBranches[(seed >> 2) % managerBranches.length];
+    const managerCard = (
+      <div key="manager" className={SUBCARD}>
+        <div className="flex items-start">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <Users className="w-5 h-5 text-orange-500 flex-shrink-0" />
+              <span className="font-bold text-md">{managerName}（E{String(10000 + (seed % 89999)).slice(0,5)}）</span>
+              <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs font-medium">經管人員</span>
             </div>
-          </div>
-        </div>
-
-        <div className={SUBCARD}>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <Users className="w-5 h-5 text-orange-600" />
-                <span className="font-bold text-md">張專員 (E12345)</span>
-                <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-sm">
-                  經管人員
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm ml-8">
-                <div>
-                  <span className="text-gray-600">經管分行: </span>
-                  <span className="font-medium">信義分行</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">關係起日: </span>
-                  <span className="font-medium">2023/01/10</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">在職狀況: </span>
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">
-                    在職
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-600">理專註記: </span>
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
-                    是
-                  </span>
-                </div>
-              </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm ml-7">
+              <div><span className="text-gray-500">經管分行: </span><span className="font-medium">{managerBranch}</span></div>
+              <div><span className="text-gray-500">關係起日: </span><span className="font-medium">{2018 + (seed % 6)}/0{(seed % 9) + 1}/01</span></div>
+              <div><span className="text-gray-500">在職狀況: </span><span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">在職</span></div>
+              <div><span className="text-gray-500">理專註記: </span><span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">是</span></div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+
+    const allCards = [spouseCard, ...childCards, managerCard].filter(Boolean);
+    if (!allCards.length) return null;
+    return (
+      <div className={SUBCARD}>
+        <h4 className="text-lg font-semibold text-gray-800 mb-3">客戶關係人資訊</h4>
+        <div className="space-y-3">{allCards}</div>
+      </div>
+    );
+  };
 
   // Generic section renderer used in detail pages
   const renderSection = (section) => {
@@ -6524,7 +6724,31 @@ const CUS360Demo = () => {
           },
         ],
       },
-      contact: detailedCustomerData.contact,
+      contact: {
+        title: "客戶联絡資訊",
+        sections: [
+          {
+            name: "联絡方式與地址",
+            data: [
+              { label: "手機號碼", value: customer.phone || "—" },
+              { label: "電子郵件", value: customer.email || "—" },
+              { label: "通訊地址", value: customer.address || "—" },
+              { label: "城市", value: customer.city || "—" },
+              {
+                label: "联絡偏好",
+                value: customer.preferredContact === "mobile" ? "行動 App"
+                  : customer.preferredContact === "email" ? "Email"
+                  : customer.preferredContact === "phone" ? "電話"
+                  : customer.preferredContact || "—",
+              },
+              {
+                label: "行銷同意",
+                value: customer.marketingOptIn ? "允許" : "拒絕",
+              },
+            ],
+          },
+        ],
+      },
       risk: detailedCustomerData.risk,
       financial: detailedCustomerData.financial,
       rating: {
@@ -7520,6 +7744,7 @@ const CUS360Demo = () => {
                     value={loginUser}
                     onChange={(e) => setLoginUser(e.target.value)}
                     placeholder="請輸入使用者代號"
+                    onKeyDown={(e) => { if (e.key === "Enter") { if (loginUser === "demo" && loginPass === "demo") { setCurrentRole("manager"); setShowMaskedData(true); setIsLoggedIn(true); setLoginError(""); setActiveModule("search"); } else { setLoginError("登入失敗：請使用 demo / demo。"); } } }}
                   />
                 </div>
                 <div>
@@ -7530,17 +7755,19 @@ const CUS360Demo = () => {
                     value={loginPass}
                     onChange={(e) => setLoginPass(e.target.value)}
                     placeholder="請輸入密碼"
+                    onKeyDown={(e) => { if (e.key === "Enter") { if (loginUser === "demo" && loginPass === "demo") { setCurrentRole("manager"); setShowMaskedData(true); setIsLoggedIn(true); setLoginError(""); setActiveModule("search"); } else { setLoginError("登入失敗：請使用 demo / demo。"); } } }}
                   />
                 </div>
                 {loginError && (
                   <div className="text-sm text-red-600">{loginError}</div>
                 )}
-                <div className="flex gap-2 justify-end">
-                  {/* removed demo-fill button per request */}
+                <div className="flex flex-col gap-2">
                   <button
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg"
                     onClick={() => {
                       if (loginUser === "demo" && loginPass === "demo") {
+                        setCurrentRole("manager");
+                        setShowMaskedData(true);
                         setIsLoggedIn(true);
                         setLoginError("");
                         setActiveModule("search");
@@ -7551,16 +7778,32 @@ const CUS360Demo = () => {
                   >
                     登入
                   </button>
-                  <button
-                    className="px-3 py-1 rounded border"
-                    onClick={() => {
-                      setIsLoggedIn(true);
-                      setLoginError("");
-                      setActiveModule("search");
-                    }}
-                  >
-                    以訪客身分進入
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      className="flex-1 px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm text-gray-700"
+                      onClick={() => {
+                        setCurrentRole("manager");
+                        setShowMaskedData(true);
+                        setIsLoggedIn(true);
+                        setLoginError("");
+                        setActiveModule("search");
+                      }}
+                    >
+                      以<span className="font-semibold">主管</span>身分進入
+                    </button>
+                    <button
+                      className="flex-1 px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm text-gray-700"
+                      onClick={() => {
+                        setCurrentRole("specialist");
+                        setShowMaskedData(true);
+                        setIsLoggedIn(true);
+                        setLoginError("");
+                        setActiveModule("search");
+                      }}
+                    >
+                      以<span className="font-semibold">專員</span>身分進入
+                    </button>
+                  </div>
                 </div>
                 <div className="text-xs text-gray-500">
                   提示: demo / demo 可直接登入。
