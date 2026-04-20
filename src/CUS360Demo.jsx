@@ -6289,13 +6289,26 @@ const CUS360Demo = () => {
                         </h4>
                         {(() => {
                           const s = seedFromId(selectedCustomer) + 777;
+                          const riskLevel = selectedCustomer.riskLevel || 'low';
+                          
+                          // Risk flags should align with customer's risk level
+                          // low: no flags; medium: 0-1 flags; high: 3+ flags
                           const flags = {
-                            blacklist: Boolean(s & 1),
-                            depositAlert: Boolean((s >> 1) & 1),
-                            courtSeizure: Boolean((s >> 2) & 1),
-                            overdueCollection: Boolean((s >> 3) & 1),
-                            guaranteeAbnormal: Boolean((s >> 4) & 1),
-                            cardAbnormal: Boolean((s >> 5) & 1),
+                            blacklist: riskLevel === 'high' && Boolean(s & 1),
+                            depositAlert: 
+                              riskLevel === 'high' ? Boolean((s >> 1) & 1) : 
+                              riskLevel === 'medium' ? Boolean((s >> 6) & 1) : 
+                              false,
+                            courtSeizure: riskLevel === 'high' && Boolean((s >> 2) & 1),
+                            overdueCollection: 
+                              riskLevel === 'high' ? Boolean((s >> 3) & 1) : 
+                              riskLevel === 'medium' ? Boolean((s >> 7) & 1) : 
+                              false,
+                            guaranteeAbnormal: riskLevel === 'high' && Boolean((s >> 4) & 1),
+                            cardAbnormal: 
+                              riskLevel === 'high' ? Boolean((s >> 5) & 1) : 
+                              riskLevel === 'medium' ? Boolean((s >> 8) & 1) : 
+                              false,
                           };
                           const dateFor = (offset) =>
                             new Date(
