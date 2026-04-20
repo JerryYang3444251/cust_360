@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import {
   Search,
   Filter,
@@ -26,6 +26,111 @@ const CUS360Demo = () => {
   const ACTIVE_BTN_CLASS =
     "bg-gradient-to-r from-teal-500/60 to-cyan-400/60 text-white";
   const THEME_BG = "bg-gradient-to-br from-teal-50 to-white";
+
+  // ========== CENTRALIZED VIP TIER CONFIGURATION ==========
+  // 統一管理客戶等級定義，確保跨頁面的一致性
+  const VIP_TIERS = {
+    VVVIP: {
+      key: "VVVIP",
+      label: "VVVIP",
+      displayLabel: "VVVIP",
+      chineseLabel: "超級貴賓",
+      order: 4,
+      bgColor: "bg-fuchsia-100",
+      textColor: "text-fuchsia-800",
+      accentColor: "text-fuchsia-600",
+      borderColor: "border-fuchsia-300",
+      // Financial wealth brackets
+      financialRange: {
+        min: 5000000,
+        max: 15000000,
+        rangeWidth: 10000000,
+      },
+    },
+    VVIP: {
+      key: "VVIP",
+      label: "VVIP",
+      displayLabel: "VVIP",
+      chineseLabel: "特級貴賓",
+      order: 3,
+      bgColor: "bg-purple-100",
+      textColor: "text-purple-800",
+      accentColor: "text-purple-600",
+      borderColor: "border-purple-300",
+      financialRange: {
+        min: 2000000,
+        max: 8000000,
+        rangeWidth: 6000000,
+      },
+    },
+    VIP: {
+      key: "VIP",
+      label: "VIP",
+      displayLabel: "VIP",
+      chineseLabel: "貴賓",
+      order: 2,
+      bgColor: "bg-blue-100",
+      textColor: "text-blue-800",
+      accentColor: "text-blue-600",
+      borderColor: "border-blue-300",
+      financialRange: {
+        min: 800000,
+        max: 3000000,
+        rangeWidth: 2200000,
+      },
+    },
+    normal: {
+      key: "normal",
+      label: "一般",
+      displayLabel: "一般",
+      chineseLabel: "一般客戶",
+      order: 1,
+      bgColor: "bg-gray-100",
+      textColor: "text-gray-800",
+      accentColor: "text-gray-600",
+      borderColor: "border-gray-300",
+      financialRange: {
+        min: 200000,
+        max: 1000000,
+        rangeWidth: 800000,
+      },
+    },
+  };
+
+  // 取得所有等級的陣列（按等級排序）
+  const getTiersList = () => {
+    return Object.values(VIP_TIERS).sort((a, b) => a.order - b.order);
+  };
+
+  // 根據 vipLevel 取得配置
+  const getTierConfig = (vipLevel) => {
+    return VIP_TIERS[vipLevel] || VIP_TIERS.normal;
+  };
+
+  // 取得 CSS 類名（用於標籤背景和文字顏色）
+  const getTierBgClass = (vipLevel) => {
+    const config = getTierConfig(vipLevel);
+    return `${config.bgColor} ${config.textColor}`;
+  };
+
+  // 取得顯示用的標籤文本
+  const getTierDisplayLabel = (vipLevel) => {
+    const config = getTierConfig(vipLevel);
+    return config.displayLabel;
+  };
+
+  // 取得中文標籤
+  const getTierChineseLabel = (vipLevel) => {
+    const config = getTierConfig(vipLevel);
+    return config.chineseLabel;
+  };
+
+  // 取得財務範圍
+  const getTierFinancialRange = (vipLevel) => {
+    const config = getTierConfig(vipLevel);
+    return config.financialRange;
+  };
+
   const renderDashboardModule = () => {
     // Scale metrics to represent a large bank (10,000,000 customers)
     // per request: override base total to 1,230,494
@@ -424,14 +529,12 @@ const CUS360Demo = () => {
             <div className="mt-3">
               {/* compute counts and render pie */}
               {(() => {
-                // Updated tiers: 一般、VIP、VVIP、VVVIP (Chinese labels match keys)
-                const tiers = ["normal", "VIP", "VVIP", "VVVIP"];
-                const labels = {
-                  normal: "一般",
-                  VIP: "VIP",
-                  VVIP: "VVIP",
-                  VVVIP: "VVVIP",
-                };
+                // 使用集中管理的 VIP 等級配置
+                const tiers = getTiersList().map((t) => t.key);
+                const labels = {};
+                getTiersList().forEach((config) => {
+                  labels[config.key] = config.displayLabel;
+                });
                 const counts = tiers.map(
                   (t) =>
                     mockCustomers.filter((c) => (c.vipLevel || "normal") === t)
@@ -1802,6 +1905,473 @@ const CUS360Demo = () => {
       lifecycleStage: "young_professional",
       lifetimeValueTier: "gold",
     },
+    // Persona: 新手媽媽 - 為孩子規劃出國留學基金
+    {
+      id: "C196",
+      name: "林怡君",
+      nameEn: "Lin Yi-Jun",
+      age: 32,
+      industry: "外商行銷企劃",
+      nationality: "中華民國",
+      vipLevel: "VIP",
+      riskScore: "A",
+      riskLevel: "low",
+      accountStatus: "active",
+      phone: "0912-196-000",
+      idCard: "U666666666",
+      creditCard: "4559-XX-XXXX-1196",
+      accountNumber: "004-1960000-6",
+      email: "lin.yj@example.com",
+      address: "台北市信義區復興南路",
+      city: "台北市",
+      preferredContact: "mobile",
+      marketingOptIn: true,
+      preferredChannels: ["mobile_app", "email", "wealth_portal"],
+      marketingChannels: {
+        email: true,
+        appPush: true,
+        linePush: true,
+        sms: false,
+      },
+      productPreferences: {
+        creditCard: 0.55,
+        loans: 0.25,
+        deposits: 0.9,
+        investment: 0.6,
+      },
+      spendingCategories: {
+        childcare: 0.95,
+        education: 0.9,
+        family: 0.85,
+        groceries: 0.8,
+        healthcare: 0.75,
+        dining: 0.7,
+        essentials: 0.75,
+        wealth: 0.8,
+        investments: 0.7,
+        overseas: 0.6,
+      },
+      lifecycleStage: "young_family",
+      lifetimeValueTier: "gold",
+      tags: [
+        "新手媽媽",
+        "家庭導向",
+        "教育金規劃需求",
+        "留學意圖",
+        "數位通路使用者",
+        "有效戶",
+      ],
+    },
+    {
+      id: "C183",
+      name: "曾建文",
+      nameEn: "",
+      age: 52,
+      vipLevel: "VVIP",
+      riskScore: "A+",
+      riskLevel: "low",
+      accountStatus: "active",
+      phone: "0956-789-012",
+      idCard: "J888990001",
+      creditCard: "4559-XX-XXXX-0183",
+      accountNumber: "004-9901234-0",
+      tags: ["有投資經驗用戶", "投資意圖", "高淨值客戶", "財富管理需求"],
+      email: "zeng.jw@example.com",
+      address: "台北市信義區威秀廣場",
+      city: "台北市",
+      preferredContact: "email",
+      marketingOptIn: true,
+      preferredChannels: ["wealth_portal", "email", "phone"],
+      marketingChannels: {
+        email: true,
+        appPush: true,
+        linePush: true,
+        sms: true,
+      },
+      productPreferences: {
+        creditCard: 0.65,
+        loans: 0.15,
+        deposits: 0.7,
+        investment: 0.95,
+      },
+      spendingCategories: { 
+        investments: 0.92,
+        luxury: 0.75, 
+        dining: 0.65, 
+        travel: 0.7 
+      },
+      lifecycleStage: "established_professional",
+      lifetimeValueTier: "platinum",
+    },
+    {
+      id: "C184",
+      name: "吳燕如",
+      nameEn: "",
+      age: 45,
+      vipLevel: "VIP",
+      riskScore: "A",
+      riskLevel: "low",
+      accountStatus: "active",
+      phone: "0945-678-901",
+      idCard: "K999001112",
+      creditCard: "4559-XX-XXXX-0184",
+      accountNumber: "004-0012345-1",
+      tags: ["有投資經驗用戶", "投資意圖", "理財規劃用戶", "數位通路使用者"],
+      email: "wu.yr@example.com",
+      address: "新北市新店區七張路",
+      city: "新北市",
+      preferredContact: "mobile",
+      marketingOptIn: true,
+      preferredChannels: ["mobile_app", "email", "wealth_portal"],
+      marketingChannels: {
+        email: true,
+        appPush: true,
+        linePush: true,
+        sms: false,
+      },
+      productPreferences: {
+        creditCard: 0.6,
+        loans: 0.2,
+        deposits: 0.65,
+        investment: 0.88,
+      },
+      spendingCategories: { 
+        investments: 0.85,
+        entertainment: 0.55, 
+        dining: 0.6, 
+        healthcare: 0.5 
+      },
+      lifecycleStage: "established_professional",
+      lifetimeValueTier: "gold",
+    },
+    {
+      id: "C185",
+      name: "蔡明珠",
+      nameEn: "",
+      age: 58,
+      vipLevel: "VIP",
+      riskScore: "A",
+      riskLevel: "low",
+      accountStatus: "active",
+      phone: "0967-890-123",
+      idCard: "L111112223",
+      creditCard: "4559-XX-XXXX-0185",
+      accountNumber: "004-1234567-2",
+      tags: ["有投資經驗用戶", "投資意圖", "穩健投資者", "退休規劃"],
+      email: "cai.mz@example.com",
+      address: "台中市西屯區惠來路",
+      city: "台中市",
+      preferredContact: "phone",
+      marketingOptIn: true,
+      preferredChannels: ["phone", "branch", "email"],
+      marketingChannels: {
+        email: true,
+        appPush: false,
+        linePush: true,
+        sms: true,
+      },
+      productPreferences: {
+        creditCard: 0.55,
+        loans: 0.1,
+        deposits: 0.75,
+        investment: 0.82,
+      },
+      spendingCategories: { 
+        investments: 0.80,
+        utilities: 0.65, 
+        healthcare: 0.7, 
+        travel: 0.45 
+      },
+      lifecycleStage: "pre_retirement",
+      lifetimeValueTier: "gold",
+    },
+    {
+      id: "C186",
+      name: "邱德財",
+      nameEn: "",
+      age: 48,
+      vipLevel: "VVVIP",
+      riskScore: "A+",
+      riskLevel: "low",
+      accountStatus: "active",
+      phone: "0978-901-234",
+      idCard: "M222223334",
+      creditCard: "4559-XX-XXXX-0186",
+      accountNumber: "004-2345678-3",
+      tags: ["有投資經驗用戶", "投資理財", "高淨值客戶", "財富管理需求"],
+      email: "qiu.dc@example.com",
+      address: "台北市中山區敬業三路",
+      city: "台北市",
+      preferredContact: "email",
+      marketingOptIn: true,
+      preferredChannels: ["wealth_portal", "email", "phone"],
+      marketingChannels: {
+        email: true,
+        appPush: true,
+        linePush: true,
+        sms: true,
+      },
+      productPreferences: {
+        creditCard: 0.72,
+        loans: 0.08,
+        deposits: 0.68,
+        investment: 0.98,
+      },
+      spendingCategories: { 
+        investments: 0.95,
+        luxury: 0.82, 
+        dining: 0.78, 
+        travel: 0.85 
+      },
+      lifecycleStage: "affluent",
+      lifetimeValueTier: "diamond",
+    },
+    {
+      id: "C187",
+      name: "黃思涵",
+      nameEn: "",
+      age: 41,
+      vipLevel: "VIP",
+      riskScore: "A",
+      riskLevel: "medium",
+      accountStatus: "active",
+      phone: "0989-012-345",
+      idCard: "N333334445",
+      creditCard: "4559-XX-XXXX-0187",
+      accountNumber: "004-3456789-4",
+      tags: ["有投資經驗用戶", "投資意圖", "創業融資需求", "業績成長客"],
+      email: "huang.sh@example.com",
+      address: "高雄市前金區中山一路",
+      city: "高雄市",
+      preferredContact: "mobile",
+      marketingOptIn: true,
+      preferredChannels: ["mobile_app", "email", "wealth_portal"],
+      marketingChannels: {
+        email: true,
+        appPush: true,
+        linePush: false,
+        sms: true,
+      },
+      productPreferences: {
+        creditCard: 0.7,
+        loans: 0.45,
+        deposits: 0.6,
+        investment: 0.85,
+      },
+      spendingCategories: { 
+        investments: 0.80,
+        tech: 0.75, 
+        dining: 0.65, 
+        travel: 0.6 
+      },
+      lifecycleStage: "young_professional",
+      lifetimeValueTier: "gold",
+    },
+    {
+      id: "C188",
+      name: "廖俊宇",
+      nameEn: "",
+      age: 32,
+      vipLevel: "normal",
+      riskScore: "B",
+      riskLevel: "medium",
+      accountStatus: "active",
+      phone: "0912-456-789",
+      idCard: "O444445556",
+      creditCard: "4559-XX-XXXX-0188",
+      accountNumber: "004-4567890-5",
+      tags: ["有投資經驗用戶", "投資意圖", "自雇者", "狀態調整-有效戶"],
+      email: "liao.jy@example.com",
+      address: "台北市東區忠孝東路",
+      city: "台北市",
+      preferredContact: "mobile",
+      marketingOptIn: true,
+      preferredChannels: ["mobile_app", "sms"],
+      marketingChannels: {
+        email: false,
+        appPush: true,
+        linePush: false,
+        sms: true,
+      },
+      productPreferences: {
+        creditCard: 0.45,
+        loans: 0.65,
+        deposits: 0.55,
+        investment: 0.75,
+      },
+      spendingCategories: { 
+        tech: 0.8,
+        investments: 0.65,
+        dining: 0.5,
+        entertainment: 0.6
+      },
+      lifecycleStage: "young_professional",
+      lifetimeValueTier: "silver",
+    },
+    {
+      id: "C189",
+      name: "鄭美玲",
+      nameEn: "",
+      age: 47,
+      vipLevel: "VIP",
+      riskScore: "A",
+      riskLevel: "low",
+      accountStatus: "active",
+      phone: "0923-567-890",
+      idCard: "P555556667",
+      creditCard: "4559-XX-XXXX-0189",
+      accountNumber: "004-5678901-6",
+      tags: ["有投資經驗用戶", "投資意圖", "家庭導向", "教育金規劃"],
+      email: "zheng.ml@example.com",
+      address: "台中市逢甲大學附近",
+      city: "台中市",
+      preferredContact: "email",
+      marketingOptIn: true,
+      preferredChannels: ["email", "branch"],
+      marketingChannels: {
+        email: true,
+        appPush: false,
+        linePush: true,
+        sms: true,
+      },
+      productPreferences: {
+        creditCard: 0.5,
+        loans: 0.25,
+        deposits: 0.85,
+        investment: 0.80,
+      },
+      spendingCategories: { 
+        investments: 0.75,
+        utilities: 0.7,
+        healthcare: 0.65,
+        family: 0.8
+      },
+      lifecycleStage: "young_family",
+      lifetimeValueTier: "gold",
+    },
+    {
+      id: "C190",
+      name: "林昊天",
+      nameEn: "",
+      age: 55,
+      vipLevel: "VVIP",
+      riskScore: "A+",
+      riskLevel: "low",
+      accountStatus: "active",
+      phone: "0934-678-901",
+      idCard: "Q666667778",
+      creditCard: "4559-XX-XXXX-0190",
+      accountNumber: "004-6789012-7",
+      tags: ["有投資經驗用戶", "投資意圖", "企業主", "財務顧問客"],
+      email: "lin.ht@example.com",
+      address: "新北市板橋縣民大道",
+      city: "新北市",
+      preferredContact: "email",
+      marketingOptIn: true,
+      preferredChannels: ["wealth_portal", "phone"],
+      marketingChannels: {
+        email: true,
+        appPush: true,
+        linePush: true,
+        sms: true,
+      },
+      productPreferences: {
+        creditCard: 0.68,
+        loans: 0.12,
+        deposits: 0.7,
+        investment: 0.92,
+      },
+      spendingCategories: { 
+        investments: 0.88,
+        luxury: 0.7,
+        dining: 0.75,
+        travel: 0.8
+      },
+      lifecycleStage: "established_professional",
+      lifetimeValueTier: "platinum",
+    },
+    {
+      id: "C191",
+      name: "王素娥",
+      nameEn: "",
+      age: 63,
+      vipLevel: "normal",
+      riskScore: "A",
+      riskLevel: "low",
+      accountStatus: "active",
+      phone: "0945-789-012",
+      idCard: "R777778889",
+      creditCard: "4559-XX-XXXX-0191",
+      accountNumber: "004-7890123-8",
+      tags: ["有投資經驗用戶", "投資意圖", "退休族", "穩健投資者"],
+      email: "wang.se@example.com",
+      address: "高雄市鳳山區文山路",
+      city: "高雄市",
+      preferredContact: "phone",
+      marketingOptIn: true,
+      preferredChannels: ["phone", "branch"],
+      marketingChannels: {
+        email: false,
+        appPush: false,
+        linePush: false,
+        sms: true,
+      },
+      productPreferences: {
+        creditCard: 0.35,
+        loans: 0.05,
+        deposits: 0.95,
+        investment: 0.70,
+      },
+      spendingCategories: { 
+        investments: 0.68,
+        healthcare: 0.8,
+        utilities: 0.75,
+        dining: 0.4
+      },
+      lifecycleStage: "retired",
+      lifetimeValueTier: "silver",
+    },
+    {
+      id: "C192",
+      name: "陳俊傑",
+      nameEn: "",
+      age: 38,
+      vipLevel: "VIP",
+      riskScore: "B+",
+      riskLevel: "high",
+      accountStatus: "active",
+      phone: "0956-890-123",
+      idCard: "S888889990",
+      creditCard: "4559-XX-XXXX-0192",
+      accountNumber: "004-8901234-9",
+      tags: ["有投資經驗用戶", "投資意圖", "信用使用偏高", "高風險偏好"],
+      email: "chen.jj@example.com",
+      address: "台中市西屯區朝馬路",
+      city: "台中市",
+      preferredContact: "mobile",
+      marketingOptIn: true,
+      preferredChannels: ["mobile_app", "email"],
+      marketingChannels: {
+        email: true,
+        appPush: true,
+        linePush: true,
+        sms: false,
+      },
+      productPreferences: {
+        creditCard: 0.75,
+        loans: 0.55,
+        deposits: 0.40,
+        investment: 0.88,
+      },
+      spendingCategories: { 
+        investments: 0.85,
+        entertainment: 0.8,
+        dining: 0.75,
+        tech: 0.7
+      },
+      lifecycleStage: "established_professional",
+      lifetimeValueTier: "gold",
+    },
   ];
 
   // Ensure all customers have unique idCard values (letter + 9 digits). If duplicates are found, bump the numeric part.
@@ -2043,7 +2613,15 @@ const CUS360Demo = () => {
     rating: {
       title: "客戶評價資訊",
       sections: [
-        { name: "客戶等級資訊", data: [{ label: "VIP等級", value: "VIP" }] },
+        {
+          name: "客戶等級資訊",
+          data: [
+            {
+              label: "VIP等級",
+              value: VIP_TIERS.VIP.displayLabel, // 使用配置而非硬編碼
+            },
+          ],
+        },
       ],
     },
     tags: {
@@ -2361,7 +2939,6 @@ const CUS360Demo = () => {
         .replace(/[^0-9A-Za-z]/g, "")
         .toLowerCase();
     const qRaw = (searchQuery || "").toString().trim();
-    const q = normalize(qRaw);
     if (!qRaw) {
       setSearchPerformed(true);
       setSearchResults([]);
@@ -2369,15 +2946,53 @@ const CUS360Demo = () => {
       return;
     }
 
+    // Auto-detect search type based on input content
+    let autoSearchType = "name";
+    const hasChinese = /[\u4E00-\u9FFF]/.test(qRaw);
+    const qNorm = qRaw.replace(/[-\s]/g, "");
+
+    if (hasChinese) {
+      // 含中文 → 姓名
+      autoSearchType = "name";
+    } else if (/^\d{10,16}$/.test(qNorm)) {
+      // 10~16 位純數字 → 信用卡號或帳號
+      // 信用卡號通常 16 位；帳號通常含分隔符
+      autoSearchType = qRaw.includes("-") && qNorm.length <= 12 ? "accountNumber" : "creditCard";
+    } else if (/^[A-Z][0-9]{9}$/i.test(qNorm)) {
+      // 1 英文字母 + 9 數字 → 身分證
+      autoSearchType = "idCard";
+    } else if (/^\d{3}-\d{7}-\d$/.test(qRaw) || /^\d{11,12}$/.test(qNorm)) {
+      // 帳號格式
+      autoSearchType = "accountNumber";
+    } else if (/[A-Za-z]/.test(qRaw)) {
+      // 含英文但不符合身分證格式 → 姓名（英文名）
+      autoSearchType = "name";
+    }
+
     // Exact match against the selected identifier field only (no fuzzy fallback)
     const fieldMap = {
       idCard: "idCard",
       creditCard: "creditCard",
       accountNumber: "accountNumber",
+      name: "name",
     };
-    const field = fieldMap[searchType] || "idCard";
-    const found = mockCustomers.filter((c) => normalize(c[field]) === q);
-
+    const field = fieldMap[autoSearchType] || "name";
+    
+    // For name search, use fuzzy matching (supports both Chinese and English); for others, use exact match
+    const found = mockCustomers.filter((c) => {
+      if (field === "name") {
+        // Support both Chinese names and English names with partial matching
+        const nameValue = (c[field] || "").toString();
+        const queryLower = qRaw.toLowerCase();
+        const nameValueLower = nameValue.toLowerCase();
+        // Direct substring match for Chinese and mixed text
+        return nameValueLower.includes(queryLower);
+      } else {
+        const q = normalize(qRaw);
+        return normalize(c[field]) === q;
+      }
+    });
+    
     setSearchPerformed(true);
     setSearchResults(found);
 
@@ -2616,16 +3231,22 @@ const CUS360Demo = () => {
           </div>
 
           <div className="flex-1 px-6">
-            <div className="max-w-xl mx-auto">
+            <div className="max-w-xl mx-auto flex gap-2">
               <input
-                className="w-full rounded-full px-4 py-2 bg-white bg-opacity-20 placeholder-white/80 border border-white/10"
-                placeholder="快速搜尋: 身分證/卡號/帳號..."
+                className="flex-1 rounded-full px-4 py-2 bg-white bg-opacity-20 placeholder-white/80 border border-white/10 text-white"
+                placeholder="快速搜尋：姓名、證號、卡號或帳號…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleSearch();
                 }}
               />
+              <button
+                onClick={handleSearch}
+                className="px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full text-white text-sm border border-white/20 transition-all"
+              >
+                搜尋
+              </button>
             </div>
           </div>
 
@@ -2673,11 +3294,21 @@ const CUS360Demo = () => {
     for (const cond of group.conditions) {
       let has = false;
       if (cond.category === '意圖標籤') {
-        has = (customer.tags || []).some(n => n === cond.tag);
+        // Check both tags and structured tags for intent
+        has = (customer.tags || []).some(n => n === cond.tag) ||
+              (customer.structuredTags || []).some(t => t.category === '意圖標籤' && t.name === cond.tag);
+      } else if (cond.category === '客戶屬性') {
+        // For customer attributes, check both tags field and structuredTags
+        has = (customer.tags || []).some(n => n === cond.tag) ||
+              (customer.structuredTags || []).some(t => t.category === '客戶屬性' && t.name === cond.tag);
       } else {
+        // For other categories, check structuredTags
         has = (customer.structuredTags || []).some(t => (!cond.category || t.category === cond.category) && t.name === cond.tag);
       }
       const val = cond.op === 'NOT' ? !has : has;
+      if (customer.id === 'C183') {
+        console.log(`[DEBUG] C183 condition:`, { category: cond.category, tag: cond.tag, op: cond.op, has, val });
+      }
       if (result === null) result = val;
       else if (cond.op === 'OR') result = result || val;
       else result = result && val; // AND or NOT treated in evaluation
@@ -2696,7 +3327,14 @@ const CUS360Demo = () => {
       else if (group.join === 'OR') overall = overall || gVal;
       else overall = overall && gVal; // AND or NOT (treated as AND after inversion)
     }
-    return Boolean(overall);
+    const result = Boolean(overall);
+    // Debug for specific customers
+    if (customer.id === 'C183') {
+      console.log(`[DEBUG] Customer ${customer.id} tags:`, customer.tags);
+      console.log(`[DEBUG] tagGroups:`, JSON.stringify(tagGroups));
+      console.log(`[DEBUG] Filter result for ${customer.id}:`, result);
+    }
+    return result;
   };
 
   // Build a compact summary string for current grouped tag conditions
@@ -2755,7 +3393,7 @@ const CUS360Demo = () => {
   // Primary UI state used across modules
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchType, setSearchType] = useState("idCard");
+  const [searchType, setSearchType] = useState("name");
   const [searchResults, setSearchResults] = useState([]);
   const [showMaskedData, setShowMaskedData] = useState(true);
   const [activeTab, setActiveTab] = useState("basic");
@@ -3061,9 +3699,97 @@ const CUS360Demo = () => {
     return map[key] || key;
   };
 
+  // Customer-specific assistant configuration
+  const getCustomerAssistantConfig = (customer) => {
+    if (!customer) return null;
+    
+    // Special configuration for customer C196 (林怡君 - education fund planning)
+    if (customer.id === "C196") {
+      return {
+        age: 32,
+        segment: "家庭客／成長型客群",
+        income: "中等穩定收入",
+        industry: "外商行銷企劃",
+        preferredChannels: ["財富管理網", "理專面對面諮詢"],
+        pastProducts: ["存款", "定存", "基礎型保險"],
+        behaviorInsights: ["新手媽媽（小孩 6 個月）", "對「子女未來教育」主動關心", "偏好穩健、不希望一次投入過高金額"],
+        objective: "推薦「子女出國留學教育基金 — 長期分階段投資規劃方案」\n（結合：穩健型投資＋教育金目標模擬，不強調短期報酬）",
+        mainOpening: `${customer.name || '林怡君'}您好，看到您目前剛成為新手媽媽，客戶 360 顯示您正好落在「子女教育規劃」的關鍵階段。我們特別為像您這樣的家庭，準備了一套可以循序規劃孩子未來留學基金的方案，今天可以一起看看是否符合您的想法。`,
+        shortOpening: "您好，我們發現您近期關注孩子未來教育，我有一個「教育基金長期規劃方案」，金額彈性、風險相對穩健，要不要花幾分鐘一起評估看看？",
+        whyRecommend: [
+          "恭喜您成為「✅ 新手媽媽」，此階段是教育金規劃的最佳起點",
+          "目前資產以「存款／定存」為主，長期累積力較難因應18 年後的海外留學費用",
+          "您偏好穩定、可掌控的方式，此方案以分期投入、長期複利為核心，不需一次投入大筆資金",
+          "系統根據相似家庭客群分析，此類規劃多為「穩健型家庭」首選",
+        ],
+        script: `${customer.name || '林怡君'}您好，從客戶 360 看得出來，您現在正處在很多爸媽會開始思考「孩子未來」的階段。目前您的資金大多放在存款與定存，雖然安全，但如果目標是 10～18 年後的出國留學，單靠定存其實會比較辛苦。我幫您設計的是一個每月金額不高、但可以長期累積的教育基金規劃。我們可以直接在財富管理網模擬給您看，不是馬上決定，而是先看看「如果現在開始，未來大概可以準備到多少」，再一起調整到您安心的節奏。`,
+        objections: [
+          {
+            question: "「我會不會現在規劃太早？」",
+            answer: "其實現在開始反而壓力最小，金額可以很彈性，等孩子長大再開始，投入金額通常會高很多。",
+          },
+          {
+            question: "「我怕風險，萬一虧錢怎麼辦？」",
+            answer: "我們是以穩健型為主，而且是長期目標，不是短期進出，系統也會定期檢視、調整比例，讓風險在可控範圍內。",
+          },
+          {
+            question: "「我現在育兒花費很多，怕負擔不了。」",
+            answer: "沒關係，我們可以從一個不影響生活的小金額開始，之後如果收入或狀況改變，再調整也很彈性。",
+          },
+        ],
+        closing: `不如我先幫您模擬三種不同投入方案，今天不一定要決定，但可以先把「孩子未來教育基金的輪廓」建立起來。如果您覺得其中一個方式適合，我可以直接在財富管理網幫您設定，流程很簡單，之後也都有提醒與檢視頻率，可以隨時調整。`,
+        compliance: "提醒您，本次說明僅為理財規劃建議，非保證收益；相關產品內容與費用將以正式說明文件與公告為準。本次諮詢將依規定進行紀錄。",
+      };
+    }
+    
+    return null;
+  };
+
   // Generate a concise assistant reply using available customer signals
   const generateAssistantReply = (prompt, customer) => {
     if (!customer) return "目前未選擇客戶。請先在左側選擇或搜尋客戶。";
+    
+    // Check for customer-specific configuration
+    const customConfig = getCustomerAssistantConfig(customer);
+    if (customConfig) {
+      // Generate response using customer-specific config variables
+      const out = [];
+      out.push('🧩 客戶摘要');
+      out.push(
+        [
+          `年齡／族群：${customConfig.age}／${customConfig.segment}`,
+          `收入 & 產業：${customConfig.income}；${customConfig.industry}`,
+          `偏好通路：${customConfig.preferredChannels.join('、')}`,
+          `過去使用產品：${customConfig.pastProducts.join('／')}`,
+          `行為洞察：\n\n${customConfig.behaviorInsights.join('\n')}`,
+        ].join('\n')
+      );
+      
+      out.push('🎯 溝通目標');
+      out.push(customConfig.objective);
+      
+      out.push('👋 客製化開場白（主開場／簡版）');
+      out.push(`主開場：\n\n${customConfig.mainOpening}`);
+      out.push(`簡版開場：\n\n${customConfig.shortOpening}`);
+      
+      out.push('✅ 為何推薦（與客戶資料連結）');
+      out.push(customConfig.whyRecommend.join('\n'));
+      
+      out.push('🗣️ 主推話術（可直接口說）');
+      out.push(customConfig.script);
+      
+      out.push('🤔 客戶可能回應 + 應對');
+      out.push(customConfig.objections.map(o => `${o.question}\n→ ${o.answer}`).join('\n'));
+      
+      out.push('🤝 成交引導（Closing）');
+      out.push(customConfig.closing);
+      
+      out.push('⚖️ 法遵提示');
+      out.push(customConfig.compliance);
+      
+      return out.join('\n\n');
+    }
+    
     const topChannel = getTopPreferenceForCustomer("通路偏好", "score", customer);
     const topProduct = getTopPreferenceForCustomer("產品偏好", "score", customer);
     const topConsumption = getTopPreferenceForCustomer("消費類別偏好", "score", customer);
@@ -3120,6 +3846,10 @@ const CUS360Demo = () => {
       return ranked.slice(0,2).map(k=>map[k]||k).join('/');
     })();
     const behav = intentText || (topConsumption?topConsumption.name:'') || '';
+    
+    // 獲取客戶行業和更詳細的收入信息
+    const customerIndustry = getCustomerIndustry(customer);
+    const monthlyIncomeFormatted = f.monthlyIncome ? `NT$${(f.monthlyIncome/1000).toFixed(0)}k` : '—';
 
     const riskLine = (
       primaryType === 'wealth' || primaryType === 'loan'
@@ -3135,7 +3865,7 @@ const CUS360Demo = () => {
     out.push(
       [
         `年齡/族群：${customer.age||'—'}／${seg}／${vip}`,
-        `收入&產業：${incomeBand}；產業：${customer.industry||'—'}`,
+        `收入/行業：${monthlyIncomeFormatted}／${customerIndustry}`,
         `偏好通路：${chText}`,
         `過去使用產品：${pastPref||'—'}`,
         `行為洞察：${behav||'—'}`,
@@ -3301,27 +4031,11 @@ const CUS360Demo = () => {
     for (let i = 0; i < key.length; i++)
       hash = (hash * 31 + key.charCodeAt(i)) % 1000000;
 
-    // VIP-tier based wealth brackets
+    // VIP-tier based wealth brackets (使用集中配置)
     const vipLevel = (customer && customer.vipLevel) || "normal";
-    let baseRange, base;
-    
-    if (vipLevel === "VVVIP") {
-      // VVVIP: 5M - 15M
-      baseRange = 10000000;
-      base = 5000000;
-    } else if (vipLevel === "VVIP") {
-      // VVIP: 2M - 8M
-      baseRange = 6000000;
-      base = 2000000;
-    } else if (vipLevel === "VIP") {
-      // VIP: 800K - 3M
-      baseRange = 2200000;
-      base = 800000;
-    } else {
-      // normal: 200K - 1M
-      baseRange = 800000;
-      base = 200000;
-    }
+    const tierFinancial = getTierFinancialRange(vipLevel);
+    const baseRange = tierFinancial.rangeWidth;
+    const base = tierFinancial.min;
     
     const netWorth = Math.round(base + (hash % baseRange));
 
@@ -3343,7 +4057,20 @@ const CUS360Demo = () => {
     }
     const other = Math.max(0, netWorth - sum);
 
-    const monthlyIncome = Math.round(netWorth / 60 + ((hash >> 3) % 50000));
+    // 根据 VIP 等级提供更多样化的收入计算
+    const getMonthlyIncomeByTier = () => {
+      const tierIncomeRanges = {
+        'VVVIP': { min: 300000, max: 800000 },
+        'VVIP': { min: 150000, max: 400000 },
+        'VIP': { min: 80000, max: 200000 },
+        'normal': { min: 30000, max: 100000 }
+      };
+      const range = tierIncomeRanges[vipLevel] || tierIncomeRanges['normal'];
+      const variance = ((hash % 100) / 100) * (range.max - range.min);
+      return Math.round(range.min + variance);
+    };
+    
+    const monthlyIncome = getMonthlyIncomeByTier();
     const avgMonthlySpend = Math.round(
       monthlyIncome * (0.25 + ((hash >> 7) % 50) / 200)
     );
@@ -3394,6 +4121,21 @@ const CUS360Demo = () => {
       marketingScore: Math.max(0, Math.min(100, marketingScore)),
       isHighValue,
     };
+  };
+
+  // 客户行业映射 - 基于客户 ID 进行确定性分配
+  const getCustomerIndustry = (customer) => {
+    const industries = [
+      "科技/軟體", "製造業", "金融服務", "零售/電商", "醫療/健康",
+      "房地產", "教育", "物流/運輸", "能源", "媒體/傳播",
+      "餐飲", "旅遊/飯店", "保險", "農業", "建築",
+      "諮詢", "法律服務", "政府/公務", "非營利組織", "其他"
+    ];
+    const key = (customer && customer.id) || "demo";
+    let hash = 0;
+    for (let i = 0; i < key.length; i++)
+      hash = (hash * 31 + key.charCodeAt(i)) % 1000000;
+    return industries[hash % industries.length];
   };
 
   // deterministic generators for demo transactions / interactions / series
@@ -4322,6 +5064,7 @@ const CUS360Demo = () => {
                 onChange={(e) => setSearchType(e.target.value)}
                 className="px-3 py-2 border rounded-lg"
               >
+                <option value="name">客戶姓名</option>
                 <option value="idCard">證件號碼</option>
                 <option value="creditCard">信用卡號</option>
                 <option value="accountNumber">存款帳號</option>
@@ -4329,7 +5072,7 @@ const CUS360Demo = () => {
 
               <input
                 type="text"
-                placeholder="輸入選擇的識別號 (精準比對，不支援模糊)"
+                placeholder={searchType === 'name' ? '輸入姓名 (支援模糊搜尋)' : '輸入選擇的識別號 (精準比對)'}
                 className="flex-1 px-3 py-2 border rounded-lg"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -4343,7 +5086,7 @@ const CUS360Demo = () => {
               </button>
             </div>
             <p className="text-sm text-gray-500 mt-2">
-              請選擇一種識別號並輸入完整號碼以查得客戶。
+              {searchType === 'name' ? '輸入客戶姓名進行查詢（支援部分字符匹配）' : '請選擇一種識別號並輸入完整號碼以查得客戶。'}
             </p>
           </div>
         </div>
@@ -4366,9 +5109,7 @@ const CUS360Demo = () => {
           )}
 
           {uniqueById(
-            searchResults ||
-              (!searchPerformed && mockCustomers.slice(0, 5)) ||
-              []
+            searchPerformed ? (searchResults || []) : mockCustomers.slice(0, 5)
           ).map((customer) => (
             <div
               key={customer.id}
@@ -4390,54 +5131,14 @@ const CUS360Demo = () => {
                     ? maskPhone(customer.phone)
                     : customer.phone || ""}
                 </div>
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
-                  {(() => {
-                    const ch = getTopPreference(
-                      "通路偏好",
-                      "usage",
-                      customer
-                    );
-                    const pd = getTopPreference(
-                      "產品偏好",
-                      "score",
-                      customer
-                    );
-                    const intent = getTopIntentTag();
-                    return (
-                      <>
-                        {ch && (
-                          <span className="px-2 py-0.5 bg-teal-100 text-teal-800 rounded-full">
-                            通路: {channelLabel(ch.name || ch.channel)}
-                          </span>
-                        )}
-                        {pd && (
-                          <span className="px-2 py-0.5 bg-teal-50 text-teal-800 rounded-full">
-                            產品: {pd.name}
-                          </span>
-                        )}
-                        {intent && (
-                          <span className="px-2 py-0.5 bg-teal-50 text-teal-800 rounded-full">
-                            意圖: {intent.name}
-                          </span>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
               </div>
               <div className="flex gap-2 text-xs">
                 <span
-                  className={`px-2 py-1 rounded-full text-xs ${
-                    customer.vipLevel === "VVIP"
-                      ? "bg-purple-100 text-purple-800"
-                      : customer.vipLevel === "VIP"
-                      ? "bg-blue-100 text-blue-800"
-                      : customer.vipLevel === "VVVIP"
-                      ? "bg-fuchsia-100 text-fuchsia-800"
-                      : "bg-gray-100 text-gray-800"
-                  }`}
+                  className={`px-2 py-1 rounded-full text-xs ${getTierBgClass(
+                    customer.vipLevel
+                  )}`}
                 >
-                  {customer.vipLevel === "normal" ? "一般" : customer.vipLevel}
+                  {getTierDisplayLabel(customer.vipLevel)}
                 </span>
                 {(() => {
                   const acct = customer.accountStatus;
@@ -4510,9 +5211,13 @@ const CUS360Demo = () => {
                 }
               >
                 <option value="">全部</option>
-                <option value="vvip">VVIP</option>
-                <option value="vip">VIP</option>
-                <option value="normal">一般客戶</option>
+                {getTiersList()
+                  .sort((a, b) => b.order - a.order)
+                  .map((tier) => (
+                    <option key={tier.key} value={tier.key.toLowerCase()}>
+                      {tier.displayLabel}
+                    </option>
+                  ))}
               </select>
             </div>
             <div>
@@ -5412,7 +6117,13 @@ const CUS360Demo = () => {
                 <div className="space-y-4">
                   {section.name && section.name.includes("意圖標籤") ? (
                     <div className="space-y-3">
-                      {section.tags.map((tag, tagIdx) => {
+                      {[...section.tags]
+                        .sort((a, b) => {
+                          const scoreA = typeof a.score === 'number' ? a.score : (a.score ? parseFloat(a.score) : 0);
+                          const scoreB = typeof b.score === 'number' ? b.score : (b.score ? parseFloat(b.score) : 0);
+                          return scoreB - scoreA; // 由高至低排序
+                        })
+                        .map((tag, tagIdx) => {
                         const score =
                           typeof tag.score === "number"
                             ? tag.score
@@ -5529,8 +6240,10 @@ const CUS360Demo = () => {
     );
   };
 
-  const renderCustomerPreferences = () => {
-    const prefsData = detailedCustomerData.preferences || {
+  const renderCustomerPreferences = (customer) => {
+    // 使用动态生成的preferences而非硬编码数据
+    const dynamicPrefs = customer ? generateCustomerBasicInfo(customer).preferences : detailedCustomerData.preferences;
+    const prefsData = dynamicPrefs || {
       title: "偏好資訊",
       sections: [],
     };
@@ -5543,93 +6256,7 @@ const CUS360Demo = () => {
           </h3>
           <div className="space-y-6">
             {prefsData.sections.map((section, sIdx) => {
-              // skip consuming section here; we'll render it immediately after the marketing consent section
-              if (section.name && section.name.includes("消費")) return null;
-
-              // When we hit the marketing consent section, render it and then render the consumption SUBCARD below it
-              if (section.name && section.name.includes("行銷")) {
-                const consumption = (prefsData.sections || []).find(
-                  (s) => s.name && s.name.includes("消費")
-                );
-                return (
-                  <React.Fragment key={sIdx}>
-                    <div className={SUBCARD}>
-                      <h4 className="font-bold text-lg mb-4 text-gray-800">
-                        {section.name}
-                      </h4>
-                      {section.preferences &&
-                        section.preferences.length > 0 && (
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            {section.preferences.map((p, i) => (
-                              <div
-                                key={i}
-                                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                              >
-                                <div>
-                                  <div className="font-medium">
-                                    {p.label || p.name}
-                                  </div>
-                                  {p.lastUpdated && (
-                                    <div className="text-xs text-gray-500">
-                                      更新: {p.lastUpdated}
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="text-sm text-gray-700">
-                                  {p.value || p.status || ""}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                    </div>
-
-                    {/* consumption SUBCARD placed immediately after marketing consent */}
-                    {consumption &&
-                      Array.isArray(consumption.preferences) &&
-                      consumption.preferences.length > 0 && (
-                        <div className={SUBCARD}>
-                          <h4 className="font-bold text-lg mb-4 text-gray-800">
-                            {consumption.name || "消費類別偏好"}
-                          </h4>
-                          <div className="grid grid-cols-3 gap-2">
-                            {consumption.preferences.map((item, i) => (
-                              <div
-                                key={i}
-                                className="p-2 bg-gray-50 rounded-md text-xs"
-                              >
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="font-medium truncate">
-                                    {item.category || item.name}
-                                  </span>
-                                  <span className="text-xs text-gray-600">
-                                    {item.score || item.percentage || ""}
-                                  </span>
-                                </div>
-                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                  <div
-                                    className="h-2 rounded-full bg-gradient-to-r from-teal-200 to-teal-600"
-                                    style={{
-                                      width:
-                                        item.score || item.percentage || "0%",
-                                    }}
-                                  ></div>
-                                </div>
-                                {item.amount && (
-                                  <div className="mt-1 text-[11px] text-gray-600">
-                                    {item.amount}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                  </React.Fragment>
-                );
-              }
-
-              // default rendering for other sections
+              // Normal rendering for all sections in order
               return (
                 <div key={sIdx} className={SUBCARD}>
                   <h4 className="font-bold text-lg mb-4 text-gray-800">
@@ -5676,6 +6303,43 @@ const CUS360Demo = () => {
                             {item.note && (
                               <div className="text-xs text-gray-500 mt-1">
                                 {item.note}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                  {/* Spending category preferences */}
+                  {section.preferences &&
+                    section.preferences.length > 0 &&
+                    section.name.includes("消費") && (
+                      <div className="grid grid-cols-3 gap-2">
+                        {section.preferences.map((item, i) => (
+                          <div
+                            key={i}
+                            className="p-2 bg-gray-50 rounded-md text-xs"
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-medium truncate">
+                                {item.category || item.name}
+                              </span>
+                              <span className="text-xs text-gray-600">
+                                {item.score || item.percentage || ""}
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className="h-2 rounded-full bg-gradient-to-r from-teal-200 to-teal-600"
+                                style={{
+                                  width:
+                                    item.score || item.percentage || "0%",
+                                }}
+                              ></div>
+                            </div>
+                            {item.amount && (
+                              <div className="mt-1 text-[11px] text-gray-600">
+                                {item.amount}
                               </div>
                             )}
                           </div>
@@ -5730,11 +6394,37 @@ const CUS360Demo = () => {
                         ))}
                       </div>
                     )}
+
+                  {/* Marketing consent */}
+                  {section.preferences &&
+                    section.preferences.length > 0 &&
+                    section.name.includes("行銷") && (
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        {section.preferences.map((p, i) => (
+                          <div
+                            key={i}
+                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                          >
+                            <div>
+                              <div className="font-medium">
+                                {p.label || p.name}
+                              </div>
+                              {p.lastUpdated && (
+                                <div className="text-xs text-gray-500">
+                                  更新: {p.lastUpdated}
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-700">
+                              {p.value || p.status || ""}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                 </div>
               );
             })}
-
-            {/* consumption is rendered immediately after the marketing consent section to avoid duplication */}
 
             {/* Standalone Marketing Settings section (same hierarchy as other preference sections) */}
             {selectedCustomer && selectedCustomer.marketingChannels && (
@@ -5784,6 +6474,147 @@ const CUS360Demo = () => {
     );
   };
 
+  // 消费类别中英文映射表
+  const SPENDING_CATEGORY_MAP = {
+    travel: "旅遊",
+    luxury: "精品消費",
+    dining: "餐飲",
+    tech: "科技/3C",
+    groceries: "食品雜貨",
+    entertainment: "娛樂",
+    utilities: "公用事業",
+    healthcare: "醫療保健",
+    bills: "帳單",
+    essentials: "生活必需品",
+    family: "家庭",
+    childcare: "育兒",
+    investments: "投資",
+    wealth: "財富管理",
+    philanthropy: "慈善捐獻",
+    education: "教育",
+    ecommerce: "電子商務",
+    overseas: "海外消費",
+  };
+
+  // 获取消费类别中文标签
+  const getSpendingCategoryLabel = (category) => {
+    return SPENDING_CATEGORY_MAP[category] || category;
+  };
+
+  // 为每个客户动态生成基本信息 - 在renderDetailView外部定义，以便renderCustomerPreferences可访问
+  const generateCustomerBasicInfo = (customer) => {
+    if (!customer) return {};
+    return {
+      basic: {
+        title: "客戶基本資訊",
+        sections: [
+          {
+            name: "客戶名稱資訊",
+            data: [
+              { label: "客戶中文戶名", value: customer.name || "—" },
+              { label: "客戶英文戶名", value: customer.nameEn || "—" },
+            ],
+          },
+          {
+            name: "客戶工作資訊",
+            data: [
+              { label: "任職單位", value: "科技股份有限公司" },
+              { label: "職業別", value: "軟體工程師" },
+            ],
+          },
+        ],
+      },
+      contact: detailedCustomerData.contact,
+      risk: detailedCustomerData.risk,
+      financial: detailedCustomerData.financial,
+      rating: {
+        title: "客戶評價資訊",
+        sections: [
+          {
+            name: "客戶等級資訊",
+            data: [
+              {
+                label: "VIP等級",
+                value: getTierDisplayLabel(customer.vipLevel || "normal"),
+              },
+            ],
+          },
+        ],
+      },
+      preferences: {
+        title: "客戶偏好資訊",
+        sections: [
+          {
+            name: "產品偏好",
+            preferences: [
+              {
+                product: "信用卡",
+                score: `${Math.round((customer.productPreferences?.creditCard || 0) * 100)}%`,
+                note: "根據客戶交易紀錄分析",
+              },
+              {
+                product: "投資理財",
+                score: `${Math.round((customer.productPreferences?.investment || 0) * 100)}%`,
+                note: "根據客戶資產配置分析",
+              },
+              {
+                product: "存款",
+                score: `${Math.round((customer.productPreferences?.deposits || 0) * 100)}%`,
+                note: "根據客戶存款行為分析",
+              },
+            ].sort((a, b) => {
+              const scoreA = parseInt(a.score) || 0;
+              const scoreB = parseInt(b.score) || 0;
+              return scoreB - scoreA; // 从高到低排序
+            }),
+          },
+          {
+            name: "消費類別偏好",
+            preferences: Object.entries(customer.spendingCategories || {})
+              .map(([category, score]) => ({
+                category: getSpendingCategoryLabel(category),
+                score: `${Math.round((score || 0) * 100)}%`,
+              }))
+              .sort((a, b) => {
+                const scoreA = parseInt(a.score) || 0;
+                const scoreB = parseInt(b.score) || 0;
+                return scoreB - scoreA; // 从高到低排序
+              })
+              .slice(0, 6), // 限制只顯示前 6 個
+          },
+          {
+            name: "通路偏好",
+            preferences: [
+              { channel: "行動銀行", score: "90%", note: "高互動頻率" },
+              { channel: "電子郵件", score: "75%", note: "用於接收行銷與月報" },
+              { channel: "臨櫃", score: "40%", note: "偶爾訪問" },
+            ].sort((a, b) => {
+              const scoreA = parseInt(a.score) || 0;
+              const scoreB = parseInt(b.score) || 0;
+              return scoreB - scoreA; // 从高到低排序
+            }),
+          },
+          {
+            name: "行銷同意",
+            preferences: [
+              {
+                label: "行銷接收狀態",
+                value: customer.marketingOptIn ? "允許" : "拒絕",
+                lastUpdated: "2025-09-12",
+              },
+              { label: "偏好頻率", value: "每月", lastUpdated: "2025-09-12" },
+              {
+                label: "偏好主題",
+                value: "旅遊/高回饋卡/投資",
+                lastUpdated: "2025-09-12",
+              },
+            ],
+          },
+        ],
+      },
+    };
+  };
+
   const renderDetailView = () => {
     if (!selectedCustomer)
       return (
@@ -5792,34 +6623,7 @@ const CUS360Demo = () => {
         </div>
       );
 
-    // Dynamically generate customer-specific basic info instead of using hardcoded detailedCustomerData
-    const generateCustomerBasicInfo = (customer) => {
-      return {
-        basic: {
-          title: "客戶基本資訊",
-          sections: [
-            {
-              name: "客戶名稱資訊",
-              data: [
-                { label: "客戶中文戶名", value: customer.name || "—" },
-                { label: "客戶英文戶名", value: customer.nameEn || "—" },
-              ],
-            },
-            {
-              name: "客戶工作資訊",
-              data: [
-                { label: "任職單位", value: "科技股份有限公司" },
-                { label: "職業別", value: "軟體工程師" },
-              ],
-            },
-          ],
-        },
-        contact: detailedCustomerData.contact,
-        risk: detailedCustomerData.risk,
-        financial: detailedCustomerData.financial,
-      };
-    };
-
+    // 使用全局的generateCustomerBasicInfo函数
     const currentData = (generateCustomerBasicInfo(selectedCustomer)[activeTab] || detailedCustomerData[activeTab]) || {
       title: "",
       sections: [],
@@ -5868,15 +6672,11 @@ const CUS360Demo = () => {
                   </p>
                   <div className="flex gap-2 items-end flex-wrap">
                     <span
-                      className={`px-2 py-1 rounded-full text-sm font-medium ${
-                        selectedCustomer?.vipLevel === "VVIP"
-                          ? "bg-teal-700 text-white"
-                          : selectedCustomer?.vipLevel === "VIP"
-                          ? "bg-teal-500 text-white"
-                          : "bg-gray-500 text-white"
-                      }`}
+                      className={`px-2 py-1 rounded-full text-sm font-medium ${getTierBgClass(
+                        selectedCustomer?.vipLevel
+                      )}`}
                     >
-                      {selectedCustomer?.vipLevel}
+                      {getTierDisplayLabel(selectedCustomer?.vipLevel)}
                     </span>
                     {(() => {
                       const lvl =
@@ -6648,7 +7448,7 @@ const CUS360Demo = () => {
           {activeTab === "tags" && renderCustomerTags()}
 
           {/* Customer Preferences View */}
-          {activeTab === "preferences" && renderCustomerPreferences()}
+          {activeTab === "preferences" && renderCustomerPreferences(selectedCustomer)}
 
           {/* Debug: show currentData summary to diagnose missing sections */}
           <div className="mt-3 p-2 bg-gray-50 rounded text-xs text-gray-700">
