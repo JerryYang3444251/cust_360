@@ -1,0 +1,52 @@
+{
+  "name": "cus360-demo-vite",
+  "version": "0.1.0",
+  "description": "CUS360 demo wrapped for Electron",
+  "author": "Your Name <you@example.com>",
+  "main": "electron-main.js",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 5173",
+    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "clean": "node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true});}catch(e){}\"",
+    "electron:build": "npm run clean && npm run build && electron-builder --win"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "lucide-react": "^0.278.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.0.0",
+    "vite": "^5.1.0",
+    "electron": "^26.0.0",
+    "electron-builder": "^24.6.0",
+    "concurrently": "^8.0.0",
+    "wait-on": "^7.0.0"
+  },
+  "build": {
+    "asar": false,
+    "appId": "com.example.cus360demo",
+    "productName": "CUS360 Demo",
+    "files": [
+      "dist/**",
+      "electron-main.js",
+      "electron-preload.js",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "build"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false
+    },
+    "win": {
+      "target": [
+        "portable"
+      ]
+    }
+  }
+}
