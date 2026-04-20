@@ -3296,8 +3296,29 @@ const CUS360Demo = () => {
     for (let i = 0; i < key.length; i++)
       hash = (hash * 31 + key.charCodeAt(i)) % 1000000;
 
-    const base = 200000; // minimum
-    const netWorth = Math.round(base + (hash % 9800000)); // ~200k - 10M
+    // VIP-tier based wealth brackets
+    const vipLevel = (customer && customer.vipLevel) || "normal";
+    let baseRange, base;
+    
+    if (vipLevel === "VVVIP") {
+      // VVVIP: 5M - 15M
+      baseRange = 10000000;
+      base = 5000000;
+    } else if (vipLevel === "VVIP") {
+      // VVIP: 2M - 8M
+      baseRange = 6000000;
+      base = 2000000;
+    } else if (vipLevel === "VIP") {
+      // VIP: 800K - 3M
+      baseRange = 2200000;
+      base = 800000;
+    } else {
+      // normal: 200K - 1M
+      baseRange = 800000;
+      base = 200000;
+    }
+    
+    const netWorth = Math.round(base + (hash % baseRange));
 
     const investPct = (hash % 50) / 100; // 0-0.49
     const liquidPct = ((hash >> 5) % 60) / 100; // 0-0.59
@@ -5766,7 +5787,35 @@ const CUS360Demo = () => {
         </div>
       );
 
-    const currentData = detailedCustomerData[activeTab] || {
+    // Dynamically generate customer-specific basic info instead of using hardcoded detailedCustomerData
+    const generateCustomerBasicInfo = (customer) => {
+      return {
+        basic: {
+          title: "客戶基本資訊",
+          sections: [
+            {
+              name: "客戶名稱資訊",
+              data: [
+                { label: "客戶中文戶名", value: customer.name || "—" },
+                { label: "客戶英文戶名", value: customer.nameEn || "—" },
+              ],
+            },
+            {
+              name: "客戶工作資訊",
+              data: [
+                { label: "任職單位", value: "科技股份有限公司" },
+                { label: "職業別", value: "軟體工程師" },
+              ],
+            },
+          ],
+        },
+        contact: detailedCustomerData.contact,
+        risk: detailedCustomerData.risk,
+        financial: detailedCustomerData.financial,
+      };
+    };
+
+    const currentData = (generateCustomerBasicInfo(selectedCustomer)[activeTab] || detailedCustomerData[activeTab]) || {
       title: "",
       sections: [],
     };
