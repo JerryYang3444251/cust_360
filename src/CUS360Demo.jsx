@@ -629,6 +629,8 @@ const CUS360Demo = () => {
         travel: 0.6,
         groceries: 0.4,
         entertainment: 0.7,
+        luxury: 0.3,
+        overseas: 0.5,
       },
       lifecycleStage: "established_professional",
       lifetimeValueTier: "gold",
@@ -6767,6 +6769,7 @@ const CUS360Demo = () => {
   const [showMaskedData, setShowMaskedData] = useState(true);
   const [activeTab, setActiveTab] = useState("basic");
   const [pendingAnchor, setPendingAnchor] = useState(null); // { anchorId } — scroll after tab render
+  const [insightModal, setInsightModal] = useState(null); // { type, data } — insight popup
   const [filters, setFilters] = useState({
     vipLevel: "",
     riskLevel: "",
@@ -7122,15 +7125,15 @@ const CUS360Demo = () => {
         pastProducts: ["存款", "定存", "基礎型保險"],
         behaviorInsights: ["新手媽媽（小孩 6 個月）", "對「子女未來教育」主動關心", "偏好穩健、不希望一次投入過高金額"],
         objective: "推薦「子女出國留學教育基金 — 長期分階段投資規劃方案」\n（結合：穩健型投資＋教育金目標模擬，不強調短期報酬）",
-        mainOpening: `${customer.name || '林怡君'}您好，看到您目前剛成為新手媽媽，客戶 360 顯示您正好落在「子女教育規劃」的關鍵階段。我們特別為像您這樣的家庭，準備了一套可以循序規劃孩子未來留學基金的方案，今天可以一起看看是否符合您的想法。`,
-        shortOpening: "您好，我們發現您近期關注孩子未來教育，我有一個「教育基金長期規劃方案」，金額彈性、風險相對穩健，要不要花幾分鐘一起評估看看？",
+        mainOpening: `${customer.name || '林怡君'}您好，我這邊有一個專為家庭客戶設計的「子女教育基金規劃方案」想跟您分享。不少有孩子的家長會在這個階段開始規劃，現在開始投入的金額彈性最高，長期下來累積的空間也最大。今天可以一起看看是否符合您的想法。`,
+        shortOpening: "您好，我有一個「教育基金長期規劃方案」想跟您分享，金額彈性、風險相對穩健，要不要花幾分鐘一起評估看看？",
         whyRecommend: [
-          "恭喜您成為「✅ 新手媽媽」，此階段是教育金規劃的最佳起點",
-          "目前資產以「存款／定存」為主，長期累積力較難因應18 年後的海外留學費用",
-          "您偏好穩定、可掌控的方式，此方案以分期投入、長期複利為核心，不需一次投入大筆資金",
-          "系統根據相似家庭客群分析，此類規劃多為「穩健型家庭」首選",
+          "這個階段開始規劃，未來可備用的金額空間最大、每月投入壓力也最小",
+          "教育基金目標通常需要 10～18 年長期累積，分期定額模式可增大長期複利效果",
+          "方案以穩健型為主，分期投入、長期複利為核心，不需一次投入大筆資金，適合各種生活節奏",
+          "許多家長都擔心「要從何時開始」，其實越早開始，每月負擔越少、就越容易長期執行",
         ],
-        script: `${customer.name || '林怡君'}您好，從客戶 360 看得出來，您現在正處在很多爸媽會開始思考「孩子未來」的階段。目前您的資金大多放在存款與定存，雖然安全，但如果目標是 10～18 年後的出國留學，單靠定存其實會比較辛苦。我幫您設計的是一個每月金額不高、但可以長期累積的教育基金規劃。我們可以直接在財富管理網模擬給您看，不是馬上決定，而是先看看「如果現在開始，未來大概可以準備到多少」，再一起調整到您安心的節奏。`,
+        script: `${customer.name || '林怡君'}您好，很多家長在孩子還小的時候會開始思考「未來教育基金」這個問題。教育基金的重點在於「越早開始、每月負擔越少」，早點起步，長期複利的空間就越大。我幫您設計的是一個每月金額彈性、可以長期累積的教育基金規劃。我們可以直接在財富管理網模擬給您看，不是馬上決定，而是先看看「如果現在開始，未來大概可以準備到多少」，再一起調整到您安心的節奏。`,
         objections: [
           {
             question: "「我會不會現在規劃太早？」",
@@ -7303,7 +7306,18 @@ const CUS360Demo = () => {
     const _trimmed = (prompt || '').trim();
     if (_trimmed === '客戶摘要') return buildCustomerSummaryBlock(customer);
     if (_trimmed === '問候話術') return buildGreetingScript(customer);
-    const _isProdRec = _trimmed === '產品推薦';
+    const _isProdRec = _trimmed === '產品推薦' || _trimmed.startsWith('產品推薦:');
+    // Parse prefix: '產品推薦:intent:XXX' | '產品推薦:product:XXX' | '產品推薦:spending:XXX' | '產品推薦:XXX' (legacy intent)
+    const _prodRecPayload = _trimmed.startsWith('產品推薦:') ? _trimmed.slice(5).trim() : null;
+    const _forcedType   = _prodRecPayload && _prodRecPayload.startsWith('intent:')   ? 'intent'
+                        : _prodRecPayload && _prodRecPayload.startsWith('product:')  ? 'product'
+                        : _prodRecPayload && _prodRecPayload.startsWith('spending:') ? 'spending'
+                        : _prodRecPayload ? 'intent' : null; // legacy: treat bare name as intent
+    const _forcedLabel  = _prodRecPayload
+      ? _prodRecPayload.replace(/^(intent|product|spending):/, '').trim()
+      : null;
+    // Keep _forcedIntentName for backward compat
+    const _forcedIntentName = _forcedType === 'intent' ? _forcedLabel : null;
     
     // Check for customer-specific configuration
     const customConfig = getCustomerAssistantConfig(customer);
@@ -7330,8 +7344,7 @@ const CUS360Demo = () => {
       out.push(`主開場：\n\n${customConfig.mainOpening}`);
       out.push(`簡版開場：\n\n${customConfig.shortOpening}`);
       
-      out.push('✅ 為何推薦（與客戶資料連結）');
-      out.push(customConfig.whyRecommend.join('\n'));
+    out.push(`💡 為何推薦\n${customConfig.whyRecommend.join('\n')}`);
       
       out.push('🗣️ 主推話術（可直接口說）');
       out.push(customConfig.script);
@@ -7369,16 +7382,49 @@ const CUS360Demo = () => {
     const chText = topChannel ? channelLabel(topChannel.channel || topChannel.name) : "慣用通路";
     // Derive a single, consistent primary product for the whole recommendation
     let prodText = topProduct ? (topProduct.product || topProduct.name) : "核心產品";
-    const intentName = intent ? intent.name : "";
+    const intentName = _forcedIntentName || (intent ? intent.name : "");
     const normalizeProd = (s) => (s || "").toLowerCase();
-    const isTravelIntent = /旅遊|出國/.test(intentName || "");
-    const prefersCard = normalizeProd(prodText).includes("card") || /信用卡|卡|card/.test(prodText);
-    // If travel intent and not already card-focused, steer to信用卡一體化方案
-    if (isTravelIntent && !prefersCard) prodText = "信用卡旅遊權益方案";
+
+    // If a specific intent was forced (clicked from modal), derive prodText from that intent
+    if (_forcedType === 'intent' && _forcedIntentName) {
+      if (/投資|理財/.test(_forcedIntentName)) prodText = customer.vipLevel === 'VVVIP' || customer.vipLevel === 'VVIP' ? '私人銀行信託方案' : '穩健型基金定期定額';
+      else if (/信用卡/.test(_forcedIntentName)) prodText = '高回饋現金回饋卡';
+      else if (/旅遊|出國/.test(_forcedIntentName)) prodText = '信用卡旅遊權益方案';
+      else if (/房貸/.test(_forcedIntentName)) prodText = '房貸試算方案';
+      else if (/信貸/.test(_forcedIntentName)) prodText = '個人信用貸款';
+      else if (/留學/.test(_forcedIntentName)) prodText = '留學教育貸款';
+    } else if (_forcedType === 'product' && _forcedLabel) {
+      // Triggered from 產品偏好 card — map product preference name to a specific plan
+      if (/信用卡/.test(_forcedLabel)) prodText = '高回饋現金回饋卡';
+      else if (/投資|理財/.test(_forcedLabel)) prodText = customer.vipLevel === 'VVVIP' || customer.vipLevel === 'VVIP' ? '私人銀行信託方案' : '穩健型基金定期定額';
+      else if (/存款/.test(_forcedLabel)) prodText = '台幣定期存款 / 外幣定存';
+      else if (/貸款/.test(_forcedLabel)) prodText = '個人信用貸款 / 房貸試算方案';
+      else prodText = _forcedLabel;
+    } else if (_forcedType === 'spending' && _forcedLabel) {
+      // Triggered from 消費類別偏好 card — map spending category to best-fit product
+      if (/旅遊/.test(_forcedLabel)) prodText = '旅遊聯名信用卡';
+      else if (/精品/.test(_forcedLabel)) prodText = '精品百貨聯名卡 / 分期零利率精品專案';
+      else if (/餐飲/.test(_forcedLabel)) prodText = '餐飲回饋信用卡';
+      else if (/科技|3C/.test(_forcedLabel)) prodText = '3C 分期購物信用卡';
+      else if (/教育/.test(_forcedLabel)) prodText = '教育儲蓄專案 / 留學教育貸款';
+      else if (/醫療/.test(_forcedLabel)) prodText = '醫療保障方案 / 醫療信用貸款';
+      else if (/娛樂/.test(_forcedLabel)) prodText = '娛樂消費回饋卡';
+      else if (/海外/.test(_forcedLabel)) prodText = '海外消費信用卡 / 外幣帳戶';
+      else if (/投資|財富/.test(_forcedLabel)) prodText = '穩健型基金定期定額';
+      else if (/育兒|家庭/.test(_forcedLabel)) prodText = '教育基金規劃方案';
+      else prodText = `${_forcedLabel}相關回饋方案`;
+    } else {
+      const isTravelIntent = /旅遊|出國/.test(intentName || "");
+      const prefersCard = normalizeProd(prodText).includes("card") || /信用卡|卡|card/.test(prodText);
+      if (isTravelIntent && !prefersCard) prodText = "信用卡旅遊權益方案";
+    }
     // If deposits/wealth intent conflicts with loans, keep deposits/wealth consistent for low risk
     const isWealthLike = /投資|基金|wealth|理財/.test(prodText);
     if (risk === 'low' && /貸款|loan/.test(prodText)) prodText = isWealthLike ? prodText : "穩健理財/定存加值";
-    const consText = topConsumption ? (topConsumption.category || topConsumption.name) : "主要消費類別";
+    // When triggered from spending card, override consText with the actual clicked category
+    const consText = (_forcedType === 'spending' && _forcedLabel)
+      ? _forcedLabel
+      : topConsumption ? (topConsumption.category || topConsumption.name) : "主要消費類別";
     const intentText = intent ? intent.name : "近期需求";
 
     const lower = (prompt || "").toLowerCase();
@@ -7388,9 +7434,9 @@ const CUS360Demo = () => {
 
     // Determine product type for coherent messaging
     const prodLower = (prodText || '').toLowerCase();
-    const isCreditCard = /信用卡|card/.test(prodText) || prodLower.includes('card');
-    const isLoan = /貸款|loan/.test(prodText);
-    const isWealth = /理財|投資|基金|wealth/.test(prodText);
+    const isCreditCard = /信用卡|聯名卡|回饋卡|card/.test(prodText) || prodLower.includes('card');
+    const isLoan = /貸款|loan/.test(prodText) && !/聯名卡|回饋卡/.test(prodText);
+    const isWealth = /理財|投資|基金|wealth/.test(prodText) && !isCreditCard;
     const primaryType = isCreditCard ? 'card' : isLoan ? 'loan' : isWealth ? 'wealth' : 'other';
 
     // Personalized headline and snapshot
@@ -7442,32 +7488,36 @@ const CUS360Demo = () => {
     }
 
     out.push('🎯 溝通目標');
-    const objective = primaryType === 'card' ? '推薦旅遊信用卡' : primaryType === 'loan' ? '推薦信貸降息方案' : primaryType === 'wealth' ? '旅遊/保險方案交叉銷售' : '邀請申請額度調整';
+    const objective = (() => {
+      if (_forcedType === 'spending' && _forcedLabel) return `推薦「${prodText}」（${_forcedLabel}情境）`;
+      if (_forcedType === 'product' && _forcedLabel) return `推薦${_forcedLabel}相關方案`;
+      if (_forcedType === 'intent' && _forcedLabel) return `跟進「${_forcedLabel}」，推薦「${prodText}」`;
+      return `推薦「${prodText}」`;
+    })();
     out.push(objective);
 
     out.push('👋 客製化開場白（主開場/簡版）');
     out.push(`主開場：${vipOpen.replace(/^開場：/, '')}`);
-    out.push(`簡版開場：您好，我們有一個與您近期需求相符的「${prodText}」方案，可於${chText}快速完成，方便嗎？`);
+    out.push(`簡版開場：您好，我這邊有一個「${prodText}」方案想跟您分享，可以在${chText}快速了解，不用花太多時間，方便嗎？`);
 
-    out.push('✅ 為何推薦（與客戶資料連結）');
     const reasons = [
-      `您近期「${behav||intentText}」的傾向明顯，「${prodText}」可直接滿足此需求。`,
-      primaryType==='card' ? `您的「${consText}」消費較多，該卡在該情境享有加碼回饋。` : `您的月收約 NT$${(f.monthlyIncome||0).toLocaleString()}，採用本方案後可更貼近您的現金流安排。`,
-      primaryType!=='card' ? `風險等級為${risk}，我們將依適合度評估分段配置。` : `此方案重點在權益與回饋，不涉及投資風險配置。`,
+      `「${prodText}」非常適合有${intentName || behav || '近期規劃'}需求的客戶，功能與權益直接對應。`,
+      primaryType==='card' ? `這張卡在「${consText}」情境有加碼回饋設計，日常使用起來直接有感。` : `方案門檻彈性、可依生活節奏調整，不造成額外財務壓力。`,
+      primaryType!=='card' ? `我們會依您的需求與適合度評估，提供最合適的配置建議。` : `此方案重點在權益與回饋，不涉及投資風險配置。`,
     ];
-    out.push(reasons.filter(Boolean).join('\n'));
+    out.push(`💡 為何推薦\n${reasons.filter(Boolean).join('\n')}`);
 
     out.push('🗣️ 主推話術（可直接口說）');
     const nameForCall = customer.name ? `，${customer.name}` : '';
     let spoken = '';
     if (primaryType === 'card') {
-      spoken = `您好${nameForCall}，看您的「${consText}」消費與${intentText || '近期需求'}，我幫您配一張「${prodText}」。這張卡在${consText}與海外都有加碼回饋，權益集中、使用簡單。等一下我可以在${chText}幫您一次設定，流程不用幾分鐘，之後有通知提醒，回饋不會漏。`;
+      spoken = `您好${nameForCall}，我這邊有一張「${prodText}」想跟您分享。這張卡在${consText}與海外消費都有加碼回饋，權益集中、使用簡單。如果您有興趣，我可以在${chText}幫您一次設定，流程不用幾分鐘。`;
     } else if (primaryType === 'loan') {
-      spoken = `您好${nameForCall}，留意到您最近的資金安排需求，這個「${prodText}」可以把月付壓得更穩，費用與期數我會先說清楚，並依適合度幫您試算。現在我可在${chText}替您送出預審，幾分鐘就好，您覺得如何？`;
+      spoken = `您好${nameForCall}，我這邊有個方案想跟您分享。「${prodText}」的條件很彈性，費用與期數我會先說清楚，也會依適合度幫您試算。現在我可在${chText}替您送出預審，幾分鐘就好，您覺得如何？`;
     } else if (primaryType === 'wealth') {
-      spoken = `您好${nameForCall}，基於您的風險等級${risk}與${intentText || '理財'}規劃，我們先用「${prodText}」做穩健配置，重點是透明、可調整；有變動我會即時通知。待會我在${chText}帶您完成設定，過程很簡單。`;
+      spoken = `您好${nameForCall}，我整理了一個穩健的「${prodText}」方案，重點是透明、可調整；有任何變動我會即時通知您。如果方便，我可在${chText}帶您看看，過程很簡單。`;
     } else {
-      spoken = `您好${nameForCall}，根據您的使用習慣，我建議「${prodText}」作為主要方案，搭配您常用的${chText}完成設定，之後依您的「${consText}」情境提供加碼提醒。現在幫您處理，方便嗎？`;
+      spoken = `您好${nameForCall}，我有一個「${prodText}」方案想跟您分享，可配合您想用的${chText}完成設定，之後在「${consText}」情境有加碼回饋。現在幫您處理，方便嗎？`;
     }
     out.push(spoken);
 
@@ -9936,6 +9986,289 @@ const CUS360Demo = () => {
     );
   };
 
+  // ── Insight Modal helpers ────────────────────────────────────────────────
+  // Build structured content for the insight popup based on type and payload.
+  const SEASON_HINTS = (() => {
+    const m = new Date().getMonth() + 1;
+    if (m >= 6 && m <= 8) return { travel: '暑假旺季，出國旅遊需求高峰', dining: '夏日餐飲消費旺季', luxury: null };
+    if (m >= 11 || m <= 1) return { travel: '年末年假出遊潮', luxury: '年末精品送禮旺季', dining: '年節餐聚旺季' };
+    if (m >= 3 && m <= 5) return { travel: '春假出遊季', dining: null, luxury: null };
+    return {};
+  })();
+
+  const buildIntentInsight = (tag, customer) => {
+    const name = tag.name || '';
+    const score = typeof tag.score === 'number' ? tag.score : parseFloat(tag.score || '0');
+    const pp = customer?.productPreferences || {};
+    const sp = customer?.spendingCategories || {};
+    const vip = customer?.vipLevel || 'normal';
+    const isHighVip = vip === 'VVVIP' || vip === 'VVIP';
+    const recs = (() => {
+      if (/旅遊|出國/.test(name)) return [
+        { name: '旅遊聯名信用卡', reason: '刷卡回饋最高，海外手續費優惠，適合出國消費場景' },
+        { name: '外幣活期存款帳戶', reason: '可預先換匯鎖定匯率，節省出國換匯成本' },
+        isHighVip ? { name: '機場貴賓室尊享卡', reason: 'VIP 客戶專屬，提升旅行體驗' } : null,
+      ].filter(Boolean);
+      if (/信用卡/.test(name)) return [
+        { name: '高回饋現金回饋卡', reason: '日常消費最高回饋，與現有消費習慣高度吻合' },
+        { name: '分期零利率專案', reason: '大額消費可分期，降低一次性資金壓力' },
+      ];
+      if (/投資|理財/.test(name)) return [
+        { name: isHighVip ? '私人銀行信託方案' : '穩健型基金定期定額', reason: '與客戶風險屬性相符，建議分批布局' },
+        { name: '外幣定存', reason: '台幣以外資產配置，分散匯率風險' },
+      ];
+      if (/房貸/.test(name)) return [
+        { name: '房貸試算方案', reason: '依客戶財力與收入估算，提供最優化的貸款條件' },
+        { name: '理財型房貸', reason: '彈性動用額度，兼顧資產流動性' },
+      ];
+      if (/信貸/.test(name)) return [
+        { name: '個人信用貸款', reason: '快速核撥，利率依信用評級調整' },
+      ];
+      if (/留學/.test(name)) return [
+        { name: '留學教育貸款', reason: '專為海外就學設計，還款期間彈性' },
+        { name: '外幣存款帳戶', reason: '可預存學費外幣，降低匯率波動風險' },
+      ];
+      return [{ name: '個人化理財諮詢', reason: '建議透過理專深入了解需求，提供客製方案' }];
+    })();
+    const dataBasis = (() => {
+      if (/旅遊|出國/.test(name)) return `旅遊消費比例 ${Math.round((sp.travel || 0) * 100)}%、海外消費比例 ${Math.round((sp.overseas || 0) * 100)}%`;
+      if (/信用卡/.test(name)) return `信用卡產品偏好 ${Math.round((pp.creditCard || 0) * 100)}%`;
+      if (/投資|理財/.test(name)) return `投資產品偏好 ${Math.round((pp.investment || 0) * 100)}%`;
+      if (/房貸/.test(name)) return `貸款產品偏好 ${Math.round((pp.loans || 0) * 100)}%`;
+      return '依客戶行為模型推導';
+    })();
+    const timing = (() => {
+      if (/旅遊|出國/.test(name) && SEASON_HINTS.travel) return SEASON_HINTS.travel + '，建議盡快聯繫';
+      if (/信用卡/.test(name)) return '信用卡需求通常源於近期消費，建議本週內聯繫';
+      if (/投資|理財/.test(name)) return '理財意圖持續升溫，建議月底前安排諮詢';
+      if (/房貸/.test(name)) return '房貸決策週期長，建議先提供試算，建立信任';
+      return '建議近期主動安排問候';
+    })();
+    const opening = (() => {
+      if (/旅遊|出國/.test(name)) return '「不知道您最近有沒有出國的計畫？我剛好有一個旅遊相關的方案想跟您分享。」';
+      if (/信用卡/.test(name)) return '「我有一張回饋設計很符合您消費習慣的卡，想花幾分鐘跟您介紹一下。」';
+      if (/投資|理財/.test(name)) return '「最近市場有一些不錯的機會，我整理了一份符合您風險屬性的方案，方便聽我說說嗎？」';
+      if (/房貸/.test(name)) return '「不知道您對房屋貸款有沒有規劃？我可以先幫您試算看看，完全沒有壓力。」';
+      return '「最近剛好有一個方案想和您分享，不知道您現在方便嗎？」';
+    })();
+    return { title: name, score, dataBasis, timing, opening, recs };
+  };
+
+  const buildProductInsight = (item, customer) => {
+    const prodName = item.product || item.name || '';
+    const score = parsePercent(item.score);
+    const pp = customer?.productPreferences || {};
+    const vip = customer?.vipLevel || 'normal';
+    const isHighVip = vip === 'VVVIP' || vip === 'VVIP';
+    const tierAvg = { creditCard: { VVVIP: 90, VVIP: 85, VIP: 75, normal: 55 }, investment: { VVVIP: 95, VVIP: 88, VIP: 70, normal: 35 }, deposits: { VVVIP: 60, VVIP: 65, VIP: 72, normal: 80 }, loans: { VVVIP: 30, VVIP: 40, VIP: 55, normal: 60 } };
+    const keyMap = { '信用卡': 'creditCard', '投資理財': 'investment', '存款': 'deposits', '貸款': 'loans' };
+    const key = keyMap[prodName] || 'creditCard';
+    const avg = (tierAvg[key] || {})[vip] || 60;
+    const gap = score - avg;
+    const plans = (() => {
+      if (/信用卡/.test(prodName)) return [
+        { name: '旅遊聯名卡', highlight: '海外消費 3% 回饋，機場貴賓室', fit: isHighVip ? '★★★' : '★★☆' },
+        { name: '現金回饋卡', highlight: '日常消費最高 2.5% 回饋', fit: '★★★' },
+        { name: '商務卡', highlight: '差旅費用管理，企業主專屬', fit: '★★☆' },
+      ];
+      if (/投資/.test(prodName)) return [
+        { name: '全球股票型基金', highlight: '長期成長潛力，定期定額布局', fit: '★★★' },
+        { name: '平衡型基金', highlight: '股債搭配，兼顧報酬與穩定', fit: '★★★' },
+        { name: isHighVip ? '私人銀行信託' : '債券型基金', highlight: isHighVip ? '客製化資產管理' : '穩健固定收益', fit: isHighVip ? '★★★' : '★★☆' },
+      ];
+      if (/存款/.test(prodName)) return [
+        { name: '台幣定期存款', highlight: '鎖定利率，到期提醒服務', fit: '★★★' },
+        { name: '外幣定期存款', highlight: '美元/澳幣高息，分散匯率風險', fit: '★★☆' },
+        { name: '數位帳戶活存', highlight: '高於一般活存利率，隨時領取', fit: '★★☆' },
+      ];
+      return [
+        { name: '房屋貸款', highlight: '優惠利率，彈性還款期', fit: '★★☆' },
+        { name: '個人信用貸款', highlight: '快速核撥，免擔保品', fit: '★★★' },
+      ];
+    })();
+    return { title: prodName, score, avg, gap, plans };
+  };
+
+  const buildSpendingInsight = (item, customer) => {
+    const cat = item.category || item.name || '';
+    const score = parsePercent(item.score);
+    const sp = customer?.spendingCategories || {};
+    const intentTag = getTopIntentTag(customer);
+    const intentName = intentTag ? intentTag.name : '';
+    const crossRef = (/旅遊|出國/.test(intentName) && /旅遊/.test(cat)) ||
+      (/信用卡/.test(intentName) && !/旅遊/.test(cat)) ? intentName : null;
+    const seasonal = SEASON_HINTS[Object.keys(SEASON_HINTS).find(k => cat.includes({ travel: '旅遊', dining: '餐飲', luxury: '精品' }[k] || ''))] || null;
+    const cards = (() => {
+      if (/旅遊/.test(cat)) return ['旅遊聯名卡（機場貴賓室、海外刷卡回饋）', '外幣帳戶（預先換匯鎖率）'];
+      if (/餐飲/.test(cat)) return ['餐飲回饋卡（指定通路最高 5% 回饋）', '訂位/外送平台優惠合作卡'];
+      if (/精品/.test(cat)) return ['精品百貨聯名卡（VIP 貴賓通道）', '分期零利率精品專案'];
+      if (/科技|3C/.test(cat)) return ['3C 分期購物卡', '科技消費回饋方案'];
+      if (/教育/.test(cat)) return ['教育儲蓄專案', '留學貸款試算'];
+      if (/醫療/.test(cat)) return ['醫療保障方案', '醫療信用貸款'];
+      return ['日常消費回饋卡', '消費分期優惠'];
+    })();
+    return { title: cat, score, crossRef, seasonal, cards };
+  };
+
+  const getAdvisorSummary = (customer) => {
+    if (!customer) return null;
+    const topIntent = getTopIntentTag(customer);
+    const sp = customer.spendingCategories || {};
+    const pp = customer.productPreferences || {};
+    const events = (generateCustomerEvents(customer) || []);
+    const urgentEvent = events.find(e => e.status === '提醒');
+    const intentScore = topIntent ? (typeof topIntent.score === 'number' ? topIntent.score : parseFloat(topIntent.score || '0')) : 0;
+    const signals = [];
+    if (topIntent && intentScore >= 0.75) signals.push({ icon: '🎯', text: `高信心度意圖：「${topIntent.name}」（${Math.round(intentScore * 100)}%）` });
+    if (urgentEvent) signals.push({ icon: '📅', text: `即將到期事件：${urgentEvent.detail.slice(0, 30)}…` });
+    const topSpend = Object.entries(sp).sort((a, b) => b[1] - a[1])[0];
+    if (topSpend && topSpend[1] >= 0.8) {
+      const label = { travel: '旅遊', dining: '餐飲', luxury: '精品', investment: '投資', tech: '科技', education: '教育', overseas: '海外消費' }[topSpend[0]] || topSpend[0];
+      signals.push({ icon: '💡', text: `消費重心：${label}（${Math.round(topSpend[1] * 100)}%）` });
+    }
+    if (signals.length === 0) return null;
+    const overlapHighlight = signals.length >= 2;
+    return { signals, overlapHighlight, actionHint: topIntent ? `建議優先跟進「${topIntent.name}」相關產品推薦` : '建議安排定期維繫問候' };
+  };
+
+  const renderInsightModal = () => {
+    if (!insightModal) return null;
+    const { type, data, customer } = insightModal;
+    const closeBtn = (
+      <button onClick={() => setInsightModal(null)} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-xl font-bold leading-none">✕</button>
+    );
+    const sendToAssistant = (prompt) => {
+      setInsightModal(null);
+      setAssistantOpen(true);
+      setTimeout(() => sendAssistant(prompt), 100);
+    };
+    let body = null;
+    if (type === 'intent') {
+      const { title, score, dataBasis, timing, opening, recs } = data;
+      body = (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <span className="px-3 py-1 rounded-full bg-teal-600 text-white font-semibold text-sm">{title}</span>
+            <span className="text-gray-500 text-sm">信心度 {Math.round(score * 100)}%</span>
+            {score >= 0.8 && <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-semibold">高優先</span>}
+          </div>
+          <div className="bg-teal-50 rounded-lg p-3 text-sm">
+            <div className="font-semibold text-teal-800 mb-1">數據依據</div>
+            <div className="text-teal-700">{dataBasis}</div>
+          </div>
+          <div className="bg-amber-50 rounded-lg p-3 text-sm">
+            <div className="font-semibold text-amber-800 mb-1">建議時機</div>
+            <div className="text-amber-700">{timing}</div>
+          </div>
+          <div>
+            <div className="font-semibold text-gray-700 mb-2 text-sm">推薦產品</div>
+            <div className="space-y-2">
+              {recs.map((r, i) => (
+                <div key={i} className="flex gap-2 p-2 bg-gray-50 rounded-lg">
+                  <span className="text-teal-600 font-bold text-sm shrink-0">{i + 1}.</span>
+                  <div>
+                    <div className="font-medium text-gray-800 text-sm">{r.name}</div>
+                    <div className="text-xs text-gray-500">{r.reason}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="bg-blue-50 rounded-lg p-3 text-sm">
+            <div className="font-semibold text-blue-800 mb-1">建議開場白</div>
+            <div className="text-blue-700 italic">{opening}</div>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button onClick={() => sendToAssistant('問候話術')} className="flex-1 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700">生成問候話術</button>
+            <button onClick={() => sendToAssistant(`產品推薦:${title}`)} className="flex-1 py-2 bg-teal-100 text-teal-800 rounded-lg text-sm font-medium hover:bg-teal-200">產品推薦分析</button>
+          </div>
+        </div>
+      );
+    } else if (type === 'product') {
+      const { title, score, avg, gap, plans } = data;
+      body = (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <span className="px-3 py-1 rounded-full bg-teal-100 text-teal-800 font-semibold text-sm">{title}</span>
+            <span className="text-gray-500 text-sm">偏好分數 {score}%</span>
+          </div>
+          <div className={`rounded-lg p-3 text-sm ${gap >= 0 ? 'bg-green-50' : 'bg-orange-50'}`}>
+            <div className={`font-semibold mb-1 ${gap >= 0 ? 'text-green-800' : 'text-orange-800'}`}>
+              {gap >= 0 ? '高於同等級均值' : '低於同等級均值'}
+            </div>
+            <div className={gap >= 0 ? 'text-green-700' : 'text-orange-700'}>
+              同 VIP 等級均值約 {avg}%，此客戶{gap >= 0 ? `高出 ${gap}%，偏好明顯` : `低 ${Math.abs(gap)}%，可探索需求`}
+            </div>
+          </div>
+          <div>
+            <div className="font-semibold text-gray-700 mb-2 text-sm">適合方案</div>
+            <div className="space-y-2">
+              {plans.map((p, i) => (
+                <div key={i} className="p-2 bg-gray-50 rounded-lg flex items-start gap-3">
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-800 text-sm">{p.name}</div>
+                    <div className="text-xs text-gray-500">{p.highlight}</div>
+                  </div>
+                  <div className="text-xs text-amber-600 font-medium shrink-0">{p.fit}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button onClick={() => sendToAssistant(`產品推薦:product:${title}`)} className="flex-1 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700">完整產品推薦分析</button>
+          </div>
+        </div>
+      );
+    } else if (type === 'spending') {
+      const { title, score, crossRef, seasonal, cards } = data;
+      body = (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <span className="px-3 py-1 rounded-full bg-teal-100 text-teal-800 font-semibold text-sm">{title}</span>
+            <span className="text-gray-500 text-sm">消費比例 {score}%</span>
+          </div>
+          {seasonal && (
+            <div className="bg-amber-50 rounded-lg p-3 text-sm">
+              <div className="font-semibold text-amber-800 mb-1">季節性提醒</div>
+              <div className="text-amber-700">{seasonal}，現在是主動聯繫的好時機</div>
+            </div>
+          )}
+          {crossRef && (
+            <div className="bg-teal-50 rounded-lg p-3 text-sm">
+              <div className="font-semibold text-teal-800 mb-1">與意圖標籤一致</div>
+              <div className="text-teal-700">「{crossRef}」意圖與此消費偏好重疊，信號更強，建議優先跟進</div>
+            </div>
+          )}
+          <div>
+            <div className="font-semibold text-gray-700 mb-2 text-sm">適合的產品 / 服務</div>
+            <div className="space-y-2">
+              {cards.map((c, i) => (
+                <div key={i} className="flex gap-2 p-2 bg-gray-50 rounded-lg text-sm">
+                  <span className="text-teal-600 shrink-0">•</span>
+                  <span className="text-gray-700">{c}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button onClick={() => sendToAssistant(`產品推薦:spending:${title}`)} className="flex-1 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700">產品推薦分析</button>
+            <button onClick={() => sendToAssistant('問候話術')} className="flex-1 py-2 bg-teal-100 text-teal-800 rounded-lg text-sm font-medium hover:bg-teal-200">問候話術建議</button>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={() => setInsightModal(null)}>
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-5 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          {closeBtn}
+          <div className="font-bold text-lg text-gray-800 mb-4 pr-6">行動建議卡</div>
+          {body}
+        </div>
+      </div>
+    );
+  };
+
   const renderCustomerTags = () => {
     // Build a tags data structure from the actual selected customer, falling back to demo data
     const customer = selectedCustomer;
@@ -10005,7 +10338,7 @@ const CUS360Demo = () => {
                         .sort((a, b) => {
                           const scoreA = typeof a.score === 'number' ? a.score : (a.score ? parseFloat(a.score) : 0);
                           const scoreB = typeof b.score === 'number' ? b.score : (b.score ? parseFloat(b.score) : 0);
-                          return scoreB - scoreA; // 由高至低排序
+                          return scoreB - scoreA;
                         })
                         .map((tag, tagIdx) => {
                         const score =
@@ -10021,41 +10354,33 @@ const CUS360Demo = () => {
                             : score >= 0.6
                             ? "bg-teal-400 text-white"
                             : "bg-teal-50 text-teal-800");
+                        const isHighPriority = score >= 0.8;
                         return (
                           <div
                             key={tagIdx}
-                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                            className={`flex items-center justify-between p-3 rounded-lg cursor-pointer hover:shadow-md transition-shadow ${isHighPriority ? 'bg-amber-50 border border-amber-100' : 'bg-gray-50'}`}
+                            onClick={() => setInsightModal({ type: 'intent', data: buildIntentInsight(tag, customer), customer })}
                           >
-                            <div className="flex items-center gap-3">
-                              <span
-                                className={`px-3 py-1 rounded-full text-sm font-medium ${badgeCls}`}
-                              >
+                            <div className="flex items-center gap-3 flex-1">
+                              <span className={`px-3 py-1 rounded-full text-sm font-medium ${badgeCls}`}>
                                 {tag.name}
                               </span>
+                              {isHighPriority && <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px] font-semibold">優先</span>}
                               <span className="text-sm text-gray-600">
                                 信心度:{" "}
-                                {tag.confidence ||
-                                  Math.round((tag.score || 0) * 100) + "%"}
+                                {tag.confidence || Math.round(score * 100) + "%"}
                               </span>
+                              <span className="text-xs text-teal-600 underline ml-auto">查看建議 →</span>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 ml-3">
                               <div className="w-32 bg-gray-200 rounded-full h-2">
                                 <div
                                   className="h-2 rounded-full bg-gradient-to-r from-teal-200 to-teal-600"
-                                  style={{
-                                    width: `${Math.max(
-                                      6,
-                                      Math.round((tag.score || 0) * 100)
-                                    )}%`,
-                                  }}
+                                  style={{ width: `${Math.max(6, Math.round(score * 100))}%` }}
                                 ></div>
                               </div>
-                              <span className="text-sm font-medium text-gray-700">
-                                {Math.max(
-                                  6,
-                                  Math.round((tag.score || 0) * 100)
-                                )}
-                                %
+                              <span className="text-sm font-medium text-gray-700 w-10 text-right">
+                                {Math.max(6, Math.round(score * 100))}%
                               </span>
                             </div>
                           </div>
@@ -10158,26 +10483,39 @@ const CUS360Demo = () => {
                     section.preferences.length > 0 &&
                     section.name.includes("產品") && (
                       <div className="grid grid-cols-3 gap-2">
-                        {section.preferences.map((item, i) => (
+                        {section.preferences.map((item, i) => {
+                          const sc = parsePercent(item.score);
+                          const insight = buildProductInsight(item, customer);
+                          const gapPositive = insight.gap >= 0;
+                          const isProductPriority = gapPositive && sc >= 70;
+                          return (
                           <div
                             key={i}
-                            className="p-2 bg-gray-50 rounded-md text-xs"
+                            className={`p-2 rounded-md text-xs cursor-pointer hover:shadow-md transition-all border ${
+                              isProductPriority ? 'bg-amber-50 border-amber-100 hover:bg-amber-100' : 'bg-gray-50 border-transparent hover:bg-teal-50 hover:border-teal-100'
+                            }`}
+                            onClick={() => setInsightModal({ type: 'product', data: insight, customer })}
                           >
                             <div className="flex items-center justify-between mb-1">
                               <span className="font-medium truncate">
                                 {item.product || item.name}
                               </span>
+                              <div className="flex items-center gap-1">
+                                {isProductPriority && (
+                                  <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px] font-semibold">優先</span>
+                                )}
                               <span
                                 className={`px-2 py-0.5 rounded text-[10px] font-medium ${
-                                  parsePercent(item.score) >= 80
+                                  sc >= 80
                                     ? "bg-teal-100 text-teal-800"
-                                    : parsePercent(item.score) >= 60
+                                    : sc >= 60
                                     ? "bg-teal-50 text-teal-800"
                                     : "bg-gray-100 text-gray-800"
                                 }`}
                               >
                                 {getPreferenceLabel(item.score)}
                               </span>
+                              </div>
                             </div>
                             <div className="flex items-center gap-2">
                               <div className="flex-1 bg-gray-200 rounded-full h-2">
@@ -10191,12 +10529,14 @@ const CUS360Demo = () => {
                               </span>
                             </div>
                             {item.note && (
-                              <div className="text-xs text-gray-500 mt-1">
-                                {item.note}
-                              </div>
+                              <div className="text-xs text-gray-500 mt-1">{item.note}</div>
                             )}
+                            <div className={`mt-1.5 text-[10px] font-medium ${gapPositive ? 'text-green-600' : 'text-orange-500'}`}>
+                              {gapPositive ? `↑ 高於同級均值 ${insight.avg}%` : `↓ 低於同級均值 ${insight.avg}%`} · 點擊查看方案
+                            </div>
                           </div>
-                        ))}
+                        );
+                        })}
                       </div>
                     )}
 
@@ -10205,35 +10545,44 @@ const CUS360Demo = () => {
                     section.preferences.length > 0 &&
                     section.name.includes("消費") && (
                       <div className="grid grid-cols-3 gap-2">
-                        {section.preferences.map((item, i) => (
+                        {section.preferences.map((item, i) => {
+                          const catName = item.category || item.name || '';
+                          const spInsight = buildSpendingInsight(item, customer);
+                          const hasSignal = (spInsight.crossRef || spInsight.seasonal) && i < 3;
+                          return (
                           <div
                             key={i}
-                            className="p-2 bg-gray-50 rounded-md text-xs"
+                            className={`p-2 rounded-md text-xs cursor-pointer hover:shadow-md transition-all border ${
+                              hasSignal ? 'bg-amber-50 border-amber-100 hover:bg-amber-100' : 'bg-gray-50 border-transparent hover:bg-teal-50 hover:border-teal-100'
+                            }`}
+                            onClick={() => setInsightModal({ type: 'spending', data: spInsight, customer })}
                           >
                             <div className="flex items-center justify-between mb-1">
                               <span className="font-medium truncate">
-                                {item.category || item.name}
+                                {catName}
                               </span>
-                              <span className="text-xs text-gray-600">
-                                {item.score || item.percentage || ""}
-                              </span>
+                              <div className="flex items-center gap-1">
+                                {hasSignal && (
+                                  <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px] font-semibold">優先</span>
+                                )}
+                                <span className="text-xs text-gray-600">
+                                  {item.score || item.percentage || ""}
+                                </span>
+                              </div>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
                               <div
                                 className="h-2 rounded-full bg-gradient-to-r from-teal-200 to-teal-600"
-                                style={{
-                                  width:
-                                    item.score || item.percentage || "0%",
-                                }}
+                                style={{ width: item.score || item.percentage || "0%" }}
                               ></div>
                             </div>
+                            <div className="mt-1.5 text-[10px] text-teal-600">點擊查看適合產品</div>
                             {item.amount && (
-                              <div className="mt-1 text-[11px] text-gray-600">
-                                {item.amount}
-                              </div>
+                              <div className="mt-0.5 text-[11px] text-gray-600">{item.amount}</div>
                             )}
                           </div>
-                        ))}
+                        );
+                        })}
                       </div>
                     )}
 
@@ -10251,15 +10600,6 @@ const CUS360Demo = () => {
                             <div className="flex items-center justify-between mb-1">
                               <span className="font-medium truncate">
                                 {channelLabel(item.channel || item.name)}
-                              </span>
-                              <span
-                                className={`px-2 py-0.5 rounded text-[10px] font-medium ${
-                                  parsePercent(item.score) >= 80
-                                    ? "bg-teal-100 text-teal-800"
-                                    : "bg-gray-100 text-gray-800"
-                                }`}
-                              >
-                                {getPreferenceLabel(item.score || item.usage)}
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
@@ -10484,22 +10824,21 @@ const CUS360Demo = () => {
           },
           {
             name: "消費類別偏好",
-            preferences: Object.entries(customer.spendingCategories || {})
-              .map(([category, score]) => ({
-                category: getSpendingCategoryLabel(category),
-                score: `${Math.round((score || 0) * 100)}%`,
-              }))
-              .sort((a, b) => {
-                const scoreA = parseInt(a.score) || 0;
-                const scoreB = parseInt(b.score) || 0;
-                return scoreB - scoreA; // 从高到低排序
-              })
-              .slice(0, 6), // 限制只顯示前 6 個
+            preferences: (() => {
+              const entries = Object.entries(customer.spendingCategories || {});
+              const total = entries.reduce((sum, [, v]) => sum + (v || 0), 0) || 1;
+              return entries
+                .map(([category, score]) => ({
+                  category: getSpendingCategoryLabel(category),
+                  score: `${Math.round(((score || 0) / total) * 100)}%`,
+                }))
+                .sort((a, b) => parseInt(b.score) - parseInt(a.score))
+                .slice(0, 6);
+            })(),
           },
           {
             name: "通路偏好",
             preferences: (() => {
-              // Derive channel preferences from customer.preferredChannels
               const chLabels = {
                 mobile_app: "行動銀行",
                 email: "電子郵件",
@@ -10512,15 +10851,19 @@ const CUS360Demo = () => {
                 appPush: "App 推播",
                 linePush: "Line 推播",
               };
-              const chScores = {
-                mobile_app: 90, wealth_portal: 88, email: 75,
-                web: 70, online_banking: 70, phone: 60,
-                appPush: 55, linePush: 55, sms: 45, branch: 40,
+              // Base interaction counts by channel type (simulating relative frequency)
+              const chBase = {
+                mobile_app: 45, wealth_portal: 40, email: 35,
+                web: 30, online_banking: 30, phone: 25,
+                appPush: 20, linePush: 20, sms: 15, branch: 10,
               };
               const channels = customer.preferredChannels || ["mobile_app"];
-              return channels.slice(0, 4).map((ch, i) => ({
+              const shown = channels.slice(0, 4);
+              const rawCounts = shown.map(ch => chBase[ch] || 20);
+              const totalCount = rawCounts.reduce((s, v) => s + v, 0) || 1;
+              return shown.map((ch, i) => ({
                 channel: chLabels[ch] || ch,
-                score: `${Math.max(30, (chScores[ch] || 60) - i * 10)}%`,
+                score: `${Math.round((rawCounts[i] / totalCount) * 100)}%`,
                 note: i === 0 ? "主要聯繫通路" : "次要通路",
               }));
             })(),
@@ -10594,6 +10937,39 @@ const CUS360Demo = () => {
     try {
       return (
         <div className="space-y-2">
+          {/* Insight Modal */}
+          {renderInsightModal()}
+
+          {/* Advisor Summary Bar */}
+          {(() => {
+            const summary = getAdvisorSummary(selectedCustomer);
+            if (!summary) return null;
+            return (
+              <div className={`rounded-lg px-4 py-3 flex items-center justify-between gap-3 ${summary.overlapHighlight ? 'bg-amber-50 border border-amber-200' : 'bg-teal-50 border border-teal-100'}`}>
+                <div className="flex items-center gap-3 flex-wrap flex-1">
+                  <span className="font-semibold text-gray-800 text-sm">理專行動建議：</span>
+                  {summary.signals.map((s, i) => (
+                    <span key={i} className="text-sm text-gray-700">{s.text}</span>
+                  ))}
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={() => { setAssistantOpen(true); setTimeout(() => sendAssistant('產品推薦'), 100); }}
+                    className="px-3 py-1.5 text-xs font-medium bg-teal-600 text-white rounded-lg hover:bg-teal-700 whitespace-nowrap"
+                  >
+                    立即推薦
+                  </button>
+                  <button
+                    onClick={() => { setAssistantOpen(true); setTimeout(() => sendAssistant('問候話術'), 100); }}
+                    className="px-3 py-1.5 text-xs font-medium bg-white text-teal-700 border border-teal-300 rounded-lg hover:bg-teal-50 whitespace-nowrap"
+                  >
+                    問候話術
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Customer Header Card */}
           <div className="bg-gradient-to-r from-teal-600 to-teal-800 text-white p-4 rounded-lg shadow-lg">
             <div className="flex justify-between items-start">
@@ -10857,9 +11233,9 @@ const CUS360Demo = () => {
                 </div>
                 <div className="px-2 pt-2 pb-1 flex gap-1.5 flex-wrap border-t border-gray-100">
                   {[
-                    { label: '📋 客戶摘要', prompt: '客戶摘要' },
-                    { label: '👋 問候話術', prompt: '問候話術' },
-                    { label: '🎯 產品推薦', prompt: '產品推薦' },
+                    { label: '客戶摘要', prompt: '客戶摘要' },
+                    { label: '問候話術', prompt: '問候話術' },
+                    { label: '產品推薦', prompt: '產品推薦' },
                   ].map(({ label, prompt }) => (
                     <button
                       key={prompt}
@@ -11233,15 +11609,17 @@ const CUS360Demo = () => {
                       <div className={SUBCARD}>
                         <div className="font-bold mb-2">通路互動紀錄</div>
                         {(() => {
-                          const ch = generateCustomerInteractions(
-                            selectedCustomer,
-                            5,
-                            7
-                          ).map((it, i) => ({
-                            ...it,
-                            status: "已發生",
-                            customerId: selectedCustomer.id,
-                          }));
+                          const rawCh = generateCustomerInteractions(selectedCustomer, 5, 7);
+                          const parseTS2 = (s) => { const d = new Date(s.replace(/\//g, "-")); return isNaN(d) ? 0 : d.getTime(); };
+                          const maxTime = Math.max(...rawCh.map(it => parseTS2(it.time)));
+                          const custSeed = seedFromId(selectedCustomer);
+                          const showPending = selectedCustomer.id === 'C001' || custSeed % 3 === 0;
+                          let pendingAssigned = false;
+                          const ch = rawCh.map((it) => {
+                            const isNewest = showPending && !pendingAssigned && parseTS2(it.time) === maxTime;
+                            if (isNewest) pendingAssigned = true;
+                            return { ...it, status: isNewest ? "處理中" : "已發生", customerId: selectedCustomer.id, ...(isNewest && selectedCustomer.id === 'C001' ? { detail: "消費爭議款處理" } : {}) };
+                          });
                           return (
                             <InteractionTimeline
                               items={ch}
