@@ -7643,6 +7643,8 @@ const CUS360Demo = () => {
         ].filter((t) => t.score >= 0.65);
         inferred.sort((a, b) => b.score - a.score);
         if (inferred.length > 0) return inferred[0];
+        // No intent signal found for this real customer — do not fall back to demo data
+        return null;
       }
       // Fallback: detailedCustomerData (C196 demo hardcoded profile)
       const sections =

@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [react()],
   server: {
     // Allow Codesandbox preview hosts
-    allowedHosts: ['6zw67f-5173.csb.app', '6zw67f-5175.csb.app', '6zw67f-5176.csb.app'],
+    allowedHosts: ['6zw67f-5173.csb.app', '6zw67f-5175.csb.app', '6zw67f-5176.csb.app','hk3q2w-5173.csb.app'],
     proxy: {
       // Dev proxy to avoid CORS when calling external LLMs
       '/api': {
