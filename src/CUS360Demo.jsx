@@ -6766,6 +6766,7 @@ const CUS360Demo = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [showMaskedData, setShowMaskedData] = useState(true);
   const [activeTab, setActiveTab] = useState("basic");
+  const [pendingAnchor, setPendingAnchor] = useState(null); // { anchorId } — scroll after tab render
   const [filters, setFilters] = useState({
     vipLevel: "",
     riskLevel: "",
@@ -6927,6 +6928,17 @@ const CUS360Demo = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [activeModule, activeTab]);
+
+  // After tab change renders, scroll to a pending anchor (deferred so scroll-to-top fires first)
+  useEffect(() => {
+    if (!pendingAnchor) return;
+    const timer = setTimeout(() => {
+      const el = document.getElementById(pendingAnchor);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      setPendingAnchor(null);
+    }, 80);
+    return () => clearTimeout(timer);
+  }, [pendingAnchor, activeTab]);
 
   // Track query history: record each time a customer detail is viewed (max 5)
   useEffect(() => {
@@ -7165,26 +7177,152 @@ const CUS360Demo = () => {
     return null;
   };
 
+  // === Quick-action generators ===
+
+  const buildCustomerSummaryBlock = (customer) => {
+    if (!customer) return "目前未選擇客戶。請先在左側選擇或搜尋客戶。";
+    const f = getCustomerFinance(customer);
+    const vip = customer.vipLevel || "normal";
+    const seg = (() => {
+      const ls = customer.lifecycleStage || '';
+      if (ls.includes('retire')) return '退休族';
+      if (ls.includes('family')) return '家庭客';
+      if (ls.includes('net_worth') || ls.includes('affluent')) return '高資產族';
+      if (ls.includes('professional')) return '上班族';
+      return (vip === 'VIP' || vip === 'VVIP' || vip === 'VVVIP') ? 'VIP 客' : '一般客';
+    })();
+    const income = f.monthlyIncome ? `NT$${Math.round(f.monthlyIncome / 1000)}k` : '—';
+    const industry = getCustomerIndustry(customer);
+    const topChannel = getTopPreferenceForCustomer("通路偏好", "score", customer);
+    const chText = topChannel
+      ? channelLabel(topChannel.channel || topChannel.name)
+      : (customer.preferredChannels?.[0] || '—');
+    const pp = customer.productPreferences || {};
+    const nameMap = { creditCard: '信用卡', loans: '貸款', investment: '投資', deposits: '存款' };
+    const pastPref = Object.entries(pp).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k])=>nameMap[k]||k).join('/');
+    const intent = getTopIntentTag(customer);
+    const tags = (customer.tags || []).filter(t => !/有效戶|帳戶/.test(t)).slice(0,3);
+    const behav = intent ? intent.name : (tags.join('、') || '—');
+    const riskLabel = { low: '低', medium: '中', high: '高' }[customer.riskLevel || 'medium'] || '中';
+    // Recent records: merge events + channel interactions, sort by date desc, take top 3
+    const _evts = generateCustomerEvents(customer) || [];
+    const _ints = generateCustomerInteractions(customer) || [];
+    const _allRec = [..._evts, ..._ints]
+      .map(r => ({ ...r, _d: new Date(r.time) }))
+      .filter(r => !isNaN(r._d))
+      .sort((a, b) => b._d - a._d)
+      .slice(0, 3);
+    const recentLines = _allRec.length
+      ? _allRec.map(r => {
+          const dateStr = r._d.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
+          const badge = r.status ? `【${r.status}】` : '';
+          return `• ${dateStr} ${r.channel}${badge}：${r.detail}`;
+        }).join('\n')
+      : '—';
+    return [
+      '🧩 客戶摘要',
+      [
+        `姓名：${customer.name || '—'}（${customer.age || '—'}歲）`,
+        `等級：${vip}｜族群：${seg}`,
+        `風險：${riskLabel}（${customer.riskScore || '—'}）｜帳戶：${customer.accountStatus || '—'}`,
+        `收入 / 行業：${income}／${industry}`,
+        `偏好通路：${chText}`,
+        `過去使用產品：${pastPref || '—'}`,
+        `行為洞察：${behav}`,
+        `近期重要事件：\n${recentLines}`,
+      ].join('\n'),
+    ].join('\n\n');
+  };
+
+  const buildGreetingScript = (customer) => {
+    if (!customer) return "目前未選擇客戶。請先在左側選擇或搜尋客戶。";
+    const name = customer.name || '客戶';
+    const lastName = name.charAt(0);
+    const vip = customer.vipLevel || 'normal';
+    const isVIP = vip === 'VVVIP' || vip === 'VVIP';
+    const ls = customer.lifecycleStage || '';
+    const tags = customer.tags || [];
+    const intent = getTopIntentTag(customer);
+    const intentName = intent ? intent.name : '';
+    const topChannel = getTopPreferenceForCustomer("通路偏好", "score", customer);
+    const ch = topChannel
+      ? channelLabel(topChannel.channel || topChannel.name)
+      : (customer.preferredChannels?.[0] || '電話');
+    // Internal context signal — for advisor reference only, not spoken to customer
+    const contextSignal = (() => {
+      if (/旅遊|出國/.test(intentName)) return '近期有旅遊相關行為訊號';
+      if (/房貸|房屋/.test(intentName)) return '近期有房貸相關需求訊號';
+      if (/投資|理財/.test(intentName)) return '近期有投資理財關注訊號';
+      if (/信用卡/.test(intentName)) return '近期有信用卡申辦意圖訊號';
+      if (tags.some(t => /新婚/.test(t))) return '生命事件：新婚（建議主動關心）';
+      if (tags.some(t => /教育/.test(t))) return '有子女教育金規劃需求訊號';
+      if (ls.includes('retire')) return '退休族群，正值規劃關鍵期';
+      if (ls.includes('family')) return '家庭族群，家庭財務規劃需求高';
+      if (ls.includes('young_professional')) return '年輕上班族，理財升級潛力高';
+      return '帳戶近期有互動，建議定期維繫';
+    })();
+    // Natural opener — casual check-in, does not reveal data collection
+    const openers = [
+      `有一陣子沒跟您聯繫了，想說打個招呼，也順便跟您分享一些資訊。`,
+      `最近在整理一些方案的時候，第一個想到您，想說趁這個機會跟您說幾句話。`,
+      `前陣子有個方案讓我馬上想到您，一直想找機會跟您分享。`,
+    ];
+    const opener = openers[(customer.name || '').charCodeAt(0) % openers.length];
+    // Natural transition into product — curiosity-based, not data-revealing
+    const transition = (() => {
+      if (/旅遊|出國/.test(intentName)) return `不知道您最近是否有出國的計畫？我這邊剛好有一個旅遊相關的方案，想說趁機跟您分享一下，花不到幾分鐘，合適再說。`;
+      if (/房貸/.test(intentName)) return `不知道您最近是否有在考慮房屋或資產規劃方面的事情？如果有，我可以先幫您試算一下現在的優惠方案，完全沒有壓力。`;
+      if (/投資|理財/.test(intentName)) return `我這邊剛好有一個和您的狀況很搭的理財方案，想說有沒有機會花幾分鐘跟您說明，不合適也完全沒關係。`;
+      if (/信用卡/.test(intentName)) return `我這邊有一張您可能會有興趣的信用卡，回饋設計和日常消費很搭，想先讓您參考看看。`;
+      if (tags.some(t => /新婚/.test(t))) return `首先恭喜您！成家之後財務規劃也是很重要的一塊，我這邊有一些適合的方案，有沒有機會跟您聊聊？`;
+      if (ls.includes('retire')) return `我這邊有一個很穩健的退休規劃方案，想說花幾分鐘跟您分享，可以依您的步調慢慢規劃，完全不急。`;
+      if (ls.includes('family')) return `我這邊有一些家庭財務規劃的方案，從教育基金到保障都有，有沒有機會跟您聊聊？`;
+      return `如果您近期有任何資金規劃或產品需求，很歡迎跟我說，我們一起討論最適合您的方式。`;
+    })();
+    const nameCall = isVIP ? `${lastName}先生／女士` : name;
+    const mainScript = isVIP
+      ? `${nameCall}您好，我是您的專屬理財顧問。${opener}\n\n${transition}\n\n您現在方便說幾句話嗎？`
+      : `${nameCall}您好，我是行服人員，${opener}\n\n${transition}\n\n不知道您現在方便嗎？`;
+    const lineVersion = isVIP
+      ? `【${nameCall}您好 👋】最近剛好有一個方案想和您分享，方便的話歡迎來電或直接回覆，謝謝您。`
+      : `【${nameCall}您好 👋】有個方案想和您分享，若方便的話歡迎回覆或致電，謝謝您。`;
+    return [
+      '👋 問候話術',
+      `【聯繫觸點（行員參考）】\n${contextSignal}，建議主動安排問候。`,
+      `【完整問候話術（電話 / 當面）】\n${mainScript}`,
+      `【簡版（LINE / SMS）】\n${lineVersion}`,
+      `【溝通小技巧】\n• 開場先寒暄，不要太快切入產品推薦\n• 語氣輕鬆自然，讓客戶感覺在聊天而非被推銷\n• 以「不知道您最近是否有...」引導，讓客戶主動表達需求\n• 若客戶不方便，主動提出預約時間再聊\n• VIP 客戶建議以姓氏稱呼，展現個人化服務`,
+    ].join('\n\n');
+  };
+
   // Generate a concise assistant reply using available customer signals
   const generateAssistantReply = (prompt, customer) => {
     if (!customer) return "目前未選擇客戶。請先在左側選擇或搜尋客戶。";
+
+    // Quick-action shortcut dispatch
+    const _trimmed = (prompt || '').trim();
+    if (_trimmed === '客戶摘要') return buildCustomerSummaryBlock(customer);
+    if (_trimmed === '問候話術') return buildGreetingScript(customer);
+    const _isProdRec = _trimmed === '產品推薦';
     
     // Check for customer-specific configuration
     const customConfig = getCustomerAssistantConfig(customer);
     if (customConfig) {
       // Generate response using customer-specific config variables
       const out = [];
-      out.push('🧩 客戶摘要');
-      out.push(
-        [
-          `年齡／族群：${customConfig.age}／${customConfig.segment}`,
-          `收入 & 產業：${customConfig.income}；${customConfig.industry}`,
-          `偏好通路：${customConfig.preferredChannels.join('、')}`,
-          `過去使用產品：${customConfig.pastProducts.join('／')}`,
-          `行為洞察：\n\n${customConfig.behaviorInsights.join('\n')}`,
-        ].join('\n')
-      );
-      
+      if (!_isProdRec) {
+        out.push('🧩 客戶摘要');
+        out.push(
+          [
+            `年齡／族群：${customConfig.age}／${customConfig.segment}`,
+            `收入 & 產業：${customConfig.income}；${customConfig.industry}`,
+            `偏好通路：${customConfig.preferredChannels.join('、')}`,
+            `過去使用產品：${customConfig.pastProducts.join('／')}`,
+            `行為洞察：\n\n${customConfig.behaviorInsights.join('\n')}`,
+          ].join('\n')
+        );
+      }
+
       out.push('🎯 溝通目標');
       out.push(customConfig.objective);
       
@@ -7222,7 +7360,7 @@ const CUS360Demo = () => {
     const topChannel = getTopPreferenceForCustomer("通路偏好", "score", customer);
     const topProduct = getTopPreferenceForCustomer("產品偏好", "score", customer);
     const topConsumption = getTopPreferenceForCustomer("消費類別偏好", "score", customer);
-    const intent = getTopIntentTag && getTopIntentTag();
+    const intent = getTopIntentTag(customer);
     const f = getCustomerFinance(customer);
     const vip = customer.vipLevel || "normal";
     const risk = customer.riskLevel || "medium";
@@ -7290,16 +7428,18 @@ const CUS360Demo = () => {
       : `開場：您好${customer.name?`，${customer.name}`:''}，我們在${chText}為您準備一個依照您的使用習慣與興趣量身打造的方案。`;
     // Standardized output format per request
     const out = [];
-    out.push('🧩 客戶摘要');
-    out.push(
-      [
-        `年齡/族群：${customer.age||'—'}／${seg}／${vip}`,
-        `收入/行業：${monthlyIncomeFormatted}／${customerIndustry}`,
-        `偏好通路：${chText}`,
-        `過去使用產品：${pastPref||'—'}`,
-        `行為洞察：${behav||'—'}`,
-      ].join('\n')
-    );
+    if (!_isProdRec) {
+      out.push('🧩 客戶摘要');
+      out.push(
+        [
+          `年齡/族群：${customer.age||'—'}／${seg}／${vip}`,
+          `收入/行業：${monthlyIncomeFormatted}／${customerIndustry}`,
+          `偏好通路：${chText}`,
+          `過去使用產品：${pastPref||'—'}`,
+          `行為洞察：${behav||'—'}`,
+        ].join('\n')
+      );
+    }
 
     out.push('🎯 溝通目標');
     const objective = primaryType === 'card' ? '推薦旅遊信用卡' : primaryType === 'loan' ? '推薦信貸降息方案' : primaryType === 'wealth' ? '旅遊/保險方案交叉銷售' : '邀請申請額度調整';
@@ -7415,8 +7555,46 @@ const CUS360Demo = () => {
   };
 
   // get highest-confidence intent tag from detailedCustomerData
-  const getTopIntentTag = () => {
+  const getTopIntentTag = (customer) => {
     try {
+      // Derive intent from the actual customer's tags array first
+      if (customer) {
+        const sp = customer.spendingCategories || {};
+        const pp = customer.productPreferences || {};
+        // Score each intent tag found in the customer's tags string array
+        const intentScorer = (name) => {
+          if (/旅遊|出國/.test(name))
+            return Math.max(sp.travel || 0, sp.overseas || 0) * 0.9 + (pp.creditCard || 0) * 0.1;
+          if (/信用卡/.test(name)) return pp.creditCard || 0;
+          if (/投資|理財/.test(name)) return pp.investment || 0;
+          if (/房貸/.test(name)) return (pp.loans || 0) * 0.8 + (sp.groceries || 0) * 0.2;
+          if (/信貸/.test(name)) return (pp.loans || 0) * 0.7;
+          if (/留學/.test(name)) return sp.education || 0;
+          if (/創業|融資/.test(name)) return 0.45;
+          return 0.5;
+        };
+        const intentTags = (customer.tags || []).filter(
+          (t) => typeof t === "string" && t.includes("意圖")
+        );
+        if (intentTags.length > 0) {
+          const withScores = intentTags.map((name) => ({
+            name,
+            score: intentScorer(name),
+          }));
+          withScores.sort((a, b) => b.score - a.score);
+          return withScores[0];
+        }
+        // No explicit intent tag — infer from strongest spending signal
+        const inferred = [
+          { name: "出國旅遊意圖", score: Math.max(sp.travel || 0, sp.overseas || 0) },
+          { name: "投資理財意圖", score: pp.investment || 0 },
+          { name: "信用卡申辦意圖", score: pp.creditCard || 0 },
+          { name: "房貸需求", score: pp.loans || 0 },
+        ].filter((t) => t.score >= 0.65);
+        inferred.sort((a, b) => b.score - a.score);
+        if (inferred.length > 0) return inferred[0];
+      }
+      // Fallback: detailedCustomerData (C196 demo hardcoded profile)
       const sections =
         (detailedCustomerData &&
           detailedCustomerData.tags &&
@@ -9759,7 +9937,53 @@ const CUS360Demo = () => {
   };
 
   const renderCustomerTags = () => {
-    const tagsData = detailedCustomerData.tags;
+    // Build a tags data structure from the actual selected customer, falling back to demo data
+    const customer = selectedCustomer;
+    const sp = (customer && customer.spendingCategories) || {};
+    const pp = (customer && customer.productPreferences) || {};
+    const intentScorer = (name) => {
+      if (/旅遊|出國/.test(name)) return Math.max(sp.travel || 0, sp.overseas || 0) * 0.9 + (pp.creditCard || 0) * 0.1;
+      if (/信用卡/.test(name)) return pp.creditCard || 0;
+      if (/投資|理財/.test(name)) return pp.investment || 0;
+      if (/房貸/.test(name)) return (pp.loans || 0) * 0.8 + (sp.groceries || 0) * 0.2;
+      if (/信貸/.test(name)) return (pp.loans || 0) * 0.7;
+      if (/留學/.test(name)) return sp.education || 0;
+      if (/創業|融資/.test(name)) return 0.45;
+      return 0.5;
+    };
+    // Build intent tags from customer.tags strings or infer from spending/product data
+    let intentTagList;
+    if (customer) {
+      const explicitIntents = (customer.tags || [])
+        .filter((t) => typeof t === "string" && t.includes("意圖"))
+        .map((name) => ({
+          name,
+          score: intentScorer(name),
+          source: "行為標籤",
+          lastUpdated: "2025-11-20",
+        }));
+      if (explicitIntents.length > 0) {
+        intentTagList = [...explicitIntents].sort((a, b) => b.score - a.score);
+      } else {
+        // Infer from spending/product signals
+        const inferred = [
+          { name: "出國旅遊意圖", score: Math.max(sp.travel || 0, sp.overseas || 0), source: "消費行為推導", lastUpdated: "2025-11-20" },
+          { name: "投資理財意圖", score: pp.investment || 0, source: "資產配置推導", lastUpdated: "2025-11-20" },
+          { name: "信用卡申辦意圖", score: pp.creditCard || 0, source: "刷卡行為推導", lastUpdated: "2025-11-20" },
+          { name: "房貸需求", score: pp.loans || 0, source: "授信行為推導", lastUpdated: "2025-11-20" },
+        ].filter((t) => t.score >= 0.5).sort((a, b) => b.score - a.score);
+        intentTagList = inferred.length > 0 ? inferred : detailedCustomerData.tags.sections.find((s) => s.name.includes("意圖標籤"))?.tags || [];
+      }
+    } else {
+      intentTagList = detailedCustomerData.tags.sections.find((s) => s.name?.includes("意圖標籤"))?.tags || [];
+    }
+    const tagsData = {
+      ...detailedCustomerData.tags,
+      sections: [
+        { name: "意圖標籤", tags: intentTagList },
+        ...detailedCustomerData.tags.sections.filter((s) => !s.name?.includes("意圖標籤")),
+      ],
+    };
     const categories = Object.keys(TAG_CATEGORIES);
     return (
       <div className={CARD}>
@@ -9768,7 +9992,7 @@ const CUS360Demo = () => {
         </h3>
         <div className="space-y-6">
           {tagsData.sections.map((section, idx) => (
-            <div key={idx} className={SUBCARD}>
+            <div key={idx} id={section.name?.includes("意圖") ? "tag-intent" : `tag-section-${idx}`} className={SUBCARD}>
               <h4 className="font-bold text-lg mb-4 text-gray-800">
                 {section.name}
               </h4>
@@ -9916,9 +10140,15 @@ const CUS360Demo = () => {
           </h3>
           <div className="space-y-6">
             {prefsData.sections.map((section, sIdx) => {
+              // Assign stable anchor id based on section name
+              const anchorId = section.name.includes("產品") ? "pref-product"
+                : section.name.includes("消費") ? "pref-spending"
+                : section.name.includes("通路") ? "pref-channel"
+                : section.name.includes("行銷") ? "pref-marketing"
+                : `pref-section-${sIdx}`;
               // Normal rendering for all sections in order
               return (
-                <div key={sIdx} className={SUBCARD}>
+                <div key={sIdx} id={anchorId} className={SUBCARD}>
                   <h4 className="font-bold text-lg mb-4 text-gray-800">
                     {section.name}
                   </h4>
@@ -10268,15 +10498,32 @@ const CUS360Demo = () => {
           },
           {
             name: "通路偏好",
-            preferences: [
-              { channel: "行動銀行", score: "90%", note: "高互動頻率" },
-              { channel: "電子郵件", score: "75%", note: "用於接收行銷與月報" },
-              { channel: "臨櫃", score: "40%", note: "偶爾訪問" },
-            ].sort((a, b) => {
-              const scoreA = parseInt(a.score) || 0;
-              const scoreB = parseInt(b.score) || 0;
-              return scoreB - scoreA; // 从高到低排序
-            }),
+            preferences: (() => {
+              // Derive channel preferences from customer.preferredChannels
+              const chLabels = {
+                mobile_app: "行動銀行",
+                email: "電子郵件",
+                branch: "臨櫃",
+                phone: "電話",
+                sms: "手機簡訊",
+                wealth_portal: "財富管理網",
+                web: "網銀",
+                online_banking: "網銀",
+                appPush: "App 推播",
+                linePush: "Line 推播",
+              };
+              const chScores = {
+                mobile_app: 90, wealth_portal: 88, email: 75,
+                web: 70, online_banking: 70, phone: 60,
+                appPush: 55, linePush: 55, sms: 45, branch: 40,
+              };
+              const channels = customer.preferredChannels || ["mobile_app"];
+              return channels.slice(0, 4).map((ch, i) => ({
+                channel: chLabels[ch] || ch,
+                score: `${Math.max(30, (chScores[ch] || 60) - i * 10)}%`,
+                note: i === 0 ? "主要聯繫通路" : "次要通路",
+              }));
+            })(),
           },
           {
             name: "行銷同意",
@@ -10289,7 +10536,18 @@ const CUS360Demo = () => {
               { label: "偏好頻率", value: "每月", lastUpdated: "2025-09-12" },
               {
                 label: "偏好主題",
-                value: "旅遊/高回饋卡/投資",
+                value: (() => {
+                  const pp = customer.productPreferences || {};
+                  const sp = customer.spendingCategories || {};
+                  const spendMap = {
+                    travel: "旅遊", dining: "餐飲", luxury: "精品", tech: "科技",
+                    education: "教育", healthcare: "醫療", groceries: "生活消費",
+                  };
+                  const prodMap = { creditCard: "高回饋卡", investment: "投資理財", loans: "貸款", deposits: "存款" };
+                  const topSpend = Object.entries(sp).sort((a, b) => b[1] - a[1]).slice(0, 1).map(([k]) => spendMap[k] || k);
+                  const topProd = Object.entries(pp).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k]) => prodMap[k] || k);
+                  return [...new Set([...topSpend, ...topProd])].join("/") || "—";
+                })(),
                 lastUpdated: "2025-09-12",
               },
             ],
@@ -10313,23 +10571,23 @@ const CUS360Demo = () => {
       sections: [],
     };
 
-    // compute top preferences for this selected customer (fallbacks to demo-level)
-    const topChannel = getTopPreference(
+    // compute top preferences for this selected customer
+    const topChannel = getTopPreferenceForCustomer(
       "通路偏好",
       "score",
       selectedCustomer
     );
-    const topProduct = getTopPreference(
+    const topProduct = getTopPreferenceForCustomer(
       "產品偏好",
       "score",
       selectedCustomer
     );
-    const topConsumption = getTopPreference(
+    const topConsumption = getTopPreferenceForCustomer(
       "消費類別偏好",
       "score",
       selectedCustomer
     );
-    const topIntent = getTopIntentTag();
+    const topIntent = getTopIntentTag(selectedCustomer);
     // simulated finance and marketing signals
     const f = getCustomerFinance(selectedCustomer);
 
@@ -10383,29 +10641,41 @@ const CUS360Demo = () => {
                       {selectedCustomer?.age}歲
                     </span>
                     {topChannel && (
-                      <span className="px-2 py-1 bg-teal-100 text-teal-800 rounded-full text-sm font-medium self-end">
+                      <button
+                        onClick={() => { setActiveTab("preferences"); setPendingAnchor("pref-channel"); }}
+                        className="px-2 py-1 bg-teal-100 text-teal-800 rounded-full text-sm font-medium self-end hover:bg-teal-200 transition-colors cursor-pointer"
+                      >
                         通路偏好:{" "}
                         {channelLabel(topChannel.channel || topChannel.name)} (
                         {topChannel.score || topChannel.usage || ""})
-                      </span>
+                      </button>
                     )}
                     {topProduct && (
-                      <span className="px-2 py-1 bg-teal-50 text-teal-800 rounded-full text-sm font-medium self-end">
+                      <button
+                        onClick={() => { setActiveTab("preferences"); setPendingAnchor("pref-product"); }}
+                        className="px-2 py-1 bg-teal-100 text-teal-800 rounded-full text-sm font-medium self-end hover:bg-teal-200 transition-colors cursor-pointer"
+                      >
                         產品偏好: {topProduct.product || topProduct.name} (
                         {topProduct.score || ""})
-                      </span>
+                      </button>
                     )}
                     {topConsumption && (
-                      <span className="px-2 py-1 bg-teal-50 text-teal-800 rounded-full text-sm font-medium self-end">
+                      <button
+                        onClick={() => { setActiveTab("preferences"); setPendingAnchor("pref-spending"); }}
+                        className="px-2 py-1 bg-teal-100 text-teal-800 rounded-full text-sm font-medium self-end hover:bg-teal-200 transition-colors cursor-pointer"
+                      >
                         消費類別偏好: {topConsumption.category || topConsumption.name} (
                         {topConsumption.score || ""})
-                      </span>
+                      </button>
                     )}
                     {topIntent && (
-                      <span className="px-2 py-1 bg-teal-200 text-teal-900 rounded-full text-sm font-medium self-end">
+                      <button
+                        onClick={() => { setActiveTab("tags"); setPendingAnchor("tag-intent"); }}
+                        className="px-2 py-1 bg-teal-100 text-teal-800 rounded-full text-sm font-medium self-end hover:bg-teal-200 transition-colors cursor-pointer"
+                      >
                         意圖: {topIntent.name} (
                         {Math.round((topIntent.score || 0) * 100)}%)
-                      </span>
+                      </button>
                     )}
                   </div>
                 </div>
@@ -10585,7 +10855,22 @@ const CUS360Demo = () => {
                     </div>
                   ))}
                 </div>
-                <div className="p-2 border-t flex items-center gap-2">
+                <div className="px-2 pt-2 pb-1 flex gap-1.5 flex-wrap border-t border-gray-100">
+                  {[
+                    { label: '📋 客戶摘要', prompt: '客戶摘要' },
+                    { label: '👋 問候話術', prompt: '問候話術' },
+                    { label: '🎯 產品推薦', prompt: '產品推薦' },
+                  ].map(({ label, prompt }) => (
+                    <button
+                      key={prompt}
+                      onClick={() => sendAssistant(prompt)}
+                      className="px-2.5 py-1 text-xs rounded-full bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100 transition-colors whitespace-nowrap"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div className="p-2 flex items-center gap-2">
                   <input
                     type="text"
                     value={assistantInput}
