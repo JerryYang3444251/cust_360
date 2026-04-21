@@ -6069,7 +6069,7 @@ const CUS360Demo = () => {
           ],
         },
         {
-          name: "消費類別偏好",
+          name: "消費偏好",
           preferences: [
             { category: "餐飲", score: "90%" },
             { category: "旅遊", score: "65%" },
@@ -7372,7 +7372,7 @@ const CUS360Demo = () => {
     
     const topChannel = getTopPreferenceForCustomer("通路偏好", "score", customer);
     const topProduct = getTopPreferenceForCustomer("產品偏好", "score", customer);
-    const topConsumption = getTopPreferenceForCustomer("消費類別偏好", "score", customer);
+    const topConsumption = getTopPreferenceForCustomer("消費偏好", "score", customer);
     const intent = getTopIntentTag(customer);
     const f = getCustomerFinance(customer);
     const vip = customer.vipLevel || "normal";
@@ -8148,6 +8148,33 @@ const CUS360Demo = () => {
 
   // Generate customer events: deposit maturity and life events
   const generateCustomerEvents = (customer, n = 4) => {
+    // C001 王小明 — 固定顯示定存到期提醒（搭配消費爭議款處理中情境）
+    if (customer && customer.id === "C001") {
+      const now = new Date();
+      const twoMonthsLater = new Date(now.getFullYear(), now.getMonth() + 2, 15);
+      const past1 = new Date(now.getFullYear() - 2, 3, 20);
+      const past2 = new Date(now.getFullYear() - 4, 8, 5);
+      return [
+        {
+          channel: "定存到期",
+          time: twoMonthsLater.toLocaleDateString("zh-TW") + " 09:00",
+          detail: "您的台幣定存即將到期，建議評估續存/轉存與利率方案。",
+          status: "提醒",
+        },
+        {
+          channel: "人生大事",
+          time: past1.toLocaleDateString("zh-TW") + " 10:00",
+          detail: "結婚：婚姻狀態更新，提供家庭保險與房貸試算。",
+          status: "已發生",
+        },
+        {
+          channel: "人生大事",
+          time: past2.toLocaleDateString("zh-TW") + " 09:30",
+          detail: "購屋：購屋完成，提供房貸與保費整合建議。",
+          status: "已發生",
+        },
+      ];
+    }
     // C196 林怡君 — 固定顯示生子事件（寶寶 6 個月前）及定存即將到期
     if (customer && customer.id === "C196") {
       const sixMonthsAgo = new Date();
@@ -8172,18 +8199,19 @@ const CUS360Demo = () => {
     const seed = seedFromId(customer) + 1357;
     const events = [];
     const now = new Date();
-    // Deposit maturity (upcoming reminder)
-    const d1 = new Date(
-      now.getFullYear(),
-      now.getMonth() + ((seed % 3) + 1),
-      (seed % 28) + 1
-    );
-    events.push({
-      channel: "定存到期",
-      time: d1.toLocaleString(),
-      detail: "您的定存即將到期，建議評估續存/轉存與利率方案。",
-      status: "提醒",
-    });
+    // Upcoming reminder — varied by seed (not always deposit maturity)
+    const reminderType = seed % 5; // 0,1 → 定存到期; 2 → 保單續繳; 3 → 信用卡年費; 4 → 無提醒
+    if (reminderType < 2) {
+      const d1 = new Date(now.getFullYear(), now.getMonth() + ((seed % 3) + 1), (seed % 28) + 1);
+      events.push({ channel: "定存到期", time: d1.toLocaleString(), detail: "您的定存即將到期，建議評估續存/轉存與利率方案。", status: "提醒" });
+    } else if (reminderType === 2) {
+      const d2 = new Date(now.getFullYear(), now.getMonth() + ((seed % 2) + 1), (seed % 20) + 1);
+      events.push({ channel: "保單續繳", time: d2.toLocaleString(), detail: "壽險/醫療險保費即將到期，請確認繳費方式與保障內容是否需調整。", status: "提醒" });
+    } else if (reminderType === 3) {
+      const d3 = new Date(now.getFullYear(), now.getMonth() + 1, (seed % 25) + 1);
+      events.push({ channel: "信用卡年費", time: d3.toLocaleString(), detail: "信用卡年費即將扣款，建議評估是否刷卡達標免年費或升級方案。", status: "提醒" });
+    }
+    // else reminderType === 4 → no upcoming reminder for this customer
     // Life events candidates
     const candidates = [
       {
@@ -10823,7 +10851,7 @@ const CUS360Demo = () => {
             }),
           },
           {
-            name: "消費類別偏好",
+            name: "消費偏好",
             preferences: (() => {
               const entries = Object.entries(customer.spendingCategories || {});
               const total = entries.reduce((sum, [, v]) => sum + (v || 0), 0) || 1;
@@ -10897,6 +10925,15 @@ const CUS360Demo = () => {
           },
         ],
       },
+      interactions: {
+        title: "客戶互動",
+        sections: [
+          {
+            name: "客戶事件紀錄",
+            interactions: generateCustomerEvents(customer),
+          },
+        ],
+      },
     };
   };
 
@@ -10926,7 +10963,7 @@ const CUS360Demo = () => {
       selectedCustomer
     );
     const topConsumption = getTopPreferenceForCustomer(
-      "消費類別偏好",
+      "消費偏好",
       "score",
       selectedCustomer
     );
@@ -10939,36 +10976,6 @@ const CUS360Demo = () => {
         <div className="space-y-2">
           {/* Insight Modal */}
           {renderInsightModal()}
-
-          {/* Advisor Summary Bar */}
-          {(() => {
-            const summary = getAdvisorSummary(selectedCustomer);
-            if (!summary) return null;
-            return (
-              <div className={`rounded-lg px-4 py-3 flex items-center justify-between gap-3 ${summary.overlapHighlight ? 'bg-amber-50 border border-amber-200' : 'bg-teal-50 border border-teal-100'}`}>
-                <div className="flex items-center gap-3 flex-wrap flex-1">
-                  <span className="font-semibold text-gray-800 text-sm">理專行動建議：</span>
-                  {summary.signals.map((s, i) => (
-                    <span key={i} className="text-sm text-gray-700">{s.text}</span>
-                  ))}
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  <button
-                    onClick={() => { setAssistantOpen(true); setTimeout(() => sendAssistant('產品推薦'), 100); }}
-                    className="px-3 py-1.5 text-xs font-medium bg-teal-600 text-white rounded-lg hover:bg-teal-700 whitespace-nowrap"
-                  >
-                    立即推薦
-                  </button>
-                  <button
-                    onClick={() => { setAssistantOpen(true); setTimeout(() => sendAssistant('問候話術'), 100); }}
-                    className="px-3 py-1.5 text-xs font-medium bg-white text-teal-700 border border-teal-300 rounded-lg hover:bg-teal-50 whitespace-nowrap"
-                  >
-                    問候話術
-                  </button>
-                </div>
-              </div>
-            );
-          })()}
 
           {/* Customer Header Card */}
           <div className="bg-gradient-to-r from-teal-600 to-teal-800 text-white p-4 rounded-lg shadow-lg">
@@ -11016,43 +11023,70 @@ const CUS360Demo = () => {
                     <span className="px-2 py-1 bg-teal-300 text-teal-900 rounded-full text-sm font-medium self-end">
                       {selectedCustomer?.age}歲
                     </span>
-                    {topChannel && (
-                      <button
-                        onClick={() => { setActiveTab("preferences"); setPendingAnchor("pref-channel"); }}
-                        className="px-2 py-1 bg-teal-100 text-teal-800 rounded-full text-sm font-medium self-end hover:bg-teal-200 transition-colors cursor-pointer"
-                      >
-                        通路偏好:{" "}
-                        {channelLabel(topChannel.channel || topChannel.name)} (
-                        {topChannel.score || topChannel.usage || ""})
-                      </button>
-                    )}
-                    {topProduct && (
-                      <button
-                        onClick={() => { setActiveTab("preferences"); setPendingAnchor("pref-product"); }}
-                        className="px-2 py-1 bg-teal-100 text-teal-800 rounded-full text-sm font-medium self-end hover:bg-teal-200 transition-colors cursor-pointer"
-                      >
-                        產品偏好: {topProduct.product || topProduct.name} (
-                        {topProduct.score || ""})
-                      </button>
-                    )}
-                    {topConsumption && (
-                      <button
-                        onClick={() => { setActiveTab("preferences"); setPendingAnchor("pref-spending"); }}
-                        className="px-2 py-1 bg-teal-100 text-teal-800 rounded-full text-sm font-medium self-end hover:bg-teal-200 transition-colors cursor-pointer"
-                      >
-                        消費類別偏好: {topConsumption.category || topConsumption.name} (
-                        {topConsumption.score || ""})
-                      </button>
-                    )}
-                    {topIntent && (
-                      <button
-                        onClick={() => { setActiveTab("tags"); setPendingAnchor("tag-intent"); }}
-                        className="px-2 py-1 bg-teal-100 text-teal-800 rounded-full text-sm font-medium self-end hover:bg-teal-200 transition-colors cursor-pointer"
-                      >
-                        意圖: {topIntent.name} (
-                        {Math.round((topIntent.score || 0) * 100)}%)
-                      </button>
-                    )}
+                    {(() => {
+                      const prefs = generateCustomerBasicInfo(selectedCustomer).preferences;
+                      const prodSection = prefs?.sections?.find(s => s.name.includes("產品"));
+                      const spSection = prefs?.sections?.find(s => s.name.includes("消費"));
+                      const productPriorityCount = prodSection?.preferences?.filter(item => {
+                        const sc = parsePercent(item.score);
+                        const insight = buildProductInsight(item, selectedCustomer);
+                        return insight.gap >= 0 && sc >= 70;
+                      }).length ?? 0;
+                      const spendingPriorityCount = spSection?.preferences?.slice(0, 3).filter(item => {
+                        const spInsight = buildSpendingInsight(item, selectedCustomer);
+                        return spInsight.crossRef || spInsight.seasonal;
+                      }).length ?? 0;
+                      const intentScore = topIntent ? (typeof topIntent.score === 'number' ? topIntent.score : parseFloat(topIntent.score || '0')) : 0;
+                      const hasIntentPriority = intentScore >= 0.8;
+                      const custSeed = seedFromId(selectedCustomer);
+                      const hasPendingInteraction = selectedCustomer.id === 'C001' || custSeed % 3 === 0;
+                      const hasAlertEvent = (generateCustomerEvents(selectedCustomer) || []).some(e => e.status === '提醒');
+                      const interactionAlertCount = (hasPendingInteraction ? 1 : 0) + (hasAlertEvent ? 1 : 0);
+                      const hasInteractionAlert = interactionAlertCount > 0;
+                      const CountBadge = ({ n, red }) => (
+                        <span className={`inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold mr-1 ${red ? 'bg-red-300 text-red-900' : 'bg-teal-300 text-teal-900'}`}>{n}</span>
+                      );
+                      return (
+                        <>
+                          {productPriorityCount > 0 && (
+                            <button
+                              onClick={() => { setActiveTab("preferences"); setPendingAnchor("pref-product"); }}
+                              className="flex items-center px-2 py-1 bg-teal-100 text-teal-800 rounded-full text-sm font-medium self-end hover:bg-teal-200 transition-colors cursor-pointer"
+                            >
+                              <CountBadge n={productPriorityCount} />
+                              產品偏好
+                            </button>
+                          )}
+                          {spendingPriorityCount > 0 && (
+                            <button
+                              onClick={() => { setActiveTab("preferences"); setPendingAnchor("pref-spending"); }}
+                              className="flex items-center px-2 py-1 bg-teal-100 text-teal-800 rounded-full text-sm font-medium self-end hover:bg-teal-200 transition-colors cursor-pointer"
+                            >
+                              <CountBadge n={spendingPriorityCount} />
+                              消費偏好
+                            </button>
+                          )}
+                          {hasIntentPriority && (
+                            <button
+                              onClick={() => { setActiveTab("tags"); setPendingAnchor("tag-intent"); }}
+                              className="flex items-center px-2 py-1 bg-teal-100 text-teal-800 rounded-full text-sm font-medium self-end hover:bg-teal-200 transition-colors cursor-pointer"
+                            >
+                              <CountBadge n={1} />
+                              意圖標籤
+                            </button>
+                          )}
+                          {hasInteractionAlert && (
+                            <button
+                              onClick={() => { setActiveTab("interactions"); setPendingAnchor("interaction-pending"); }}
+                              className="flex items-center px-2 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium self-end hover:bg-red-200 transition-colors cursor-pointer"
+                            >
+                              <CountBadge n={interactionAlertCount} red />
+                              互動注意
+                            </button>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -11606,7 +11640,7 @@ const CUS360Demo = () => {
                   {/* Interactions tab: ensure 3-6 interactions and show customer service records */}
                   {activeTab === "interactions" && selectedCustomer && (
                     <div className="mt-4 space-y-3">
-                      <div className={SUBCARD}>
+                      <div id="interaction-pending" className={SUBCARD}>
                         <div className="font-bold mb-2">通路互動紀錄</div>
                         {(() => {
                           const rawCh = generateCustomerInteractions(selectedCustomer, 5, 7);
