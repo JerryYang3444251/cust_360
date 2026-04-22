@@ -7868,7 +7868,7 @@ const CUS360Demo = () => {
         { channel: "網銀", time: sixWeeksAgo.toLocaleString(), detail: "申請定存續存" },
         { channel: "行動銀行", time: twoWeeksAgo.toLocaleString(), detail: "查詢子女教育金試算" },
         { channel: "行動銀行", time: oneWeekAgo.toLocaleString(), detail: "查詢帳戶餘額與近期交易" },
-        { channel: "網銀", time: fourDaysAgo.toLocaleString(), detail: "子女教育金規劃諮詢申請送出" },
+        { channel: "臨櫃", time: fourDaysAgo.toLocaleString(), detail: "子女教育金規劃諮詢申請送出" },
       ];
     }
     const seed = seedFromId(customer) + 201;
