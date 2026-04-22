@@ -7616,6 +7616,13 @@ const CUS360Demo = () => {
         const pp = customer.productPreferences || {};
         // Score each intent tag found in the customer's tags string array
         const intentScorer = (name) => {
+          // C196 林怡君 — 固定分數（與 renderCustomerTags 一致）
+          if (customer.id === 'C196') {
+            if (/子女教育基金|教育基金規劃/.test(name)) return 0.92;
+            if (name === '信用卡申辦意圖') return 0.76;
+            if (name === '投資意圖') return 0.70;
+            if (name === '信貸意圖') return 0.64;
+          }
           if (/旅遊|出國/.test(name))
             return Math.max(sp.travel || 0, sp.overseas || 0) * 0.9 + (pp.creditCard || 0) * 0.1;
           if (/信用卡/.test(name)) return pp.creditCard || 0;
@@ -11051,8 +11058,27 @@ const CUS360Demo = () => {
                         const spInsight = buildSpendingInsight(item, selectedCustomer);
                         return spInsight.crossRef || spInsight.seasonal;
                       }).length ?? 0;
-                      const intentScore = topIntent ? (typeof topIntent.score === 'number' ? topIntent.score : parseFloat(topIntent.score || '0')) : 0;
-                      const hasIntentPriority = intentScore >= 0.8;
+                      // Count all intent tags with score >= 0.8
+                      const allIntentTags = (selectedCustomer?.tags || []).filter(t => typeof t === 'string' && t.includes('意圖'));
+                      const sp2 = selectedCustomer?.spendingCategories || {};
+                      const pp2 = selectedCustomer?.productPreferences || {};
+                      const headerIntentScorer = (name) => {
+                        if (selectedCustomer?.id === 'C196') {
+                          if (/子女教育基金|教育基金規劃/.test(name)) return 0.92;
+                          if (name === '信用卡申辦意圖') return 0.76;
+                          if (name === '投資意圖') return 0.70;
+                          if (name === '信貸意圖') return 0.64;
+                        }
+                        if (/旅遊|出國/.test(name)) return Math.max(sp2.travel || 0, sp2.overseas || 0) * 0.9 + (pp2.creditCard || 0) * 0.1;
+                        if (/信用卡/.test(name)) return pp2.creditCard || 0;
+                        if (/投資|理財/.test(name)) return pp2.investment || 0;
+                        if (/房貸/.test(name)) return (pp2.loans || 0) * 0.8 + (sp2.groceries || 0) * 0.2;
+                        if (/信貸/.test(name)) return (pp2.loans || 0) * 0.7;
+                        if (/留學/.test(name)) return sp2.education || 0;
+                        return 0.5;
+                      };
+                      const intentPriorityCount = allIntentTags.filter(name => headerIntentScorer(name) >= 0.8).length;
+                      const hasIntentPriority = intentPriorityCount > 0;
                       const custSeed = seedFromId(selectedCustomer);
                       const hasPendingInteraction = selectedCustomer.id === 'C001' || custSeed % 3 === 0;
                       const hasAlertEvent = (generateCustomerEvents(selectedCustomer) || []).some(e => e.status === '提醒');
@@ -11086,7 +11112,7 @@ const CUS360Demo = () => {
                               onClick={() => { setActiveTab("tags"); setPendingAnchor("tag-intent"); }}
                               className="flex items-center px-2 py-1 bg-teal-100 text-teal-800 rounded-full text-sm font-medium self-end hover:bg-teal-200 transition-colors cursor-pointer"
                             >
-                              <CountBadge n={1} />
+                              <CountBadge n={intentPriorityCount} />
                               意圖標籤
                             </button>
                           )}
