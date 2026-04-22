@@ -1865,9 +1865,12 @@ const CUS360Demo = () => {
         "新手媽媽",
         "家庭導向",
         "教育金規劃需求",
-        "留學意圖",
         "數位通路使用者",
         "有效戶",
+        "子女教育基金規劃意圖",
+        "信用卡申辦意圖",
+        "投資意圖",
+        "信貸意圖",
       ],
     },
     {
@@ -7873,7 +7876,7 @@ const CUS360Demo = () => {
         { channel: "網銀", time: sixWeeksAgo.toLocaleString(), detail: "申請定存續存" },
         { channel: "行動銀行", time: twoWeeksAgo.toLocaleString(), detail: "查詢子女教育金試算" },
         { channel: "行動銀行", time: oneWeekAgo.toLocaleString(), detail: "查詢帳戶餘額與近期交易" },
-        { channel: "行動銀行", time: fourDaysAgo.toLocaleString(), detail: "登入並查詢餘額" },
+        { channel: "網銀", time: fourDaysAgo.toLocaleString(), detail: "子女教育金規劃諮詢申請送出" },
       ];
     }
     const seed = seedFromId(customer) + 201;
@@ -8177,24 +8180,25 @@ const CUS360Demo = () => {
         },
       ];
     }
-    // C196 林怡君 — 固定顯示生子事件（寶寶 6 個月前）及定存即將到期
+    // C196 林怡君 — 生子事件（6 個月前）+ 教育金規劃申請處理中
+    // 定存已於 6 週前完成續存（見通路互動紀錄），故不再顯示定存到期提醒
     if (customer && customer.id === "C196") {
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-      const twoMonthsLater = new Date();
-      twoMonthsLater.setMonth(twoMonthsLater.getMonth() + 2);
+      const oneMonthLater = new Date();
+      oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
       return [
+        {
+          channel: "保單續繳",
+          time: oneMonthLater.toLocaleDateString("zh-TW") + " 09:00",
+          detail: "新生兒醫療險首次年繳即將到期，建議確認保障內容並視需要調整。",
+          status: "提醒",
+        },
         {
           channel: "人生大事",
           time: sixMonthsAgo.toLocaleString(),
           detail: "生子：新生兒相關教育基金與保險建議。",
           status: "已發生",
-        },
-        {
-          channel: "定存到期",
-          time: twoMonthsLater.toLocaleString(),
-          detail: "您的定存即將到期，建議評估續存/轉存與利率方案。",
-          status: "提醒",
         },
       ];
     }
@@ -9941,10 +9945,14 @@ const CUS360Demo = () => {
   const InteractionTimeline = ({ items = [], onItemClick = null }) => {
     if (!items.length)
       return <div className="text-xs text-gray-500">無互動紀錄</div>;
-    // Sort descending by time if parseable
+    // Sort descending by time (newest first → leftmost)
+    // Handles Chinese locale strings like "2026/4/2 上午12:00:00" and "2025/12/15 09:00"
     const parseTS = (s) => {
-      const d = new Date(s.replace(/\//g, "-"));
-      return isNaN(d) ? new Date() : d;
+      // Extract YYYY/M/D or YYYY-M-D from any locale string
+      const m = String(s).match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+      if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+      const d = new Date(s);
+      return isNaN(d) ? new Date(0) : d;
     };
     const data = [...items].sort((a, b) => parseTS(b.time) - parseTS(a.time));
     return (
@@ -10312,6 +10320,11 @@ const CUS360Demo = () => {
       if (/信貸/.test(name)) return (pp.loans || 0) * 0.7;
       if (/留學/.test(name)) return sp.education || 0;
       if (/創業|融資/.test(name)) return 0.45;
+      if (/子女教育基金|教育基金規劃/.test(name)) return 0.92;
+      // New-mom supplementary intents — fixed scores for C196
+      if (name === "信用卡申辦意圖") return customer?.id === "C196" ? 0.76 : (pp.creditCard || 0);
+      if (name === "投資意圖") return customer?.id === "C196" ? 0.70 : (pp.investment || 0);
+      if (name === "信貸意圖") return customer?.id === "C196" ? 0.64 : ((pp.loans || 0) * 0.7);
       return 0.5;
     };
     // Build intent tags from customer.tags strings or infer from spending/product data
@@ -11646,7 +11659,7 @@ const CUS360Demo = () => {
                         <div className="font-bold mb-2">通路互動紀錄</div>
                         {(() => {
                           const rawCh = generateCustomerInteractions(selectedCustomer, 5, 7);
-                          const parseTS2 = (s) => { const d = new Date(s.replace(/\//g, "-")); return isNaN(d) ? 0 : d.getTime(); };
+                          const parseTS2 = (s) => { const m = String(s).match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/); if (m) return new Date(+m[1], +m[2]-1, +m[3]).getTime(); const d = new Date(s); return isNaN(d) ? 0 : d.getTime(); };
                           const maxTime = Math.max(...rawCh.map(it => parseTS2(it.time)));
                           const custSeed = seedFromId(selectedCustomer);
                           const showPending = selectedCustomer.id === 'C001' || custSeed % 3 === 0;
