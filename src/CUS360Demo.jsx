@@ -597,21 +597,21 @@ const CUS360Demo = () => {
       name: "王小明",
       nameEn: "",
       age: 35,
-      vipLevel: "VIP",
-      riskScore: "A",
+      vipLevel: "VVVIP",
+      riskScore: "A+",
       riskLevel: "low",
       accountStatus: "active",
       phone: "0912-345-678",
       idCard: "A123456789",
       creditCard: "4559-XX-XXXX-1001",
       accountNumber: "004-1234567-1",
-      tags: ["高頻交易客戶", "數位通路使用者"],
+      tags: ["財富管理需求", "高頻交易客戶", "投資理財意圖", "出國旅遊意圖"],
       email: "wangxm@example.com",
       address: "台北市信義區忠孝東路五段",
       city: "台北市",
-      preferredContact: "mobile",
+      preferredContact: "email",
       marketingOptIn: true,
-      preferredChannels: ["email", "mobile_app"],
+      preferredChannels: ["wealth_portal", "email", "phone"],
       marketingChannels: {
         email: true,
         appPush: true,
@@ -619,21 +619,21 @@ const CUS360Demo = () => {
         sms: true,
       },
       productPreferences: {
-        creditCard: 0.85,
-        loans: 0.2,
-        deposits: 0.6,
-        investment: 0.75,
+        creditCard: 0.92,
+        loans: 0.08,
+        deposits: 0.55,
+        investment: 0.93,
       },
       spendingCategories: {
-        dining: 0.9,
-        travel: 0.6,
-        groceries: 0.4,
-        entertainment: 0.7,
-        luxury: 0.3,
-        overseas: 0.5,
+        dining: 0.85,
+        travel: 0.88,
+        groceries: 0.35,
+        entertainment: 0.65,
+        luxury: 0.78,
+        overseas: 0.82,
       },
       lifecycleStage: "established_professional",
-      lifetimeValueTier: "gold",
+      lifetimeValueTier: "diamond",
     },
     {
       id: "C002",
@@ -5958,7 +5958,7 @@ const CUS360Demo = () => {
       sections: [
         {
           name: "客戶資產負債資訊",
-          data: [{ label: "個人資產", value: "NT$ 5,200,000" }],
+          data: [{ label: "個人資產", value: "NT$ 49,043,662" }],
         },
       ],
     },
@@ -6183,13 +6183,51 @@ const CUS360Demo = () => {
     return Array.from(set);
   })();
 
+  // VIP-tag incompatibility rules: tags that must NOT appear for certain VIP levels
+  const VIP_TAG_BLACKLIST = {
+    // VVVIP & VVIP: 高端客戶不應有負向財務標籤
+    VVVIP: [
+      "低收益客戶",
+      "頻繁預借現金",
+      "近期首次產生循環利息",
+      "長期信卡循環利息",
+      "刷卡經常額度不足",
+      "經常在信卡額度上限邊緣",
+      "信卡臨時額度上調",
+      "頻繁聯絡客服",
+    ],
+    VVIP: [
+      "低收益客戶",
+      "頻繁預借現金",
+      "近期首次產生循環利息",
+      "長期信卡循環利息",
+      "刷卡經常額度不足",
+      "信卡臨時額度上調",
+    ],
+    // VIP: 不應有明顯負向信用標籤
+    VIP: [
+      "低收益客戶",
+      "長期信卡循環利息",
+    ],
+  };
+
+  // VIP-tag allowlist: tags that should be preferred for high VIP levels
+  const VIP_TAG_PREFERRED = {
+    VVVIP: ["有投資經驗用戶", "有近期投資行銷回應紀錄", "定期投資金額增加", "定期投資頻率增加", "高累計現金與點數回饋", "頻繁調整定期投資設定"],
+    VVIP:  ["有投資經驗用戶", "有近期投資行銷回應紀錄", "定期投資金額增加", "高累計現金與點數回饋"],
+  };
+
   // Helper: assign sample tags by category to each customer
   const attachStructuredTags = (customer) => {
     const seed = seedFromId(customer) + 777;
+    const vipBlacklist = VIP_TAG_BLACKLIST[customer.vipLevel] || [];
+    const filterByVip = (arr) => arr.filter((t) => !vipBlacklist.includes(t));
     const pick = (arr, n = 2) => {
+      const filtered = filterByVip(arr);
+      const pool = filtered.length > 0 ? filtered : arr;
       const out = [];
       for (let i = 0; i < n; i++) {
-        out.push(arr[(seed + i * 3) % arr.length]);
+        out.push(pool[(seed + i * 3) % pool.length]);
       }
       return Array.from(new Set(out));
     };
@@ -6218,6 +6256,19 @@ const CUS360Demo = () => {
         name: t,
       }))
     );
+    // For high-VIP customers, inject preferred tags if none are already present
+    const preferred = VIP_TAG_PREFERRED[customer.vipLevel] || [];
+    if (preferred.length > 0) {
+      const hasPref = structured.some((t) => preferred.includes(t.name));
+      if (!hasPref) {
+        const prefTag = preferred[seed % preferred.length];
+        // Find its category
+        const prefCat = Object.entries(TAG_CATEGORIES).find(([, tags]) => tags.includes(prefTag));
+        if (prefCat && !structured.some((t) => t.name === prefTag)) {
+          structured.push({ category: prefCat[0], name: prefTag });
+        }
+      }
+    }
     // Persona-aligned tag augmentation: map persona traits to existing taxonomy tags
     const personaTagMap = {
       C012: [
