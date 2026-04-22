@@ -7117,69 +7117,6 @@ const CUS360Demo = () => {
   const getCustomerAssistantConfig = (customer) => {
     if (!customer) return null;
     
-    // Special configuration for customer C196 (林怡君 - education fund planning)
-    if (customer.id === "C196") {
-      return {
-        age: 32,
-        segment: "家庭客／成長型客群",
-        income: "中等穩定收入",
-        industry: "外商行銷企劃",
-        preferredChannels: ["財富管理網", "理專面對面諮詢"],
-        pastProducts: ["存款", "定存", "基礎型保險"],
-        behaviorInsights: ["新手媽媽（小孩 6 個月）", "對「子女未來教育」主動關心", "偏好穩健、不希望一次投入過高金額"],
-        objective: "推薦「子女出國留學教育基金 — 長期分階段投資規劃方案」\n（結合：穩健型投資＋教育金目標模擬，不強調短期報酬）",
-        mainOpening: `${customer.name || '林怡君'}您好，我這邊有一個專為家庭客戶設計的「子女教育基金規劃方案」想跟您分享。不少有孩子的家長會在這個階段開始規劃，現在開始投入的金額彈性最高，長期下來累積的空間也最大。今天可以一起看看是否符合您的想法。`,
-        shortOpening: "您好，我有一個「教育基金長期規劃方案」想跟您分享，金額彈性、風險相對穩健，要不要花幾分鐘一起評估看看？",
-        whyRecommend: [
-          "這個階段開始規劃，未來可備用的金額空間最大、每月投入壓力也最小",
-          "教育基金目標通常需要 10～18 年長期累積，分期定額模式可增大長期複利效果",
-          "方案以穩健型為主，分期投入、長期複利為核心，不需一次投入大筆資金，適合各種生活節奏",
-          "許多家長都擔心「要從何時開始」，其實越早開始，每月負擔越少、就越容易長期執行",
-        ],
-        script: `${customer.name || '林怡君'}您好，很多家長在孩子還小的時候會開始思考「未來教育基金」這個問題。教育基金的重點在於「越早開始、每月負擔越少」，早點起步，長期複利的空間就越大。我幫您設計的是一個每月金額彈性、可以長期累積的教育基金規劃。我們可以直接在財富管理網模擬給您看，不是馬上決定，而是先看看「如果現在開始，未來大概可以準備到多少」，再一起調整到您安心的節奏。`,
-        objections: [
-          {
-            question: "「我會不會現在規劃太早？」",
-            answer: "其實現在開始反而壓力最小，金額可以很彈性，等孩子長大再開始，投入金額通常會高很多。",
-          },
-          {
-            question: "「我怕風險，萬一虧錢怎麼辦？」",
-            answer: "我們是以穩健型為主，而且是長期目標，不是短期進出，系統也會定期檢視、調整比例，讓風險在可控範圍內。",
-          },
-          {
-            question: "「我現在育兒花費很多，怕負擔不了。」",
-            answer: "沒關係，我們可以從一個不影響生活的小金額開始，之後如果收入或狀況改變，再調整也很彈性。",
-          },
-        ],
-        closing: `不如我先幫您模擬三種不同投入方案，今天不一定要決定，但可以先把「孩子未來教育基金的輪廓」建立起來。如果您覺得其中一個方式適合，我可以直接在財富管理網幫您設定，流程很簡單，之後也都有提醒與檢視頻率，可以隨時調整。`,
-        plans: [
-          {
-            type: "保守型",
-            monthlyAmount: "NT$3,000",
-            targetYears: 18,
-            estimatedTotal: "約 NT$90 萬（含保守預期報酬）",
-            note: "以定存、短期債券為主，波動最低，適合不接受任何風險的家庭。",
-          },
-          {
-            type: "穩健型（建議）",
-            monthlyAmount: "NT$5,000",
-            targetYears: 18,
-            estimatedTotal: "約 NT$180 萬（預期年化報酬 3-5%）",
-            note: "搭配定期定額基金＋部分保單，長期複利效果佳，兼顧風險保障，為最推薦方案。",
-            recommended: true,
-          },
-          {
-            type: "成長型",
-            monthlyAmount: "NT$8,000",
-            targetYears: 18,
-            estimatedTotal: "約 NT$320 萬（預期年化報酬 6-8%）",
-            note: "較高比例配置股票型基金，長期報酬潛力高，但需承擔短期波動，適合風險接受度較高者。",
-          },
-        ],
-        compliance: "提醒您，本次說明僅為理財規劃建議，非保證收益；相關產品內容與費用將以正式說明文件與公告為準。本次諮詢將依規定進行紀錄。",
-      };
-    }
-    
     return null;
   };
 
@@ -7394,6 +7331,7 @@ const CUS360Demo = () => {
       else if (/信用卡/.test(_forcedIntentName)) prodText = '高回饋現金回饋卡';
       else if (/旅遊|出國/.test(_forcedIntentName)) prodText = '信用卡旅遊權益方案';
       else if (/房貸/.test(_forcedIntentName)) prodText = '房貸試算方案';
+      else if (/教育基金|子女教育|育兒/.test(_forcedIntentName)) prodText = '子女教育基金規劃方案';
       else if (/信貸/.test(_forcedIntentName)) prodText = '個人信用貸款';
       else if (/留學/.test(_forcedIntentName)) prodText = '留學教育貸款';
     } else if (_forcedType === 'product' && _forcedLabel) {
@@ -7418,8 +7356,10 @@ const CUS360Demo = () => {
       else prodText = `${_forcedLabel}相關回饋方案`;
     } else {
       const isTravelIntent = /旅遊|出國/.test(intentName || "");
+      const isEducationFundIntent = /教育基金|子女教育|育兒/.test(intentName || "");
       const prefersCard = normalizeProd(prodText).includes("card") || /信用卡|卡|card/.test(prodText);
-      if (isTravelIntent && !prefersCard) prodText = "信用卡旅遊權益方案";
+      if (isEducationFundIntent) prodText = "子女教育基金規劃方案";
+      else if (isTravelIntent && !prefersCard) prodText = "信用卡旅遊權益方案";
     }
     // If deposits/wealth intent conflicts with loans, keep deposits/wealth consistent for low risk
     const isWealthLike = /投資|基金|wealth|理財/.test(prodText);
@@ -7616,13 +7556,7 @@ const CUS360Demo = () => {
         const pp = customer.productPreferences || {};
         // Score each intent tag found in the customer's tags string array
         const intentScorer = (name) => {
-          // C196 林怡君 — 固定分數（與 renderCustomerTags 一致）
-          if (customer.id === 'C196') {
-            if (/子女教育基金|教育基金規劃/.test(name)) return 0.92;
-            if (name === '信用卡申辦意圖') return 0.76;
-            if (name === '投資意圖') return 0.70;
-            if (name === '信貸意圖') return 0.64;
-          }
+          if (/子女教育基金|教育基金規劃/.test(name)) return (sp.education || 0) * 0.6 + (sp.childcare || 0) * 0.4;
           if (/旅遊|出國/.test(name))
             return Math.max(sp.travel || 0, sp.overseas || 0) * 0.9 + (pp.creditCard || 0) * 0.1;
           if (/信用卡/.test(name)) return pp.creditCard || 0;
@@ -10320,6 +10254,7 @@ const CUS360Demo = () => {
     const sp = (customer && customer.spendingCategories) || {};
     const pp = (customer && customer.productPreferences) || {};
     const intentScorer = (name) => {
+      if (/子女教育基金|教育基金規劃/.test(name)) return (sp.education || 0) * 0.6 + (sp.childcare || 0) * 0.4;
       if (/旅遊|出國/.test(name)) return Math.max(sp.travel || 0, sp.overseas || 0) * 0.9 + (pp.creditCard || 0) * 0.1;
       if (/信用卡/.test(name)) return pp.creditCard || 0;
       if (/投資|理財/.test(name)) return pp.investment || 0;
@@ -10327,11 +10262,6 @@ const CUS360Demo = () => {
       if (/信貸/.test(name)) return (pp.loans || 0) * 0.7;
       if (/留學/.test(name)) return sp.education || 0;
       if (/創業|融資/.test(name)) return 0.45;
-      if (/子女教育基金|教育基金規劃/.test(name)) return 0.92;
-      // New-mom supplementary intents — fixed scores for C196
-      if (name === "信用卡申辦意圖") return customer?.id === "C196" ? 0.76 : (pp.creditCard || 0);
-      if (name === "投資意圖") return customer?.id === "C196" ? 0.70 : (pp.investment || 0);
-      if (name === "信貸意圖") return customer?.id === "C196" ? 0.64 : ((pp.loans || 0) * 0.7);
       return 0.5;
     };
     // Build intent tags from customer.tags strings or infer from spending/product data
@@ -11063,12 +10993,7 @@ const CUS360Demo = () => {
                       const sp2 = selectedCustomer?.spendingCategories || {};
                       const pp2 = selectedCustomer?.productPreferences || {};
                       const headerIntentScorer = (name) => {
-                        if (selectedCustomer?.id === 'C196') {
-                          if (/子女教育基金|教育基金規劃/.test(name)) return 0.92;
-                          if (name === '信用卡申辦意圖') return 0.76;
-                          if (name === '投資意圖') return 0.70;
-                          if (name === '信貸意圖') return 0.64;
-                        }
+                        if (/子女教育基金|教育基金規劃/.test(name)) return (sp2.education || 0) * 0.6 + (sp2.childcare || 0) * 0.4;
                         if (/旅遊|出國/.test(name)) return Math.max(sp2.travel || 0, sp2.overseas || 0) * 0.9 + (pp2.creditCard || 0) * 0.1;
                         if (/信用卡/.test(name)) return pp2.creditCard || 0;
                         if (/投資|理財/.test(name)) return pp2.investment || 0;
