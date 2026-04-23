@@ -17,6 +17,195 @@ import {
   RotateCcw,
 } from "lucide-react";
 
+// ── CustomerProductTree ────────────────────────────────────────────────────
+// Hierarchical product tree: L1 → L2 → L4-group (grouped by type, detail panel inside).
+// Same-type products are grouped under one row; expanding shows all instances stacked.
+// Defined outside CUS360Demo so the component reference is stable and
+// React does NOT unmount/remount it on every parent re-render.
+const CustomerProductTree = ({ products = [] }) => {
+  const [expanded, setExpanded] = React.useState({});
+  const toggle = (key) =>
+    setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  // Build L1 → L2 → L4label → [products]  (group same-type together)
+  const tree = {};
+  products.forEach((p) => {
+    if (!tree[p.l1]) tree[p.l1] = {};
+    if (!tree[p.l1][p.l2]) tree[p.l1][p.l2] = {};
+    if (!tree[p.l1][p.l2][p.l4]) tree[p.l1][p.l2][p.l4] = [];
+    tree[p.l1][p.l2][p.l4].push(p);
+  });
+
+  const L1_STYLE = {
+    存款:  { badge: "bg-teal-100 text-teal-800" },
+    信用卡: { badge: "bg-blue-100 text-blue-800" },
+    貸款:  { badge: "bg-amber-100 text-amber-800" },
+    財管:  { badge: "bg-purple-100 text-purple-800" },
+  };
+
+  const Arrow = ({ open }) => (
+    <span
+      className="text-gray-400 font-bold transition-transform duration-200"
+      style={{ display: "inline-block", transform: open ? "rotate(90deg)" : "none" }}
+    >
+      ›
+    </span>
+  );
+
+  if (!products.length)
+    return <div className="text-sm text-gray-400 py-2">尚無產品資料</div>;
+
+  return (
+    <div className="space-y-2">
+      {Object.entries(tree).map(([l1, l2Map]) => {
+        const isL1Open = !!expanded[l1];
+        // total = number of unique L4 groups (not raw product count)
+        const totalGroups = Object.values(l2Map).reduce(
+          (s, l4Map) => s + Object.keys(l4Map).length, 0
+        );
+        const style = L1_STYLE[l1] || { badge: "bg-gray-100 text-gray-700" };
+        return (
+          <div key={l1} className="border border-gray-200 rounded-lg overflow-hidden">
+            {/* L1 row */}
+            <button
+              className={`w-full flex items-center justify-between px-4 py-3 transition-colors ${
+                isL1Open ? "bg-teal-50 border-b border-teal-200" : "bg-gray-50 hover:bg-gray-100"
+              }`}
+              onClick={() => toggle(l1)}
+            >
+              <div className="flex items-center gap-3">
+                <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${style.badge}`}>{l1}</span>
+                <span className="text-xs text-gray-500 bg-white border rounded-full px-2 py-0.5">
+                  {totalGroups} 項產品
+                </span>
+              </div>
+              <Arrow open={isL1Open} />
+            </button>
+
+            {isL1Open && (
+              <div className="divide-y divide-gray-100">
+                {Object.entries(l2Map).map(([l2, l4Map]) => {
+                  const l2key = `${l1}/${l2}`;
+                  const isL2Open = !!expanded[l2key];
+                  return (
+                    <div key={l2}>
+                      {/* L2 row */}
+                      <button
+                        className={`w-full flex items-center justify-between px-5 py-2.5 transition-colors ${
+                          isL2Open ? "bg-teal-50/50" : "bg-white hover:bg-gray-50"
+                        }`}
+                        onClick={() => toggle(l2key)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-teal-400 flex-shrink-0" />
+                          <span className="font-medium text-gray-700 text-sm">{l2}</span>
+                          <span className="text-xs text-gray-400">({Object.keys(l4Map).length})</span>
+                        </div>
+                        <Arrow open={isL2Open} />
+                      </button>
+
+                      {isL2Open && (
+                        <div className="ml-4 border-l-2 border-teal-100 pb-2 space-y-1.5 pt-1">
+                          {Object.entries(l4Map).map(([l4label, groupItems]) => {
+                            const groupKey = `${l1}/${l2}/${l4label}`;
+                            const isGroupOpen = !!expanded[groupKey];
+                            const hasMultiple = groupItems.length > 1;
+                            return (
+                              <div
+                                key={l4label}
+                                className="ml-2 border border-teal-100 rounded-lg overflow-hidden"
+                              >
+                                {/* L4 group row */}
+                                <button
+                                  className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors ${
+                                    isGroupOpen
+                                      ? "bg-teal-600 text-white"
+                                      : "bg-teal-50 hover:bg-teal-100 text-gray-700"
+                                  }`}
+                                  onClick={() => toggle(groupKey)}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                                        isGroupOpen ? "bg-white" : "bg-teal-500"
+                                      }`}
+                                    />
+                                    <span className="font-medium">{l4label}</span>
+                                    {hasMultiple && (
+                                      <span
+                                        className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold ${
+                                          isGroupOpen
+                                            ? "bg-white/25 text-white"
+                                            : "bg-teal-500 text-white"
+                                        }`}
+                                      >
+                                        {groupItems.length}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className={`text-xs px-1.5 py-0.5 rounded ${
+                                        isGroupOpen
+                                          ? "bg-white/20 text-white"
+                                          : "bg-teal-200 text-teal-700"
+                                      }`}
+                                    >
+                                      查看細節資訊
+                                    </span>
+                                    <span
+                                      className="text-sm font-bold transition-transform duration-200"
+                                      style={{
+                                        display: "inline-block",
+                                        transform: isGroupOpen ? "rotate(90deg)" : "none",
+                                        color: isGroupOpen ? "white" : "#9ca3af",
+                                      }}
+                                    >
+                                      ›
+                                    </span>
+                                  </div>
+                                </button>
+
+                                {/* Detail panel — stacked if multiple */}
+                                {isGroupOpen && (
+                                  <div className="bg-white border-t border-teal-100 divide-y divide-gray-100">
+                                    {groupItems.map((product, idx) => (
+                                      <div key={idx} className="px-3 py-2">
+                                        {hasMultiple && (
+                                          <div className="text-xs font-semibold text-teal-600 mb-1.5">
+                                            第 {idx + 1} 筆
+                                          </div>
+                                        )}
+                                        <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
+                                          {product.details.map((d, di) => (
+                                            <div key={di} className="flex flex-col">
+                                              <span className="text-gray-400">{d.label}</span>
+                                              <span className="font-medium text-gray-800">{d.value}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+// ── end CustomerProductTree ────────────────────────────────────────────────
+
 const CUS360Demo = () => {
   const [activeModule, setActiveModule] = useState("search");
   // Theme tokens used across the demo (centralized for easy tweaks)
@@ -7798,7 +7987,7 @@ const CUS360Demo = () => {
   const generateRecentTransfers = (customer, n = 5) => {
     const seed = seedFromId(customer);
     const merchants = [
-      "臺灣銀行",
+      "中鼎商業銀行",
       "王大明",
       "李美華",
       "張三貿易",
@@ -7826,13 +8015,13 @@ const CUS360Demo = () => {
   const generateRecentCardAuths = (customer, n = 5) => {
     const seed = seedFromId(customer) + 97;
     const merchants = [
-      "全家便利商店",
-      "星巴克",
-      "台北101購物",
-      "家樂福",
-      "Uber Eats",
-      "誠品書店",
-      "MRT加值",
+      "順豐便利商店",
+      "晨星咖啡",
+      "城央購物廣場",
+      "裕豐量販",
+      "速達外送",
+      "文薈書店",
+      "捷運儲值",
     ];
     const out = [];
     for (let i = 0; i < n; i++) {
@@ -7849,6 +8038,397 @@ const CUS360Demo = () => {
     }
     return out;
   };
+
+  // ── generateCustomerProducts ───────────────────────────────────────────────
+  // Returns a flat array of held products { l1, l2, l3, l4, details[] }
+  // deterministically from the customer's financial data + seed.
+  const generateCustomerProducts = (customer) => {
+    const f = getCustomerFinance(customer);
+    const s = seedFromId(customer);
+    const vip = (customer && customer.vipLevel) || "normal";
+
+    // Deterministic pseudo-random integer in [0, mod)
+    const rnd = (salt, mod) => Math.abs((s + salt * 1337) % mod);
+
+    // Account / contract number helpers
+    const acctNum = (prefix, salt) =>
+      `${prefix}${String(1000000 + rnd(salt, 9000000)).slice(0, 7)}`;
+
+    // Date string helper: baseYear + small variance
+    const dateStr = (baseYear, salt) => {
+      const v = rnd(salt, 10000000);
+      const yr = baseYear + (v % 4);
+      const mo = String((v % 12) + 1).padStart(2, "0");
+      const dy = String(((v >> 3) % 28) + 1).padStart(2, "0");
+      return `${yr}/${mo}/${dy}`;
+    };
+
+    const products = [];
+
+    // ── 存款 ─────────────────────────────────────────────────────────────────
+    // 台幣活期存款 (always when liquid > 0)
+    if (f.liquid > 0) {
+      products.push({
+        l1: "存款", l2: "台幣存款", l3: "台幣活期存款", l4: "台幣活期存款",
+        details: [
+          { label: "帳號",     value: acctNum("001", 1) },
+          { label: "開戶日期", value: dateStr(2015, 101) },
+          { label: "現存餘額", value: `NT$ ${Math.round(f.liquid * 0.55).toLocaleString()}` },
+          { label: "帳戶狀態", value: "正常" },
+        ],
+      });
+    }
+    // 台幣活期儲蓄存款
+    if (f.liquid > 50000 && rnd(2, 3) === 0) {
+      products.push({
+        l1: "存款", l2: "台幣存款", l3: "台幣活期存款", l4: "台幣活期儲蓄存款",
+        details: [
+          { label: "帳號",     value: acctNum("002", 2) },
+          { label: "開戶日期", value: dateStr(2018, 102) },
+          { label: "現存餘額", value: `NT$ ${Math.round(f.liquid * 0.45).toLocaleString()}` },
+          { label: "帳戶狀態", value: "正常" },
+        ],
+      });
+    }
+    // 台幣定期存款
+    if (f.liquid > 100000 && rnd(3, 2) === 0) {
+      const amt = Math.round(f.liquid * (0.2 + rnd(4, 30) / 100));
+      products.push({
+        l1: "存款", l2: "台幣存款", l3: "台幣定期存款", l4: "台幣定期存款",
+        details: [
+          { label: "帳號",     value: acctNum("003", 3) },
+          { label: "開戶日期", value: dateStr(2020, 103) },
+          { label: "存款金額", value: `NT$ ${amt.toLocaleString()}` },
+          { label: "到期日",   value: dateStr(2025, 203) },
+          { label: "利率",     value: `${(1.5 + rnd(5, 20) / 10).toFixed(2)}%` },
+          { label: "帳戶狀態", value: "定存中" },
+        ],
+      });
+    }
+    // 外幣活期存款 (VIP+ or one-third of normal customers)
+    if (vip !== "normal" || rnd(6, 3) === 1) {
+      const fxCcys = ["USD", "EUR", "JPY", "AUD", "CNY"];
+      const ccy = fxCcys[rnd(7, fxCcys.length)];
+      const fxRates = { USD: 32, EUR: 35, JPY: 0.22, AUD: 21, CNY: 4.5 };
+      const fxBal = Math.max(100, Math.round(f.invest * 0.03 / fxRates[ccy]));
+      products.push({
+        l1: "存款", l2: "外幣存款", l3: "外幣活期存款", l4: "外幣活期存款",
+        details: [
+          { label: "帳號",     value: acctNum("FX1", 10) },
+          { label: "幣別",     value: ccy },
+          { label: "開戶日期", value: dateStr(2019, 110) },
+          { label: "現存餘額", value: `${ccy} ${fxBal.toLocaleString()}` },
+          { label: "帳戶狀態", value: "正常" },
+        ],
+      });
+    }
+    // 外幣定期存款 (VVIP+)
+    if ((vip === "VVIP" || vip === "VVVIP") && f.invest > 500000) {
+      const fxCcys2 = ["USD", "EUR", "GBP"];
+      const ccy2 = fxCcys2[rnd(11, 3)];
+      const fxRates2 = { USD: 32, EUR: 35, GBP: 40 };
+      const fxDepForeign = Math.max(1000, Math.round(f.invest * 0.06 / fxRates2[ccy2]));
+      products.push({
+        l1: "存款", l2: "外幣存款", l3: "外幣定期存款", l4: "外幣定期存款",
+        details: [
+          { label: "帳號",     value: acctNum("FX2", 11) },
+          { label: "幣別",     value: ccy2 },
+          { label: "存款金額", value: `${ccy2} ${fxDepForeign.toLocaleString()}` },
+          { label: "開戶日期", value: dateStr(2022, 111) },
+          { label: "到期日",   value: dateStr(2025, 211) },
+          { label: "利率",     value: `${(2.0 + rnd(12, 15) / 10).toFixed(2)}%` },
+          { label: "帳戶狀態", value: "定存中" },
+        ],
+      });
+    }
+
+    // ── 信用卡 ────────────────────────────────────────────────────────────────
+    // 本行信用卡 (always)
+    {
+      const last4 = String(1000 + rnd(20, 9000));
+      const cardTypes = ["白金卡", "鈦金卡", "御璽卡", "無限卡"];
+      const cardType = cardTypes[rnd(21, cardTypes.length)];
+      products.push({
+        l1: "信用卡", l2: "信用卡", l3: "信用卡發卡", l4: "本行信用卡",
+        details: [
+          { label: "卡號",     value: `**** **** **** ${last4}` },
+          { label: "卡片類型", value: cardType },
+          { label: "信用額度", value: `NT$ ${f.creditLimit.toLocaleString()}` },
+          { label: "本期消費", value: `NT$ ${Math.round(f.cardSpend3M / 3).toLocaleString()}` },
+          { label: "開卡日期", value: dateStr(2016, 120) },
+          { label: "有效期限", value: `${2025 + rnd(22, 4)}/12` },
+        ],
+      });
+    }
+    // 聯名卡
+    if (rnd(23, 3) === 0) {
+      const partners = ["翔泰航空", "文薈書店", "好家量販", "優購電商"];
+      const partner = partners[rnd(24, partners.length)];
+      const last4b = String(1000 + rnd(25, 9000));
+      products.push({
+        l1: "信用卡", l2: "信用卡", l3: "信用卡發卡", l4: "聯名卡",
+        details: [
+          { label: "卡號",     value: `**** **** **** ${last4b}` },
+          { label: "聯名廠商", value: partner },
+          { label: "信用額度", value: `NT$ ${Math.round(f.creditLimit * 0.6).toLocaleString()}` },
+          { label: "開卡日期", value: dateStr(2020, 123) },
+          { label: "有效期限", value: `${2025 + rnd(26, 3)}/06` },
+        ],
+      });
+    }
+    // 簽帳卡
+    if (rnd(27, 4) === 0) {
+      const last4c = String(1000 + rnd(28, 9000));
+      products.push({
+        l1: "信用卡", l2: "簽帳卡", l3: "簽帳卡", l4: "簽帳卡",
+        details: [
+          { label: "卡號",     value: `**** **** **** ${last4c}` },
+          { label: "開卡日期", value: dateStr(2021, 127) },
+          { label: "帳戶狀態", value: "正常" },
+        ],
+      });
+    }
+
+    // ── 貸款 ──────────────────────────────────────────────────────────────────
+    // 房屋貸款
+    if (f.loan > 500000 && rnd(30, 3) !== 0) {
+      const loanAmt = Math.round(f.loan * 0.75);
+      const loanRate = (1.5 + rnd(31, 20) / 10).toFixed(2);
+      const loanL4 = rnd(32, 7) === 0 ? "政策房貸" : "一般房貸";
+      products.push({
+        l1: "貸款", l2: "個人貸款", l3: "房屋貸款", l4: loanL4,
+        details: [
+          { label: "貸款帳號", value: acctNum("HL", 30) },
+          { label: "貸款金額", value: `NT$ ${loanAmt.toLocaleString()}` },
+          { label: "起貸日期", value: dateStr(2018, 130) },
+          { label: "到期日",   value: dateStr(2038, 230) },
+          { label: "利率",     value: `${loanRate}%` },
+          { label: "月繳金額", value: `NT$ ${Math.round(loanAmt * parseFloat(loanRate) / 100 / 12 * 1.3).toLocaleString()}` },
+          { label: "帳戶狀態", value: "正常繳款" },
+        ],
+      });
+    }
+    // 信用貸款
+    if (f.loan > 100000 && rnd(33, 4) === 1) {
+      const plAmt = Math.round(f.loan * 0.25);
+      const plRate = (3.5 + rnd(34, 30) / 10).toFixed(2);
+      const plL4 = rnd(35, 3) === 0 ? "公教信貸" : "一般房貸";
+      products.push({
+        l1: "貸款", l2: "個人貸款", l3: "信用貸款", l4: plL4,
+        details: [
+          { label: "貸款帳號", value: acctNum("PL", 33) },
+          { label: "貸款金額", value: `NT$ ${plAmt.toLocaleString()}` },
+          { label: "起貸日期", value: dateStr(2022, 133) },
+          { label: "到期日",   value: dateStr(2027, 233) },
+          { label: "利率",     value: `${plRate}%` },
+          { label: "帳戶狀態", value: "正常繳款" },
+        ],
+      });
+    }
+    // 汽車貸款
+    if (rnd(36, 5) === 0 && f.loan > 200000) {
+      const carAmt = Math.round(300000 + rnd(37, 700000));
+      products.push({
+        l1: "貸款", l2: "個人貸款", l3: "其他貸款", l4: "汽車貸款",
+        details: [
+          { label: "貸款帳號", value: acctNum("AL", 36) },
+          { label: "貸款金額", value: `NT$ ${carAmt.toLocaleString()}` },
+          { label: "起貸日期", value: dateStr(2023, 136) },
+          { label: "到期日",   value: dateStr(2028, 236) },
+          { label: "利率",     value: `${(2.0 + rnd(38, 15) / 10).toFixed(2)}%` },
+          { label: "帳戶狀態", value: "正常繳款" },
+        ],
+      });
+    }
+
+    // ── 財管 ──────────────────────────────────────────────────────────────────
+    // 國內基金
+    if (f.invest > 100000) {
+      const fundCats = ["股票型", "固定收益型", "平衡型", "貨幣市場型"];
+      const fCat = fundCats[rnd(40, fundCats.length)];
+      const fundNameMap = {
+        股票型:    "台灣高股息連結基金",
+        固定收益型: "投資等級債券基金",
+        平衡型:    "大中華平衡基金",
+        貨幣市場型: "台幣貨幣市場基金",
+      };
+      products.push({
+        l1: "財管", l2: "基金", l3: "國內基金", l4: fCat,
+        details: [
+          { label: "契約號",   value: `F${String(100000 + rnd(41, 900000))}` },
+          { label: "基金名稱", value: fundNameMap[fCat] },
+          { label: "持有金額", value: `NT$ ${Math.round(f.invest * 0.2).toLocaleString()}` },
+          { label: "申購日期", value: dateStr(2021, 140) },
+          { label: "帳戶狀態", value: "持有中" },
+        ],
+      });
+      // 第二支國內基金 (部分客戶)
+      if (rnd(70, 3) === 0) {
+        const fCat2 = fundCats[(rnd(40, fundCats.length) + 1) % fundCats.length];
+        const fundNameMap2 = {
+          股票型:    "亞太資訊股票基金",
+          固定收益型: "亞洲高收益債基金",
+          平衡型:    "全球平衡配置基金",
+          貨幣市場型: "美元貨幣市場基金",
+        };
+        products.push({
+          l1: "財管", l2: "基金", l3: "國內基金", l4: fCat2,
+          details: [
+            { label: "契約號",   value: `F${String(100000 + rnd(71, 900000))}` },
+            { label: "基金名稱", value: fundNameMap2[fCat2] },
+            { label: "持有金額", value: `NT$ ${Math.round(f.invest * 0.1).toLocaleString()}` },
+            { label: "申購日期", value: dateStr(2023, 172) },
+            { label: "帳戶狀態", value: "持有中" },
+          ],
+        });
+      }
+    }
+    // 境外基金 (VIP+)
+    if (f.invest > 500000 && vip !== "normal") {
+      const ofCats = ["股票型", "固定收益型", "平衡型"];
+      const ofCat = ofCats[rnd(42, 3)];
+      const ofNameMap = {
+        股票型:    "全球科技股票基金",
+        固定收益型: "新興市場債券基金",
+        平衡型:    "全球資產配置基金",
+      };
+      products.push({
+        l1: "財管", l2: "基金", l3: "境外基金", l4: ofCat,
+        details: [
+          { label: "契約號",          value: `OF${String(100000 + rnd(43, 900000))}` },
+          { label: "基金名稱",        value: ofNameMap[ofCat] },
+          { label: "持有金額(台幣換算)", value: `NT$ ${Math.round(f.invest * 0.12).toLocaleString()}` },
+          { label: "申購日期",        value: dateStr(2022, 142) },
+          { label: "帳戶狀態",        value: "持有中" },
+        ],
+      });
+      // 第二支境外基金 (VVIP+)
+      if (vip === "VVVIP" || (vip === "VVIP" && rnd(72, 2) === 0)) {
+        const ofCat2 = ofCats[(rnd(42, 3) + 2) % 3];
+        const ofNameMap2 = {
+          股票型:    "歐洲遊奕股票基金",
+          固定收益型: "全球投資級公司債基金",
+          平衡型:    "多元資產收益基金",
+        };
+        products.push({
+          l1: "財管", l2: "基金", l3: "境外基金", l4: ofCat2,
+          details: [
+            { label: "契約號",          value: `OF${String(100000 + rnd(73, 900000))}` },
+            { label: "基金名稱",        value: ofNameMap2[ofCat2] },
+            { label: "持有金額(台幣換算)", value: `NT$ ${Math.round(f.invest * 0.08).toLocaleString()}` },
+            { label: "申購日期",        value: dateStr(2024, 174) },
+            { label: "帳戶狀態",        value: "持有中" },
+          ],
+        });
+      }
+    }
+    // 國內ETF
+    if (rnd(44, 3) === 0 && f.invest > 200000) {
+      const etfNames = ["TA50 華信台灣50", "TA56 華信高股息", "TA88 永信永續高股息"];
+      const etfName = etfNames[rnd(45, 3)];
+      const shares = (rnd(46, 50) + 1) * 1000;
+      products.push({
+        l1: "財管", l2: "ETF", l3: "國內ETF", l4: "國內ETF",
+        details: [
+          { label: "帳號",     value: acctNum("ETF", 44) },
+          { label: "ETF名稱",  value: etfName },
+          { label: "持有股數", value: `${shares.toLocaleString()} 股` },
+          { label: "概估市值", value: `NT$ ${Math.round(f.invest * 0.08).toLocaleString()}` },
+          { label: "購入日期", value: dateStr(2020, 144) },
+          { label: "帳戶狀態", value: "持有中" },
+        ],
+      });
+    }
+    // 壽險 (most customers)
+    if (rnd(50, 5) !== 0) {
+      const insCoList = ["大成人壽", "豐裕人壽", "南峰人壽", "中正人壽"];
+      const insCo = insCoList[rnd(51, 4)];
+      const annualPremium = Math.round(20000 + rnd(52, 80000));
+      products.push({
+        l1: "財管", l2: "保險", l3: "人身保險", l4: "壽險",
+        details: [
+          { label: "契約號",   value: `L${String(1000000 + rnd(53, 9000000))}` },
+          { label: "保險公司", value: insCo },
+          { label: "年繳保費", value: `NT$ ${annualPremium.toLocaleString()}` },
+          { label: "保額",     value: `NT$ ${Math.round(annualPremium * 20).toLocaleString()}` },
+          { label: "生效日期", value: dateStr(2019, 150) },
+          { label: "帳戶狀態", value: "有效" },
+        ],
+      });
+    }
+    // 醫療險
+    if (rnd(54, 2) === 0) {
+      products.push({
+        l1: "財管", l2: "保險", l3: "人身保險", l4: "醫療險",
+        details: [
+          { label: "契約號",   value: `M${String(1000000 + rnd(55, 9000000))}` },
+          { label: "日額保障", value: `NT$ ${(1000 + rnd(56, 5) * 500).toLocaleString()}` },
+          { label: "年繳保費", value: `NT$ ${Math.round(8000 + rnd(57, 30000)).toLocaleString()}` },
+          { label: "生效日期", value: dateStr(2020, 154) },
+          { label: "帳戶狀態", value: "有效" },
+        ],
+      });
+    }
+    // 投資型保險 (VIP+ with high invest)
+    if (f.invest > 1000000 && vip !== "normal") {
+      const invInsAmt = Math.round(f.invest * 0.04);
+      products.push({
+        l1: "財管", l2: "保險", l3: "人身保險", l4: "投資型保險",
+        details: [
+          { label: "契約號",       value: `IV${String(100000 + rnd(58, 900000))}` },
+          { label: "年繳保費",     value: `NT$ ${invInsAmt.toLocaleString()}` },
+          { label: "累積投資金額", value: `NT$ ${Math.round(invInsAmt * 2.5).toLocaleString()}` },
+          { label: "生效日期",     value: dateStr(2021, 158) },
+          { label: "帳戶狀態",     value: "有效" },
+        ],
+      });
+    }
+    // 旅遊不便險
+    if (rnd(59, 4) === 0) {
+      products.push({
+        l1: "財管", l2: "保險", l3: "產物保險", l4: "旅遊不便險",
+        details: [
+          { label: "契約號",   value: `TR${String(100000 + rnd(60, 900000))}` },
+          { label: "保障天數", value: `${7 + rnd(61, 14)} 天` },
+          { label: "生效日期", value: dateStr(2024, 159) },
+          { label: "到期日",   value: dateStr(2025, 259) },
+          { label: "帳戶狀態", value: "有效" },
+        ],
+      });
+    }
+    // 海外債 (VVIP+)
+    if (f.invest > 2000000 && (vip === "VVIP" || vip === "VVVIP")) {
+      const bondNames = ["美國政府公債", "投資等級企業債", "新興市場主權債"];
+      const bond = bondNames[rnd(62, 3)];
+      products.push({
+        l1: "財管", l2: "海外債", l3: "海外債", l4: "海外債",
+        details: [
+          { label: "契約號",          value: `B${String(100000 + rnd(63, 900000))}` },
+          { label: "債券名稱",        value: bond },
+          { label: "面額(台幣換算)",  value: `NT$ ${Math.round(f.invest * 0.1).toLocaleString()}` },
+          { label: "購入日期",        value: dateStr(2023, 162) },
+          { label: "到期日",          value: dateStr(2033, 262) },
+          { label: "帳戶狀態",        value: "持有中" },
+        ],
+      });
+    }
+    // 安養信託 (VVVIP or very high invest)
+    if (vip === "VVVIP" || (f.invest > 3000000 && rnd(64, 3) === 0)) {
+      products.push({
+        l1: "財管", l2: "信託", l3: "非金錢信託", l4: "安養信託",
+        details: [
+          { label: "契約號",   value: `T${String(100000 + rnd(65, 900000))}` },
+          { label: "信託金額", value: `NT$ ${Math.round(f.netWorth * 0.08).toLocaleString()}` },
+          { label: "委託日期", value: dateStr(2022, 164) },
+          { label: "信託目的", value: "退休養老規劃" },
+          { label: "帳戶狀態", value: "有效" },
+        ],
+      });
+    }
+
+    return products;
+  };
+  // ── end generateCustomerProducts ──────────────────────────────────────────
 
   const generateCustomerInteractions = (customer, min = 3, max = 6) => {
     // C196 林怡君 — 固定顯示近期通路互動（行動銀行、網銀等，不含人生大事）
@@ -8779,6 +9359,7 @@ const CUS360Demo = () => {
     colors = [],
     size = 96,
     innerRatio = 0.55,
+    centerText = null,
   }) => {
     const [hoverIdx, setHoverIdx] = React.useState(null);
     // Animation: 0→1 sweeps all segments from nothing to full size
@@ -8855,6 +9436,31 @@ const CUS360Demo = () => {
               />
             );
           })}
+          {centerText && (
+            <text
+              x="21"
+              y="18.5"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize="4.2"
+              fontWeight="bold"
+              fill="#0f766e"
+            >
+              {centerText.line1}
+            </text>
+          )}
+          {centerText && (
+            <text
+              x="21"
+              y="24"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize="3"
+              fill="#6b7280"
+            >
+              {centerText.line2}
+            </text>
+          )}
         </svg>
         {hoverIdx != null && (
           <div className="absolute left-1 top-1 px-2 py-1 bg-white border border-teal-100 rounded-lg shadow-md text-xs pointer-events-none">
@@ -11176,6 +11782,78 @@ const CUS360Demo = () => {
             </div>
           )}
 
+          {/* Business tab: product tree + recent transactions */}
+          {activeTab === "business" && selectedCustomer && (
+            <div className="space-y-4">
+              {/* 客戶業務往來累計 */}
+              {(() => {
+                const f = getCustomerFinance(selectedCustomer);
+                const allProds = generateCustomerProducts(selectedCustomer);
+                const transfers = generateRecentTransfers(selectedCustomer, 5);
+                const transferTotal = transfers.reduce((sum, t) => {
+                  const num = parseInt(t.amount.replace(/[^0-9-]/g, ""), 10);
+                  return sum + (isNaN(num) ? 0 : Math.abs(num));
+                }, 0);
+                const stats = [
+                  { label: "持有產品總數",       value: `${allProds.length} 項` },
+                  { label: "近三個月信用卡消費",  value: `NT$ ${f.cardSpend3M.toLocaleString()}` },
+                  { label: "近五筆轉帳合計",      value: `NT$ ${transferTotal.toLocaleString()}` },
+                  { label: "信用卡利用率",        value: `${f.creditUtilPct}%` },
+                ];
+                return (
+                  <div className={SUBCARD}>
+                    <h4 className="font-bold text-md mb-3 text-gray-800">客戶業務往來累計</h4>
+                    <div className="grid grid-cols-4 gap-3">
+                      {stats.map((st) => (
+                        <div key={st.label} className="bg-gray-50 rounded-lg p-3">
+                          <div className="text-xs text-gray-500 mb-1">{st.label}</div>
+                          <div className="font-semibold text-gray-800 text-sm">{st.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+              <div className={SUBCARD}>
+                <h4 className="font-bold text-md mb-3 text-gray-800">客戶開辦業務</h4>
+                <CustomerProductTree
+                  key={selectedCustomer.id}
+                  products={generateCustomerProducts(selectedCustomer)}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className={SUBCARD}>
+                  <div className="font-bold mb-2">近五筆轉帳</div>
+                  <div className="space-y-2 text-sm">
+                    {generateRecentTransfers(selectedCustomer, 5).map((t, i) => (
+                      <div key={i} className={SUBCARD}>
+                        <div className="flex justify-between border-b pb-1">
+                          <div className="font-medium">{t.merchant}</div>
+                          <div className="text-right font-medium">{t.amount}</div>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">{t.time}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className={SUBCARD}>
+                  <div className="font-bold mb-2">近五筆信用卡授權明細</div>
+                  <div className="space-y-2 text-sm">
+                    {generateRecentCardAuths(selectedCustomer, 5).map((t, i) => (
+                      <div key={i} className={SUBCARD}>
+                        <div className="flex justify-between border-b pb-1">
+                          <div className="font-medium">{t.merchant}</div>
+                          <div className="text-right font-medium">{t.amount}</div>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">{t.time}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
 
           {/* Floating Assistant */}
           <>
@@ -11392,7 +12070,8 @@ const CUS360Demo = () => {
           {activeTab !== "basic" &&
             activeTab !== "financial" &&
             activeTab !== "tags" &&
-            activeTab !== "preferences" && (
+            activeTab !== "preferences" &&
+            activeTab !== "business" && (
               <div className={SUBCARD}>
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold text-gray-800">
@@ -11601,59 +12280,6 @@ const CUS360Demo = () => {
                     </>
                   )}
 
-                  {/* Business tab: show recent transfers and card auths */}
-                  {activeTab === "business" && selectedCustomer && (
-                    <div className="mt-4 grid grid-cols-2 gap-4">
-                      <div className={SUBCARD}>
-                        <div className="font-bold mb-2">近五筆轉帳</div>
-                        <div className="space-y-2 text-sm">
-                          {generateRecentTransfers(selectedCustomer, 5).map(
-                            (t, i) => (
-                              <div key={i} className={SUBCARD}>
-                                <div className="flex justify-between border-b pb-1">
-                                  <div className="font-medium">
-                                    {t.merchant}
-                                  </div>
-                                  <div className="text-right font-medium">
-                                    {t.amount}
-                                  </div>
-                                </div>
-                                <div className="text-xs text-gray-500 mt-1">
-                                  {t.time}
-                                </div>
-                              </div>
-                            )
-                          )}
-                        </div>
-                      </div>
-
-                      <div className={SUBCARD}>
-                        <div className="font-bold mb-2">
-                          近五筆信用卡授權明細
-                        </div>
-                        <div className="space-y-2 text-sm">
-                          {generateRecentCardAuths(selectedCustomer, 5).map(
-                            (t, i) => (
-                              <div key={i} className={SUBCARD}>
-                                <div className="flex justify-between border-b pb-1">
-                                  <div className="font-medium">
-                                    {t.merchant}
-                                  </div>
-                                  <div className="text-right font-medium">
-                                    {t.amount}
-                                  </div>
-                                </div>
-                                <div className="text-xs text-gray-500 mt-1">
-                                  {t.time}
-                                </div>
-                              </div>
-                            )
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Interactions tab: ensure 3-6 interactions and show customer service records */}
                   {activeTab === "interactions" && selectedCustomer && (
                     <div className="mt-4 space-y-3">
@@ -11687,7 +12313,7 @@ const CUS360Demo = () => {
 
                   {/* Rating tab: contribution and investment-attribute blocks */}
                   {activeTab === "rating" && selectedCustomer && (
-                    <div className="mt-4 space-y-4">
+                    <div className="mt-4 grid grid-cols-2 gap-4 items-start">
                       <div className={SUBCARD}>
                         <h4 className="font-bold text-md mb-2 text-gray-800">
                           客戶貢獻度
@@ -11696,10 +12322,10 @@ const CUS360Demo = () => {
                           const f = getCustomerFinance(selectedCustomer);
                           const cardFees = Math.round(
                             ((f.cardSpend3M || 0) / 3) * 0.005
-                          ); // approx interchange/fees
+                          );
                           const depositMargin = Math.round(
                             (f.liquid || 0) * 0.001
-                          ); // margin
+                          );
                           const wealthFees = Math.round(
                             (f.invest || 0) * 0.002
                           );
@@ -11715,68 +12341,53 @@ const CUS360Demo = () => {
                               loanInterest +
                               investmentFees
                           );
-                          const pct = (v) =>
-                            `${Math.round((v / total) * 100)}%`;
+                          const contribColors = [
+                            "#14b8a6",
+                            "#06b6d4",
+                            "#34d399",
+                            "#0ea5a4",
+                            "#7dd3fc",
+                          ];
+                          const contribItems = [
+                            { label: "信用卡手續費 / 年費估值", value: cardFees },
+                            { label: "存款利差貢獻", value: depositMargin },
+                            { label: "財富管理/顧問費用", value: wealthFees },
+                            { label: "貸款利息貢獻", value: loanInterest },
+                            { label: "投資相關手續費", value: investmentFees },
+                          ].filter((it) => it.value > 0);
+                          const donutData = contribItems.map((it) => ({
+                            label: it.label,
+                            value: Math.max(1, Math.round((it.value / total) * 100)),
+                          }));
                           return (
-                            <div className="grid gap-2 text-sm">
-                              <div className="flex justify-between border-b pb-1">
-                                <div className="text-gray-600">
-                                  信用卡手續費 / 年費估值
-                                </div>
-                                <div className="font-medium text-right">
-                                  NT$ {cardFees.toLocaleString()}{" "}
-                                  <span className="text-xs text-gray-500">
-                                    ({pct(cardFees)})
-                                  </span>
-                                </div>
+                            <div className="rounded-lg p-3 bg-gray-50 flex items-center gap-5">
+                              <div className="flex-shrink-0">
+                                <DonutInteractive
+                                  data={donutData}
+                                  colors={contribColors.slice(0, contribItems.length)}
+                                  size={140}
+                                  centerText={{
+                                    line1: `${(total / 1000).toFixed(1)}K`,
+                                    line2: "年貢獻",
+                                  }}
+                                />
                               </div>
-                              <div className="flex justify-between border-b pb-1">
-                                <div className="text-gray-600">
-                                  存款利差貢獻
-                                </div>
-                                <div className="font-medium text-right">
-                                  NT$ {depositMargin.toLocaleString()}{" "}
-                                  <span className="text-xs text-gray-500">
-                                    ({pct(depositMargin)})
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex justify-between border-b pb-1">
-                                <div className="text-gray-600">
-                                  財富管理/顧問費用
-                                </div>
-                                <div className="font-medium text-right">
-                                  NT$ {wealthFees.toLocaleString()}{" "}
-                                  <span className="text-xs text-gray-500">
-                                    ({pct(wealthFees)})
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex justify-between border-b pb-1">
-                                <div className="text-gray-600">
-                                  貸款利息貢獻
-                                </div>
-                                <div className="font-medium text-right">
-                                  NT$ {loanInterest.toLocaleString()}{" "}
-                                  <span className="text-xs text-gray-500">
-                                    ({pct(loanInterest)})
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex justify-between">
-                                <div className="text-gray-600">
-                                  投資相關手續費
-                                </div>
-                                <div className="font-medium text-right">
-                                  NT$ {investmentFees.toLocaleString()}{" "}
-                                  <span className="text-xs text-gray-500">
-                                    ({pct(investmentFees)})
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="pt-2 text-xs text-gray-500">
-                                總估計年度貢獻: NT$ {total.toLocaleString()}
-                                （近似值，用於客戶價值排序）
+                              <div className="flex-1 space-y-1.5">
+                                {contribItems.map((it, i) => (
+                                  <div key={it.label} className="flex items-center gap-2 text-xs">
+                                    <span
+                                      className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                                      style={{ background: contribColors[i] }}
+                                    />
+                                    <span className="text-gray-700 flex-1">{it.label}</span>
+                                    <span className="font-semibold text-gray-800 tabular-nums">
+                                      NT$ {it.value.toLocaleString()}
+                                    </span>
+                                    <span className="text-gray-400 w-9 text-right tabular-nums">
+                                      {Math.round((it.value / total) * 100)}%
+                                    </span>
+                                  </div>
+                                ))}
                               </div>
                             </div>
                           );
