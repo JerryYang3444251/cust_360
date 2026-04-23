@@ -6712,7 +6712,7 @@ const CUS360Demo = () => {
               <select
                 value={exportFormat}
                 onChange={(e) => setExportFormat(e.target.value)}
-                className="mt-2 px-3 py-2 border rounded-lg"
+                className="mt-2 px-3 py-2 border border-teal-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300"
               >
                 <option value="csv">CSV 檔案</option>
                 <option value="json">JSON 檔案</option>
@@ -9168,7 +9168,7 @@ const CUS360Demo = () => {
           </svg>
           {interp && (
             <div
-              className="absolute z-10 px-2 py-1 bg-white border rounded shadow text-xs"
+              className="absolute z-10 px-2 py-1 bg-white border border-teal-100 rounded-lg shadow-md text-xs"
               style={{
                 left: Math.min(Math.max(interp.x - 40, 0), w - 80),
                 top: 4,
@@ -9492,7 +9492,7 @@ const CUS360Demo = () => {
               <select
                 value={searchType}
                 onChange={(e) => setSearchType(e.target.value)}
-                className="px-3 py-2 border rounded-lg"
+                className="px-3 py-2 border border-teal-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300"
               >
                 <option value="name">客戶姓名</option>
                 <option value="idCard">證件號碼</option>
@@ -9503,7 +9503,7 @@ const CUS360Demo = () => {
               <input
                 type="text"
                 placeholder={searchType === 'name' ? '輸入姓名 (支援模糊搜尋)' : '輸入選擇的識別號 (精準比對)'}
-                className="flex-1 px-3 py-2 border rounded-lg"
+                className="flex-1 px-3 py-2 border border-teal-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -9659,7 +9659,7 @@ const CUS360Demo = () => {
             <div>
               <label className="block text-sm font-medium mb-2">VIP等級</label>
               <select
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 border border-teal-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300"
                 value={filters.vipLevel}
                 onChange={(e) =>
                   setFilters({ ...filters, vipLevel: e.target.value })
@@ -9678,7 +9678,7 @@ const CUS360Demo = () => {
             <div>
               <label className="block text-sm font-medium mb-2">授信風險等級</label>
               <select
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 border border-teal-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300"
                 value={filters.riskLevel}
                 onChange={(e) =>
                   setFilters({ ...filters, riskLevel: e.target.value })
@@ -9693,7 +9693,7 @@ const CUS360Demo = () => {
             <div>
               <label className="block text-sm font-medium mb-2">帳戶狀態</label>
               <select
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 border border-teal-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300"
                 value={filters.accountStatus}
                 onChange={(e) =>
                   setFilters({ ...filters, accountStatus: e.target.value })
@@ -9708,7 +9708,7 @@ const CUS360Demo = () => {
             <div>
               <label className="block text-sm font-medium mb-2">身分類型</label>
               <select
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 border border-teal-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300"
                 value={filters.idType}
                 onChange={(e) =>
                   setFilters({ ...filters, idType: e.target.value })
@@ -9730,7 +9730,7 @@ const CUS360Demo = () => {
                     <span className="text-xs text-gray-600">群組連接</span>
                     <select value={group.join} onChange={(e)=>{
                       const arr = [...tagGroups]; arr[gIdx].join = e.target.value; setTagGroups(arr);
-                    }} className="px-2 py-1 border rounded-lg">
+                    }} className="px-2 py-1 border border-teal-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300">
                       <option value="AND">AND</option>
                       <option value="OR">OR</option>
                       <option value="NOT">NOT</option>
@@ -9742,16 +9742,16 @@ const CUS360Demo = () => {
                   </div>
                   {group.conditions.map((cond, cIdx) => (
                     <div key={cIdx} className="flex items-center gap-2">
-                      <select value={cond.op} onChange={(e)=> updateTagCondition(gIdx, cIdx, { op: e.target.value })} className="px-2 py-1 border rounded-lg">
+                      <select value={cond.op} onChange={(e)=> updateTagCondition(gIdx, cIdx, { op: e.target.value })} className="px-2 py-1 border border-teal-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300">
                         <option value="AND">AND</option>
                         <option value="OR">OR</option>
                         <option value="NOT">NOT</option>
                       </select>
-                      <select value={cond.category || ''} onChange={(e)=> updateTagCondition(gIdx, cIdx, { category: e.target.value, tag: '' })} className="px-2 py-1 border rounded-lg">
+                      <select value={cond.category || ''} onChange={(e)=> updateTagCondition(gIdx, cIdx, { category: e.target.value, tag: '' })} className="px-2 py-1 border border-teal-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300">
                         <option value="">(選擇類別)</option>
                         {[...Object.keys(TAG_CATEGORIES), '意圖標籤'].map(cat => (<option key={cat} value={cat}>{cat}</option>))}
                       </select>
-                      <select value={cond.tag || ''} onChange={(e)=> updateTagCondition(gIdx, cIdx, { tag: e.target.value })} className="flex-1 px-3 py-1 border rounded-lg" disabled={!cond.category}>
+                      <select value={cond.tag || ''} onChange={(e)=> updateTagCondition(gIdx, cIdx, { tag: e.target.value })} className="flex-1 px-3 py-1 border border-teal-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300" disabled={!cond.category}>
                         <option value="">(選擇標籤)</option>
                         {(cond.category ? (cond.category==='意圖標籤' ? INTENT_TAGS : TAG_CATEGORIES[cond.category]) : []).map(t => (
                           <option key={t} value={t}>{t}</option>
@@ -10050,7 +10050,7 @@ const CUS360Demo = () => {
         </div>
 
         <div>
-          <h3 className="font-bold mb-3">查詢歷程稽核</h3>
+          <h3 className="font-bold text-md mb-3 text-gray-800">查詢歷程稽核</h3>
           {queryHistory.length === 0 ? (
             <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-500">本次登入尚未查詢任何客戶。</div>
           ) : (
@@ -11590,7 +11590,7 @@ const CUS360Demo = () => {
           <div className="bg-gradient-to-r from-teal-600 to-teal-800 text-white p-4 rounded-lg shadow-lg">
             <div className="flex justify-between items-start">
               <div className="flex items-start gap-4">
-                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-blue-600 text-2xl font-bold">
+                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-teal-600 text-2xl font-bold">
                   {selectedCustomer?.name?.charAt(0) ||
                     selectedCustomer?.id?.charAt(0) ||
                     "?"}
@@ -11823,7 +11823,7 @@ const CUS360Demo = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className={SUBCARD}>
-                  <div className="font-bold mb-2">近五筆轉帳</div>
+                  <div className="font-bold text-md mb-2 text-gray-800">近五筆轉帳</div>
                   <div className="space-y-2 text-sm">
                     {generateRecentTransfers(selectedCustomer, 5).map((t, i) => (
                       <div key={i} className={SUBCARD}>
@@ -11837,7 +11837,7 @@ const CUS360Demo = () => {
                   </div>
                 </div>
                 <div className={SUBCARD}>
-                  <div className="font-bold mb-2">近五筆信用卡授權明細</div>
+                  <div className="font-bold text-md mb-2 text-gray-800">近五筆信用卡授權明細</div>
                   <div className="space-y-2 text-sm">
                     {generateRecentCardAuths(selectedCustomer, 5).map((t, i) => (
                       <div key={i} className={SUBCARD}>
@@ -11987,7 +11987,7 @@ const CUS360Demo = () => {
                       }
                     }}
                     placeholder="輸入問題，例如：給我一段行銷話術建議"
-                    className="flex-1 px-3 py-2 border rounded-lg"
+                    className="flex-1 px-3 py-2 border border-teal-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300"
                   />
                   <button
                     className="px-3 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 flex items-center gap-1"
@@ -12284,7 +12284,7 @@ const CUS360Demo = () => {
                   {activeTab === "interactions" && selectedCustomer && (
                     <div className="mt-4 space-y-3">
                       <div id="interaction-pending" className={SUBCARD}>
-                        <div className="font-bold mb-2">通路互動紀錄</div>
+                        <div className="font-bold text-md mb-2 text-gray-800">通路互動紀錄</div>
                         {(() => {
                           const rawCh = generateCustomerInteractions(selectedCustomer, 5, 7);
                           const parseTS2 = (s) => { const m = String(s).match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/); if (m) return new Date(+m[1], +m[2]-1, +m[3]).getTime(); const d = new Date(s); return isNaN(d) ? 0 : d.getTime(); };
