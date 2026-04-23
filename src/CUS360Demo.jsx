@@ -295,6 +295,56 @@ const CUS360Demo = () => {
     return Object.values(VIP_TIERS).sort((a, b) => a.order - b.order);
   };
 
+  // 依台灣護照羅馬拼音（Wade-Giles）從中文姓名生成英文戶名
+  const generateNameEn = (chineseName) => {
+    if (!chineseName) return '';
+    const MAP = {
+      // 常見姓氏
+      '王':'WANG','李':'LI','陳':'CHEN','張':'CHANG','劉':'LIU','林':'LIN','吳':'WU',
+      '蔡':'TSAI','何':'HO','周':'CHOU','許':'HSU','曾':'TSENG','郭':'KUO','黃':'HUANG',
+      '葉':'YEH','鄭':'CHENG','謝':'HSIEH','洪':'HUNG','邱':'CHIU','楊':'YANG','余':'YU',
+      '朱':'CHU','胡':'HU','江':'CHIANG','高':'KAO','韓':'HAN','宋':'SUNG','廖':'LIAO',
+      '賴':'LAI','潘':'PAN','方':'FANG','石':'SHIH','徐':'HSU','蕭':'HSIAO',
+      // 常見名字字
+      '小':'HSIAO','明':'MING','美':'MEI','華':'HUA','大':'TA','偉':'WEI','麗':'LI',
+      '娟':'CHUAN','志':'CHIH','芳':'FANG','杰':'CHIEH','仁':'JEN','雅':'YA','婷':'TING',
+      '宗':'TSUNG','憲':'HSIEN','文':'WEN','冠':'KUAN','哲':'CHE','逸':'YI','軒':'HSUAN',
+      '佳':'CHIA','穎':'YING','育':'YU','庭':'TING','豪':'HAO','霖':'LIN','建':'CHIEN',
+      '弘':'HUNG','宇':'YU','昕':'HSIN','恩':'EN','柏':'PO','翰':'HAN','郁':'YU',
+      '安':'AN','怡':'YI','珊':'SHAN','欣':'HSIN','俊':'CHUN','凱':'KAI','嘉':'CHIA',
+      '彥':'YEN','君':'CHUN','涵':'HAN','澤':'TSE','瑋':'WEI','銘':'MING','靖':'CHING',
+      '慧':'HUI','玲':'LING','萍':'PING','秀':'HSIU','珍':'CHEN','淑':'SHU','素':'SU',
+      '英':'YING','瑜':'YU','如':'JU','倩':'CHIEN','燕':'YEN','靜':'CHING','莉':'LI',
+      '依':'YI','思':'SSU','雯':'WEN','心':'HSIN','儀':'YI','筠':'YUN','菁':'CHING',
+      '昱':'YU','勝':'SHENG','健':'CHIEN','翔':'HSIANG','廷':'TING','聰':'TSUNG',
+      '威':'WEI','國':'KUO','家':'CHIA','峰':'FENG','源':'YUAN','龍':'LUNG','強':'CHIANG',
+      '春':'CHUN','玉':'YU','婉':'WAN','卓':'CHO','博':'PO','喬':'CHIAO','坤':'KUN',
+      '天':'TIEN','子':'TZU','孟':'MENG','尚':'SHANG','堅':'CHIEN','達':'TA','德':'TE',
+      '敬':'CHING','武':'WU','民':'MIN','世':'SHIH','仲':'CHUNG','宏':'HUNG','宜':'YI',
+      '容':'JUNG','富':'FU','幸':'HSING','彤':'TUNG','彬':'PIN','惠':'HUI','晉':'CHIN',
+      '朗':'LANG','柔':'JOU','樂':'LE','淳':'CHUN','添':'TIEN','清':'CHING','漢':'HAN',
+      '煜':'YU','熙':'HSI','璟':'CHING','璇':'HSUAN','琪':'CHI','琬':'WAN','琳':'LIN',
+      '琴':'CHIN','真':'CHEN','祥':'HSIANG','竣':'CHUN','綺':'CHI','若':'JO','莊':'CHUANG',
+      '蕙':'HUI','融':'JUNG','誼':'YI','謙':'CHIEN','賢':'HSIEN','軍':'CHUN','辰':'CHEN',
+      '鋒':'FENG','鑫':'HSIN','馨':'HSIN','黎':'LI','品':'PIN','元':'YUAN','平':'PING',
+      '展':'CHAN','道':'TAO','生':'SHENG','寬':'KUAN','律':'LU','晟':'CHENG','暉':'HUI',
+      '格':'KO','樺':'HUA','歆':'HSIN','澄':'CHENG','炯':'CHIUNG','璘':'LIN','盈':'YING',
+      '祐':'YU','筑':'CHU','緣':'YUAN','耘':'YUN','致':'CHIH','荃':'CHUAN','菀':'WAN',
+      '蕾':'LEI','藍':'LAN','語':'YU','豫':'YU','錦':'CHIN','靖':'CHING','頡':'CHIEH',
+      '馥':'FU','麒':'CHI','博':'PO','喬':'CHIAO','宸':'CHEN','彭':'PENG','朋':'PENG',
+      '杏':'HSING','澤':'TSE','珈':'CHIA','琇':'HSIU','珠':'CHU','寶':'PAO','旭':'HSU',
+      '成':'CHENG','義':'YI','信':'HSIN','善':'SHAN','良':'LIANG','松':'SUNG','梅':'MEI',
+      '蘭':'LAN','蓮':'LIEN','桂':'KUEI','岳':'YUEH','毅':'YI','傑':'CHIEH','凡':'FAN',
+      '力':'LI','函':'HAN','棟':'TUNG','豐':'FENG','耀':'YAO','飛':'FEI',
+    };
+    const surname = chineseName[0];
+    const given = chineseName.slice(1);
+    const surnameEn = MAP[surname] || '';
+    const givenParts = given.split('').map(c => MAP[c]).filter(Boolean);
+    if (!surnameEn && !givenParts.length) return '';
+    return [surnameEn, givenParts.join('-')].filter(Boolean).join(' ');
+  };
+
   // 根據 vipLevel 取得配置
   const getTierConfig = (vipLevel) => {
     return VIP_TIERS[vipLevel] || VIP_TIERS.normal;
@@ -784,7 +834,7 @@ const CUS360Demo = () => {
     {
       id: "C001",
       name: "王小明",
-      nameEn: "",
+      nameEn: "WANG HSIAO-MING",
       age: 35,
       vipLevel: "VVVIP",
       riskScore: "A+",
@@ -827,7 +877,7 @@ const CUS360Demo = () => {
     {
       id: "C002",
       name: "李美華",
-      nameEn: "",
+      nameEn: "LI MEI-HUA",
       age: 42,
       vipLevel: "VVIP",
       riskScore: "A+",
@@ -863,7 +913,7 @@ const CUS360Demo = () => {
     {
       id: "C003",
       name: "陳大偉",
-      nameEn: "",
+      nameEn: "CHEN DA-WEI",
       age: 28,
       vipLevel: "normal",
       riskScore: "B",
@@ -899,7 +949,7 @@ const CUS360Demo = () => {
     {
       id: "C004",
       name: "張麗娟",
-      nameEn: "",
+      nameEn: "CHANG LI-CHUAN",
       age: 51,
       vipLevel: "VIP",
       riskScore: "A",
@@ -935,7 +985,7 @@ const CUS360Demo = () => {
     {
       id: "C005",
       name: "劉志明",
-      nameEn: "",
+      nameEn: "LIU CHIH-MING",
       age: 46,
       vipLevel: "normal",
       riskScore: "C",
@@ -971,7 +1021,7 @@ const CUS360Demo = () => {
     {
       id: "C006",
       name: "林小芳",
-      nameEn: "",
+      nameEn: "LIN HSIAO-FANG",
       age: 33,
       vipLevel: "VIP",
       riskScore: "A",
@@ -1007,7 +1057,7 @@ const CUS360Demo = () => {
     {
       id: "C007",
       name: "張杰仁",
-      nameEn: "",
+      nameEn: "CHANG CHIEH-JEN",
       age: 41,
       vipLevel: "VVIP",
       riskScore: "A+",
@@ -1043,7 +1093,7 @@ const CUS360Demo = () => {
     {
       id: "C008",
       name: "何雅婷",
-      nameEn: "",
+      nameEn: "HO YA-TING",
       age: 29,
       vipLevel: "normal",
       riskScore: "B",
@@ -1079,7 +1129,7 @@ const CUS360Demo = () => {
     {
       id: "C009",
       name: "吳宗憲",
-      nameEn: "",
+      nameEn: "WU TSUNG-HSIEN",
       age: 58,
       vipLevel: "VIP",
       riskScore: "A",
@@ -1115,7 +1165,7 @@ const CUS360Demo = () => {
     {
       id: "C010",
       name: "蔡雅文",
-      nameEn: "",
+      nameEn: "TSAI YA-WEN",
       age: 64,
       vipLevel: "VVIP",
       riskScore: "A+",
@@ -1151,7 +1201,7 @@ const CUS360Demo = () => {
     {
       id: "C011",
       name: "林冠哲",
-      nameEn: "",
+      nameEn: "LIN KUAN-CHE",
       age: 39,
       vipLevel: "VVVIP",
       riskScore: "A",
@@ -1188,7 +1238,7 @@ const CUS360Demo = () => {
     {
       id: "C012",
       name: "周逸軒",
-      nameEn: "",
+      nameEn: "CHOU YI-HSUAN",
       age: 45,
       vipLevel: "VVIP",
       riskScore: "A+",
@@ -1237,7 +1287,7 @@ const CUS360Demo = () => {
     {
       id: "C013",
       name: "林佳穎",
-      nameEn: "",
+      nameEn: "LIN CHIA-YING",
       age: 29,
       vipLevel: "normal",
       riskScore: "C",
@@ -1287,7 +1337,7 @@ const CUS360Demo = () => {
     {
       id: "C014",
       name: "陳育庭",
-      nameEn: "",
+      nameEn: "CHEN YU-TING",
       age: 40,
       vipLevel: "VIP",
       riskScore: "A",
@@ -1336,7 +1386,7 @@ const CUS360Demo = () => {
     {
       id: "C015",
       name: "郭仁豪",
-      nameEn: "",
+      nameEn: "KUO JEN-HAO",
       age: 38,
       vipLevel: "VIP",
       riskScore: "A",
@@ -1373,7 +1423,7 @@ const CUS360Demo = () => {
     {
       id: "C016",
       name: "曾雅霖",
-      nameEn: "",
+      nameEn: "TSENG YA-LIN",
       age: 27,
       vipLevel: "normal",
       riskScore: "C",
@@ -1419,7 +1469,7 @@ const CUS360Demo = () => {
     {
       id: "C017",
       name: "許建弘",
-      nameEn: "",
+      nameEn: "HSU CHIEN-HUNG",
       age: 50,
       vipLevel: "VVIP",
       riskScore: "A",
@@ -7011,6 +7061,8 @@ const CUS360Demo = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [showMaskedData, setShowMaskedData] = useState(true);
   const [activeTab, setActiveTab] = useState("basic");
+  const [assetAllocTab, setAssetAllocTab] = useState("l1");
+  const aumAnimatedRef = React.useRef(new Set()); // tracks which customer IDs have already played AUM entry animation
   const [pendingAnchor, setPendingAnchor] = useState(null); // { anchorId } — scroll after tab render
   const [insightModal, setInsightModal] = useState(null); // { type, data } — insight popup
   const [filters, setFilters] = useState({
@@ -7775,6 +7827,15 @@ const CUS360Demo = () => {
     }
     return chars.join("");
   };
+  const maskAccount = makeMaskFunction((s) => {
+    // Keep bank code (prefix before first dash) and last segment; mask middle digits
+    const parts = s.split('-');
+    if (parts.length >= 3) {
+      const mid = parts.slice(1, -1).map(p => '*'.repeat(p.length)).join('-');
+      return `${parts[0]}-${mid}-${parts[parts.length - 1]}`;
+    }
+    return maskDigitsKeepLast(s, 4);
+  });
   const maskValue = (label, value, force = false) => {
     // When masking is disabled, always return raw value regardless of force flag
     if (!showMaskedData) return value;
@@ -7784,6 +7845,7 @@ const CUS360Demo = () => {
     if (/手機|電話/.test(l)) return maskPhone(value);
     if (/地址/.test(l)) return maskAddress(value);
     if (/證件號|身分證|ID|idCard/i.test(l)) return maskId(value);
+    if (/帳號/.test(l)) return maskAccount(value);
     return value;
   };
 
@@ -7958,7 +8020,7 @@ const CUS360Demo = () => {
     };
   };
 
-  // 客户行业映射 - 基于客户 ID 进行确定性分配
+  // 客戶行業映射 - 依據客戶 ID 進行確定性分配
   const getCustomerIndustry = (customer) => {
     // Use explicit industry field if set on the customer
     if (customer && customer.industry) return customer.industry;
@@ -8066,6 +8128,14 @@ const CUS360Demo = () => {
     const products = [];
 
     // ── 存款 ─────────────────────────────────────────────────────────────────
+    // Pre-compute which TWD deposit products are held so fractions sum to 1.0
+    const hasTWDSavings = f.liquid > 50000 && rnd(2, 3) === 0;
+    const hasTWDTime    = f.liquid > 100000 && rnd(3, 2) === 0;
+    // Canonical fractions: 定期 0.30, 活儲 0.30, 活期 = remainder
+    const twdTimeFrac    = hasTWDTime    ? 0.30 : 0;
+    const twdSavingsFrac = hasTWDSavings ? 0.30 : 0;
+    const twdDemandFrac  = Math.max(0, 1.0 - twdTimeFrac - twdSavingsFrac);
+
     // 台幣活期存款 (always when liquid > 0)
     if (f.liquid > 0) {
       products.push({
@@ -8073,32 +8143,31 @@ const CUS360Demo = () => {
         details: [
           { label: "帳號",     value: acctNum("001", 1) },
           { label: "開戶日期", value: dateStr(2015, 101) },
-          { label: "現存餘額", value: `NT$ ${Math.round(f.liquid * 0.55).toLocaleString()}` },
+          { label: "現存餘額", value: `NT$ ${Math.round(f.liquid * twdDemandFrac).toLocaleString()}` },
           { label: "帳戶狀態", value: "正常" },
         ],
       });
     }
     // 台幣活期儲蓄存款
-    if (f.liquid > 50000 && rnd(2, 3) === 0) {
+    if (hasTWDSavings) {
       products.push({
         l1: "存款", l2: "台幣存款", l3: "台幣活期存款", l4: "台幣活期儲蓄存款",
         details: [
           { label: "帳號",     value: acctNum("002", 2) },
           { label: "開戶日期", value: dateStr(2018, 102) },
-          { label: "現存餘額", value: `NT$ ${Math.round(f.liquid * 0.45).toLocaleString()}` },
+          { label: "現存餘額", value: `NT$ ${Math.round(f.liquid * twdSavingsFrac).toLocaleString()}` },
           { label: "帳戶狀態", value: "正常" },
         ],
       });
     }
     // 台幣定期存款
-    if (f.liquid > 100000 && rnd(3, 2) === 0) {
-      const amt = Math.round(f.liquid * (0.2 + rnd(4, 30) / 100));
+    if (hasTWDTime) {
       products.push({
         l1: "存款", l2: "台幣存款", l3: "台幣定期存款", l4: "台幣定期存款",
         details: [
           { label: "帳號",     value: acctNum("003", 3) },
           { label: "開戶日期", value: dateStr(2020, 103) },
-          { label: "存款金額", value: `NT$ ${amt.toLocaleString()}` },
+          { label: "存款金額", value: `NT$ ${Math.round(f.liquid * twdTimeFrac).toLocaleString()}` },
           { label: "到期日",   value: dateStr(2025, 203) },
           { label: "利率",     value: `${(1.5 + rnd(5, 20) / 10).toFixed(2)}%` },
           { label: "帳戶狀態", value: "定存中" },
@@ -9390,6 +9459,23 @@ const CUS360Demo = () => {
     const cy = 21;
     const outerR = 15.9155;
     const innerR = outerR * innerRatio;
+    // Special case: single segment = full circle (arc path degenerates to nothing)
+    if (data.length === 1) {
+      return (
+        <div className="relative" style={{ width: size, height: size }}>
+          <svg width={size} height={size} viewBox="0 0 42 42">
+            <circle cx={cx} cy={cy} r={outerR} fill={colors[0] || '#14b8a6'} />
+            <circle cx={cx} cy={cy} r={innerR} fill="white" />
+            {centerText && (
+              <text x="21" y="18.5" textAnchor="middle" dominantBaseline="middle" fontSize="4.2" fontWeight="bold" fill="#0f766e">{centerText.line1}</text>
+            )}
+            {centerText && (
+              <text x="21" y="24" textAnchor="middle" dominantBaseline="middle" fontSize="3" fill="#6b7280">{centerText.line2}</text>
+            )}
+          </svg>
+        </div>
+      );
+    }
     // Build segments with animated angular span
     let acc = 0;
     const segments = data.map((d, i) => {
@@ -10073,6 +10159,7 @@ const CUS360Demo = () => {
   const renderFinancialCharts = () => {
     // Reorganized: separate NetWorth/Liabilities, Income Sources+3mo trend, and Asset Allocation
     return (
+      <>
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-lg shadow">
           <h4 className="text-lg font-semibold text-gray-800 mb-3">
@@ -10159,69 +10246,107 @@ const CUS360Demo = () => {
         </div>
 
         <div className="bg-white p-4 rounded-lg shadow">
-          <h4 className="text-lg font-semibold text-gray-800 mb-3">資產配置</h4>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-lg font-semibold text-gray-800">資產配置</h4>
+            {selectedCustomer && (
+              <div className="flex gap-0.5 text-xs bg-gray-100 rounded-lg p-0.5">
+                <button
+                  className={`px-2.5 py-1 rounded-md transition-colors ${assetAllocTab === 'l1' ? 'bg-white shadow text-teal-700 font-semibold' : 'text-gray-500 hover:text-gray-700'}`}
+                  onClick={() => setAssetAllocTab('l1')}
+                >概覽</button>
+                <button
+                  className={`px-2.5 py-1 rounded-md transition-colors ${assetAllocTab === 'l3' ? 'bg-white shadow text-teal-700 font-semibold' : 'text-gray-500 hover:text-gray-700'}`}
+                  onClick={() => setAssetAllocTab('l3')}
+                >細項</button>
+              </div>
+            )}
+          </div>
           <div className="rounded-lg p-3 bg-gray-50 flex items-center gap-4">
             {selectedCustomer ? (
               (() => {
+                // ── 一致性規則 ─────────────────────────────────────────────────
+                // Rule 1: f.liquid (存款池) and f.invest (投資池) are canonical pool sizes.
+                // Rule 2: 概覽 shows f.liquid and f.invest directly — no scraping.
+                // Rule 3: 細項 distributes each pool proportionally by product weights,
+                //         so sum(細項 存款) = f.liquid and sum(細項 財管) = f.invest.
+                // Rule 4: 保險 is excluded (not an investable asset).
+                // ────────────────────────────────────────────────────────────────
                 const f = getCustomerFinance(selectedCustomer);
-                // Deposit mix (some may be zero)
-                const seed = seedFromId(selectedCustomer) + 2025;
-                const baseDep = Math.max(0, f.liquid || 0);
-                const fxRatio = (seed % 30) / 100;
-                const twRatio = ((seed >> 3) % 40) / 100;
-                const fxTime = Math.round(baseDep * fxRatio);
-                const twTime = Math.round(baseDep * twRatio);
-                const demand = Math.max(0, baseDep - fxTime - twTime);
-                // Other asset classes
-                const investAmt = Math.max(0, f.invest || 0);
-                const loanAmt = Math.max(0, f.loan || 0);
-                const otherAmt = Math.max(0, f.other || 0);
-                const itemsAll = [
-                  { label: "外幣定存", value: fxTime, color: "#14b8a6" },
-                  { label: "台幣定存", value: twTime, color: "#06b6d4" },
-                  { label: "台幣活存", value: demand, color: "#0ea5a4" },
-                  { label: "投資資產", value: investAmt, color: "#34d399" },
-                  { label: "貸款餘額", value: loanAmt, color: "#7dd3fc" },
-                  { label: "其他", value: otherAmt, color: "#0f766e" },
-                ].filter((it) => it.value > 0);
+                const allProds = generateCustomerProducts(selectedCustomer);
+                const ASSET_L1 = new Set(['存款', '財管']);
+                const EXCLUDE_L2 = new Set(['保險']);
+                const assetProds = allProds.filter(p => ASSET_L1.has(p.l1) && !EXCLUDE_L2.has(p.l2));
+                const depositProds = assetProds.filter(p => p.l1 === '存款');
+                const investProds  = assetProds.filter(p => p.l1 === '財管');
+
+                // Canonical weights per L4 within each pool
+                const DEP_W = {
+                  '台幣活期存款': 40, '台幣活期儲蓄存款': 30,
+                  '台幣定期存款': 30, '外幣活期存款': 12, '外幣定期存款': 18,
+                };
+                const INV_W = {
+                  '股票型': 25, '固定收益型': 20, '平衡型': 20, '組合型': 15,
+                  '貨幣市場型': 15, '期貨信託型': 10,
+                  '國內ETF': 18, '境外ETF': 18,
+                  '海外債': 22, '結構型': 10,
+                  '安養信託': 18, '保險金信託': 12, '不動產信託': 18, '價金信託': 12, '其他信託': 8,
+                };
+
+                const L4_PALETTE = {
+                  '存款': ['#14b8a6', '#0d9488', '#5eead4', '#99f6e4'],
+                  '財管': ['#06b6d4', '#0891b2', '#22d3ee', '#67e8f9', '#a5f3fc', '#0e7490'],
+                };
+
+                // Normalize product amounts within a pool so they sum to exactly `poolAmt`
+                const allocatePool = (prods, poolAmt, weightMap, palette) => {
+                  if (!prods.length || poolAmt <= 0) return [];
+                  const totalW = prods.reduce((s, p) => s + (weightMap[p.l4] || 15), 0) || 1;
+                  const items = prods.map((p, idx) => ({
+                    label: p.l4, l1: p.l1,
+                    value: Math.round(poolAmt * (weightMap[p.l4] || 15) / totalW),
+                    color: palette[idx % palette.length],
+                  }));
+                  // Adjust rounding so sum = poolAmt exactly
+                  let diff = poolAmt - items.reduce((s, x) => s + x.value, 0);
+                  if (diff !== 0) items[0].value += diff;
+                  return items.filter(x => x.value > 0);
+                };
+
+                let itemsAll;
+                if (assetAllocTab === 'l1') {
+                  // 概覽: canonical pool totals only
+                  itemsAll = [
+                    depositProds.length > 0 && { label: '存款', value: f.liquid, color: '#14b8a6' },
+                    investProds.length > 0  && { label: '財管', value: f.invest, color: '#06b6d4' },
+                  ].filter(Boolean);
+                } else {
+                  // 細項: proportional allocation within each pool
+                  itemsAll = [
+                    ...allocatePool(depositProds, f.liquid, DEP_W, L4_PALETTE['存款']),
+                    ...allocatePool(investProds,  f.invest, INV_W, L4_PALETTE['財管']),
+                  ];
+                }
+
+                const colors = itemsAll.map(x => x.color);
+                if (itemsAll.length === 0) return <div className="text-sm text-gray-400">暫無資產資料</div>;
+
                 const total = itemsAll.reduce((s, x) => s + x.value, 0) || 1;
-                const data = itemsAll.map((it) => ({
-                  label: it.label,
-                  value: Math.max(1, Math.round((it.value / total) * 100)),
-                }));
-                // rebalance to 100 exactly
+                const data = itemsAll.map(it => ({ label: it.label, value: Math.max(1, Math.round((it.value / total) * 100)) }));
                 let sum = data.reduce((s, x) => s + x.value, 0);
-                for (let i = 0; sum > 100 && i < data.length; i++) {
-                  if (data[i].value > 1) {
-                    data[i].value--;
-                    sum--;
-                    i = -1;
-                  }
-                }
-                for (let i = 0; sum < 100 && i < data.length; i++) {
-                  data[i].value++;
-                  sum++;
-                }
-                const colors = itemsAll.map((it) => it.color);
+                for (let i = 0; sum > 100 && i < data.length; i++) { if (data[i].value > 1) { data[i].value--; sum--; i = -1; } }
+                for (let i = 0; sum < 100 && i < data.length; i++) { data[i].value++; sum++; }
+
                 return (
                   <div className="flex items-center gap-4 w-full">
                     <DonutInteractive data={data} colors={colors} size={96} />
                     <div className="flex-1">
-                      <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
                         {itemsAll.map((it, i) => (
-                          <div
-                            key={it.label}
-                            className="flex items-center gap-2"
-                          >
-                            <span
-                              className="w-3 h-3 rounded-sm"
-                              style={{ background: colors[i] }}
-                            ></span>
-                            <div>
-                              <div className="font-medium">{it.label}</div>
-                              <div className="text-xs text-gray-600">
-                                NT$ {it.value.toLocaleString()}
-                              </div>
+                          <div key={`${it.label}-${i}`} className="flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ background: colors[i] }}></span>
+                            <div className="min-w-0">
+                              <div className="font-medium truncate">{it.label}</div>
+                              <div className="text-gray-500">NT$ {it.value.toLocaleString()}</div>
                             </div>
                           </div>
                         ))}
@@ -10238,6 +10363,372 @@ const CUS360Demo = () => {
           </div>
         </div>
       </div>
+
+      {/* 12-month AUM stacked bar & ROI trend — side-by-side */}
+      {selectedCustomer && (() => {
+        const s = seedFromId(selectedCustomer);
+        const f = getCustomerFinance(selectedCustomer);
+        const allProds = generateCustomerProducts(selectedCustomer);
+        const EXCLUDE_L2 = new Set(['保險']);
+        const investProds = allProds.filter(p => p.l1 === '財管' && !EXCLUDE_L2.has(p.l2));
+
+        const now = new Date();
+        const monthLabels = Array.from({ length: 12 }, (_, i) => {
+          const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
+          return `${d.getMonth() + 1}月`;
+        });
+
+        const rndSalt = (salt, range) => (Math.abs((s + salt * 1337 + salt) % range) - range / 2);
+
+        // ── AUM data: all 12 months within ±30% of current AUM; most recent ≤30% off ──
+        // Forward random walk: start from a point near current, drift month-to-month,
+        // every month clamped within ±30% of the current anchor (f.liquid / f.invest).
+        const MAX_DRIFT = 0.30;
+        const buildWalk = (current, saltBase) => {
+          const lo = Math.round(current * (1 - MAX_DRIFT));
+          const hi = Math.round(current * (1 + MAX_DRIFT));
+          const clamp = v => Math.min(hi, Math.max(lo, v));
+          // Start at a random point within ±20% of current
+          const initOffset = rndSalt(saltBase + 999, 1000) / 1000 * 0.20;
+          const vals = new Array(12);
+          vals[0] = clamp(Math.round(current * (1 + initOffset)));
+          for (let i = 1; i < 12; i++) {
+            const step = rndSalt(saltBase + i * 13, 1000) / 1000 * 0.08; // ±8% per month
+            vals[i] = clamp(Math.round(vals[i - 1] * (1 + step)));
+          }
+          return vals;
+        };
+        // Scale liquid/invest proportionally so their sum equals netWorth
+        const aumBase = f.liquid + f.invest || 1;
+        const liqRatio = f.liquid / aumBase;
+        const invRatio = f.invest / aumBase;
+        const scaledLiq = Math.round(f.netWorth * liqRatio);
+        const scaledInv = Math.round(f.netWorth * invRatio);
+        const liqWalk = buildWalk(scaledLiq, 500);
+        const invWalk = buildWalk(scaledInv, 600);
+        const aumSeries = Array.from({ length: 12 }, (_, i) => ({
+          liq: liqWalk[i], inv: invWalk[i], total: liqWalk[i] + invWalk[i],
+        }));
+        const maxAUM = Math.max(...aumSeries.map(d => d.total), 1);
+        const aumUnit = maxAUM >= 100000000 ? 100000000 : 10000;
+        const aumUnitLabel = aumUnit === 100000000 ? '億' : '萬';
+        const fmtAUM = v => (v / aumUnit).toFixed(aumUnit === 100000000 ? 1 : 0);
+
+        // ── ROI data ─────────────────────────────────────────────────────────────────
+        const heldProducts = [];
+        const seenProdKeys = new Set();
+        investProds.forEach(p => {
+          const key = `${p.l3}/${p.l4 || p.l3}`;
+          if (!seenProdKeys.has(key)) { seenProdKeys.add(key); heldProducts.push(p); }
+        });
+
+        const prodLabel = (p) => {
+          if (p.l2 === '基金' && p.l3.includes('境外')) return '境外' + p.l4;
+          if (p.l2 === '基金' && p.l3.includes('國內')) return '國內' + p.l4;
+          return p.l4 || p.l3;
+        };
+
+        const BASE_PROFILES = {
+          '國內股票型':    { annualBase: 14.0, vol: 2.5 },
+          '國內固定收益型': { annualBase:  5.5, vol: 1.0 },
+          '國內平衡型':    { annualBase:  9.0, vol: 1.8 },
+          '國內貨幣市場型': { annualBase:  2.5, vol: 0.3 },
+          '國內組合型':    { annualBase:  8.0, vol: 1.6 },
+          '國內期貨信託型': { annualBase: 16.0, vol: 4.0 },
+          '境外股票型':    { annualBase: 16.0, vol: 3.0 },
+          '境外固定收益型': { annualBase:  5.0, vol: 1.0 },
+          '境外平衡型':    { annualBase: 10.0, vol: 2.0 },
+          '境外組合型':    { annualBase:  9.0, vol: 1.8 },
+          '境外貨幣市場型': { annualBase:  3.0, vol: 0.4 },
+          '國內ETF':      { annualBase: 12.0, vol: 3.5 },
+          '境外ETF':      { annualBase: 13.0, vol: 4.0 },
+          '海外債':        { annualBase:  4.5, vol: 1.2 },
+          '結構型':        { annualBase:  5.5, vol: 1.8 },
+          '安養信託':      { annualBase:  3.5, vol: 0.8 },
+          '保險金信託':    { annualBase:  3.0, vol: 0.7 },
+          '不動產信託':    { annualBase:  5.0, vol: 1.5 },
+          '價金信託':      { annualBase:  2.5, vol: 0.6 },
+          '其他信託':      { annualBase:  3.0, vol: 0.9 },
+        };
+        const COLOR_PALETTE = [
+          '#14b8a6', '#0891b2', '#06b6d4', '#0d9488', '#0e7490',
+          '#5eead4', '#22d3ee', '#0f766e', '#67e8f9', '#99f6e4',
+        ];
+
+        const roiSeries = heldProducts.map((p, idx) => {
+          const label = prodLabel(p);
+          const prof = BASE_PROFILES[label] || { annualBase: 7.0, vol: 2.0 };
+          const saltBase = (p.l3.charCodeAt(0) + (p.l4 || '').charCodeAt(0)) * 17 + idx * 31;
+          let prevReturn = prof.annualBase / 12;
+          const monthlyReturns = Array.from({ length: 23 }, (_, i) => {
+            const shock  = rndSalt(saltBase + i * 3, 2000) / 2000 * prof.vol;
+            const regime = rndSalt(saltBase + i * 7 + 999, 1000) / 1000 * (prof.vol * 0.4);
+            const ret    = prof.annualBase / 12 * 0.7 + prevReturn * 0.3 + shock + regime;
+            prevReturn = ret;
+            return ret;
+          });
+          const values = Array.from({ length: 12 }, (_, i) => {
+            const sum = monthlyReturns.slice(i, i + 12).reduce((a, b) => a + b, 0);
+            return Math.round(sum * 100) / 100;
+          });
+          return { label, values, color: COLOR_PALETTE[idx % COLOR_PALETTE.length] };
+        });
+
+        // ── Shared SVG dimensions ──────────────────────────────────────────────────
+        const W = 560, H = 140, PAD_X = 44, PAD_TOP = 12, PAD_BOTTOM = 22;
+        const innerW = W - PAD_X * 2, innerH = H - PAD_TOP - PAD_BOTTOM;
+        const CHART_BOTTOM = PAD_TOP + innerH;
+
+        // ── AUM SVG helpers ────────────────────────────────────────────────────────
+        const slotW = innerW / 12;
+        const barW = slotW * 0.62;
+        const barX = i => PAD_X + i * slotW + (slotW - barW) / 2;
+        const aumToY = v => PAD_TOP + innerH * (1 - v / maxAUM);
+        const aumToH = v => innerH * v / maxAUM;
+
+        const aumRawStep = maxAUM / aumUnit / 4;
+        const aumMag = Math.pow(10, Math.floor(Math.log10(Math.max(aumRawStep, 0.1))));
+        const aumNorm = aumRawStep / aumMag;
+        const aumNiceStep = aumNorm <= 1 ? aumMag : aumNorm <= 2 ? 2 * aumMag : aumNorm <= 5 ? 5 * aumMag : 10 * aumMag;
+        const aumYTicks = Array.from({ length: 5 }, (_, i) => ({
+          v: i * aumNiceStep,
+          y: aumToY(i * aumNiceStep * aumUnit),
+        })).filter(t => t.v * aumUnit <= maxAUM * 1.05);
+
+        // ── ROI SVG helpers: 0% at centre, equal-distance ticks ──────────────────
+        const allROIVals = roiSeries.length > 0 ? roiSeries.flatMap(sr => sr.values) : [0];
+        const dataAbsMax = Math.max(...allROIVals.map(v => Math.abs(v)), 1);
+        // Pick step so axis snugly covers data with minimum 2 ticks per side
+        const NICE_STEPS = [1, 2, 5, 10, 15, 20, 25, 30];
+        const roiStep = NICE_STEPS.find(s => s * 2 >= dataAbsMax) || 30;
+        const roiTickCount = Math.max(2, Math.ceil(dataAbsMax / roiStep));
+        const axisMax = roiStep * roiTickCount;          // symmetric axis: [-axisMax, +axisMax]
+        const roiToX = i => PAD_X + (i / 11) * innerW;
+        const roiToY = v => PAD_TOP + innerH * (1 - (v + axisMax) / (2 * axisMax)); // 0 → mid
+        const roiYTicks = Array.from({ length: roiTickCount * 2 + 1 }, (_, i) => ({
+          v: (i - roiTickCount) * roiStep,
+          y: roiToY((i - roiTickCount) * roiStep),
+        }));
+
+        const toBezier = (pts) => {
+          if (!pts.length) return '';
+          let d = `M ${pts[0].x} ${pts[0].y}`;
+          for (let i = 0; i < pts.length - 1; i++) {
+            const p0 = pts[Math.max(0, i - 1)];
+            const p1 = pts[i], p2 = pts[i + 1];
+            const p3 = pts[Math.min(pts.length - 1, i + 2)];
+            const cp1x = p1.x + (p2.x - p0.x) / 6;
+            const cp1y = p1.y + (p2.y - p0.y) / 6;
+            const cp2x = p2.x - (p3.x - p1.x) / 6;
+            const cp2y = p2.y - (p3.y - p1.y) / 6;
+            d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+          }
+          return d;
+        };
+
+        // ── AUM Chart component ────────────────────────────────────────────────────
+        const AUMChart = () => {
+          const custId = selectedCustomer && (selectedCustomer.id || selectedCustomer.name);
+          const alreadyPlayed = aumAnimatedRef.current.has(custId);
+          const [hoverIdx, setHoverIdx] = React.useState(null);
+          const [animPct, setAnimPct] = React.useState(alreadyPlayed ? 1 : 0);
+          const animRef = React.useRef(null);
+          React.useEffect(() => {
+            if (alreadyPlayed) return; // tab switch remount — skip animation
+            aumAnimatedRef.current.add(custId);
+            setAnimPct(0);
+            const start = performance.now();
+            const dur = 700;
+            const tick = (now) => {
+              const t = Math.min((now - start) / dur, 1);
+              setAnimPct(1 - Math.pow(1 - t, 3)); // ease-out cubic
+              if (t < 1) animRef.current = requestAnimationFrame(tick);
+            };
+            animRef.current = requestAnimationFrame(tick);
+            return () => cancelAnimationFrame(animRef.current);
+          }, []);
+          return (
+            <div className="bg-white p-4 rounded-lg shadow flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-lg font-semibold text-gray-800">過去 12 個月 AUM</h4>
+                <div className="flex gap-3">
+                  <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                    <span className="inline-block w-3 h-3 rounded-sm" style={{ background: '#14b8a6' }}></span>存款
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                    <span className="inline-block w-3 h-3 rounded-sm" style={{ background: '#0891b2' }}></span>財管
+                  </div>
+                </div>
+              </div>
+              <div className="relative">
+                <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="block overflow-visible">
+                  <defs>
+                    <linearGradient id="aumGradLiq" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.9" />
+                      <stop offset="100%" stopColor="#14b8a6" stopOpacity="0.5" />
+                    </linearGradient>
+                    <linearGradient id="aumGradInv" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#0891b2" stopOpacity="0.9" />
+                      <stop offset="100%" stopColor="#0891b2" stopOpacity="0.5" />
+                    </linearGradient>
+                  </defs>
+                  {aumYTicks.map(t => (
+                    <g key={t.v}>
+                      <line x1={PAD_X} x2={W - PAD_X} y1={t.y} y2={t.y} stroke="#f0fdfa" strokeWidth="1" />
+                      <text x={PAD_X - 4} y={t.y + 3} fontSize="8" fill="#9ca3af" textAnchor="end">{t.v}{aumUnitLabel}</text>
+                    </g>
+                  ))}
+                  {aumSeries.map((d, i) => {
+                    const hLiq = aumToH(d.liq) * animPct;
+                    const hInv = aumToH(d.inv) * animPct;
+                    const yLiq = CHART_BOTTOM - hLiq;
+                    const yInv = yLiq - hInv;
+                    const isHov = hoverIdx === i;
+                    return (
+                      <g key={i}>
+                        <rect x={barX(i)} y={yInv} width={barW} height={Math.max(0, hInv)} rx={2}
+                          fill={isHov ? '#0891b2' : 'url(#aumGradInv)'} fillOpacity={isHov ? 1 : 0.85} />
+                        <rect x={barX(i)} y={yLiq} width={barW} height={Math.max(0, hLiq)} rx={2}
+                          fill={isHov ? '#14b8a6' : 'url(#aumGradLiq)'} fillOpacity={isHov ? 1 : 0.85} />
+                        <rect x={barX(i) - 2} y={PAD_TOP} width={barW + 4} height={innerH}
+                          fill="transparent"
+                          onMouseEnter={() => setHoverIdx(i)}
+                          onMouseLeave={() => setHoverIdx(null)} />
+                      </g>
+                    );
+                  })}
+                  {monthLabels.map((lbl, i) => (
+                    <text key={i} x={PAD_X + i * slotW + slotW / 2} y={CHART_BOTTOM + 13}
+                      fontSize="8" fill={hoverIdx === i ? '#0f766e' : '#9ca3af'}
+                      textAnchor="middle" fontWeight={hoverIdx === i ? 'bold' : 'normal'}>{lbl}</text>
+                  ))}
+                </svg>
+                {hoverIdx !== null && (() => {
+                  const d = aumSeries[hoverIdx];
+                  const xPct = (PAD_X + hoverIdx * slotW + slotW / 2) / W * 100;
+                  const clamp = Math.min(Math.max(xPct, 5), 68);
+                  return (
+                    <div className="absolute top-0 pointer-events-none z-10" style={{ left: `${clamp}%` }}>
+                      <div className="bg-white border border-teal-100 rounded-lg shadow-md px-2 py-1.5 text-xs whitespace-nowrap">
+                        <div className="font-semibold text-gray-700 mb-1">{monthLabels[hoverIdx]}</div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: '#14b8a6' }}></span>
+                          <span className="text-gray-600">存款</span>
+                          <span className="font-medium ml-auto pl-3 text-teal-700">{fmtAUM(d.liq)}{aumUnitLabel}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: '#0891b2' }}></span>
+                          <span className="text-gray-600">財管</span>
+                          <span className="font-medium ml-auto pl-3 text-teal-700">{fmtAUM(d.inv)}{aumUnitLabel}</span>
+                        </div>
+                        <div className="border-t border-gray-100 mt-1 pt-1 flex justify-between gap-3">
+                          <span className="text-gray-500">合計</span>
+                          <span className="font-semibold text-gray-700">{fmtAUM(d.total)}{aumUnitLabel}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+              <div className="text-xs text-gray-400 mt-3">* 月末 AUM（{aumUnitLabel}），含存款與財管資產</div>
+            </div>
+          );
+        };
+
+        // ── ROI Chart component ────────────────────────────────────────────────────
+        const ROIChart = () => {
+          const [hoverMonth, setHoverMonth] = React.useState(null);
+          const handleMouseMove = (e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const xRaw = (e.clientX - rect.left) / rect.width * W;
+            setHoverMonth(Math.min(11, Math.max(0, Math.round((xRaw - PAD_X) / innerW * 11))));
+          };
+          return (
+            <div className="bg-white p-4 rounded-lg shadow flex-1 min-w-0">
+              <div className="mb-3">
+                <h4 className="text-lg font-semibold text-gray-800 whitespace-nowrap">12 個月滾動投資報酬率</h4>
+                <div className="flex gap-x-3 gap-y-1 flex-wrap mt-1.5">
+                  {roiSeries.map(sr => (
+                    <div key={sr.label} className="flex items-center gap-1.5 text-xs text-gray-600 whitespace-nowrap">
+                      <span className="inline-block rounded flex-shrink-0" style={{ width: 18, height: 2, background: sr.color }}></span>
+                      {sr.label}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="relative" onMouseMove={handleMouseMove} onMouseLeave={() => setHoverMonth(null)}>
+                <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="block overflow-visible">
+                  {roiYTicks.map(t => (
+                    <g key={t.v}>
+                      <line x1={PAD_X} x2={W - PAD_X} y1={t.y} y2={t.y}
+                        stroke={t.v === 0 ? '#0d9488' : '#f0fdfa'}
+                        strokeWidth={t.v === 0 ? 1.5 : 1} />
+                      <text x={PAD_X - 4} y={t.y + 3} fontSize="8" textAnchor="end"
+                        fill={t.v === 0 ? '#0d9488' : '#9ca3af'}
+                        fontWeight={t.v === 0 ? 'bold' : 'normal'}>
+                        {t.v === 0 ? '0%' : `${t.v > 0 ? '+' : ''}${t.v}%`}
+                      </text>
+                    </g>
+                  ))}
+                  {hoverMonth !== null && (
+                    <line x1={roiToX(hoverMonth)} x2={roiToX(hoverMonth)} y1={PAD_TOP} y2={CHART_BOTTOM}
+                      stroke="#d1fae5" strokeWidth="1" strokeDasharray="3 2" />
+                  )}
+                  {roiSeries.map(sr => {
+                    const pts = sr.values.map((v, i) => ({ x: roiToX(i), y: roiToY(v) }));
+                    return (
+                      <g key={sr.label}>
+                        <path d={toBezier(pts)} fill="none" stroke={sr.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        {hoverMonth !== null && (
+                          <circle cx={roiToX(hoverMonth)} cy={roiToY(sr.values[hoverMonth])} r="3.5" fill={sr.color} stroke="white" strokeWidth="1.5" />
+                        )}
+                      </g>
+                    );
+                  })}
+                  {monthLabels.map((lbl, i) => (
+                    <text key={i} x={roiToX(i)} y={CHART_BOTTOM + 13} fontSize="8"
+                      fill={hoverMonth === i ? '#0f766e' : '#9ca3af'}
+                      textAnchor="middle" fontWeight={hoverMonth === i ? 'bold' : 'normal'}>{lbl}</text>
+                  ))}
+                </svg>
+                {hoverMonth !== null && (() => {
+                  const pct = roiToX(hoverMonth) / W * 100;
+                  const clampLeft = Math.min(Math.max(pct, 5), 68);
+                  return (
+                    <div className="absolute top-0 pointer-events-none z-10" style={{ left: `${clampLeft}%` }}>
+                      <div className="bg-white border border-teal-100 rounded-lg shadow-md px-2 py-1.5 text-xs whitespace-nowrap">
+                        <div className="font-semibold text-gray-700 mb-1">{monthLabels[hoverMonth]}</div>
+                        {roiSeries.map(sr => (
+                          <div key={sr.label} className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: sr.color }}></span>
+                            <span className="text-gray-600">{sr.label}</span>
+                            <span className="font-medium ml-auto pl-3" style={{ color: sr.values[hoverMonth] >= 0 ? '#0d9488' : '#ef4444' }}>
+                              {sr.values[hoverMonth] >= 0 ? '+' : ''}{sr.values[hoverMonth].toFixed(2)}%
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+              <div className="text-xs text-gray-400 mt-3">* 12 個月滾動報酬率（%），以 0% 為基準，等距刻度</div>
+            </div>
+          );
+        };
+
+        return (
+          <div className="flex gap-4 mt-4">
+            <AUMChart />
+            {heldProducts.length > 0 ? <ROIChart /> : (
+              <div className="bg-white p-4 rounded-lg shadow flex-1 min-w-0 flex items-center justify-center">
+                <span className="text-sm text-gray-400">未持有投資商品</span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+      </>
     );
   };
 
@@ -11087,7 +11578,7 @@ const CUS360Demo = () => {
   };
 
   const renderCustomerPreferences = (customer) => {
-    // 使用动态生成的preferences而非硬编码数据
+    // 使用動態產生的 preferences 而非硬編碼資料
     const dynamicPrefs = customer ? generateCustomerBasicInfo(customer).preferences : detailedCustomerData.preferences;
     const prefsData = dynamicPrefs || {
       title: "偏好資訊",
@@ -11341,7 +11832,7 @@ const CUS360Demo = () => {
     );
   };
 
-  // 消费类别中英文映射表
+  // 消費類別中英文對照表
   const SPENDING_CATEGORY_MAP = {
     travel: "旅遊",
     luxury: "精品消費",
@@ -11363,12 +11854,12 @@ const CUS360Demo = () => {
     overseas: "海外消費",
   };
 
-  // 获取消费类别中文标签
+  // 取得消費類別中文標籤
   const getSpendingCategoryLabel = (category) => {
     return SPENDING_CATEGORY_MAP[category] || category;
   };
 
-  // 为每个客户动态生成基本信息 - 在renderDetailView外部定义，以便renderCustomerPreferences可访问
+  // 為每位客戶動態產生基本資訊 - 定義於 renderDetailView 外部，供 renderCustomerPreferences 存取
   const generateCustomerBasicInfo = (customer) => {
     if (!customer) return {};
     return {
@@ -11379,7 +11870,7 @@ const CUS360Demo = () => {
             name: "客戶名稱資訊",
             data: [
               { label: "客戶中文戶名", value: customer.name || "—" },
-              { label: "客戶英文戶名", value: customer.nameEn || "—" },
+              { label: "客戶英文戶名", value: customer.nameEn || generateNameEn(customer.name) || "—" },
             ],
           },
           {
@@ -11392,17 +11883,17 @@ const CUS360Demo = () => {
         ],
       },
       contact: {
-        title: "客戶联絡資訊",
+        title: "客戶聯絡資訊",
         sections: [
           {
-            name: "联絡方式與地址",
+            name: "聯絡方式與地址",
             data: [
               { label: "手機號碼", value: customer.phone || "—" },
               { label: "電子郵件", value: customer.email || "—" },
               { label: "通訊地址", value: customer.address || "—" },
               { label: "城市", value: customer.city || "—" },
               {
-                label: "联絡偏好",
+                label: "聯絡偏好",
                 value: customer.preferredContact === "mobile" ? "行動 App"
                   : customer.preferredContact === "email" ? "Email"
                   : customer.preferredContact === "phone" ? "電話"
@@ -11456,7 +11947,7 @@ const CUS360Demo = () => {
             ].sort((a, b) => {
               const scoreA = parseInt(a.score) || 0;
               const scoreB = parseInt(b.score) || 0;
-              return scoreB - scoreA; // 从高到低排序
+              return scoreB - scoreA; // 由高至低排序
             }),
           },
           {
