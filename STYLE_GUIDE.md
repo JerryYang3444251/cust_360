@@ -217,7 +217,73 @@ THEME_BG (頁面底色)
 
 ---
 
-## 10. 注意事項
+## 11. 動畫規範
+
+### 11.1 入場動畫參數
+
+| 參數 | 值 | 說明 |
+|------|----|------|
+| 時長 | `700ms` | 所有長條圖入場動畫 |
+| 緩動函式 | ease-out cubic：`1 - (1-t)³` | 快入慢出，視覺自然 |
+| 驅動方式 | `requestAnimationFrame` 手動計算 `animPct`（0→1） | 避免 CSS transition 與 SVG 的相容問題 |
+
+### 11.2 元件定義位置原則（防止誤觸動畫）
+
+**規則：凡是含有入場動畫的圖表元件，必須定義在 `CUS360Demo` 函式之外（module scope）。**
+
+原因：若元件定義在父函式（或父函式內的子函式）內部，每次父元件 re-render（包含 state 切換如 tab 切換）都會產生新的函式型別，導致 React 強制 unmount + remount，動畫因此被非預期地重新觸發。
+
+```
+✅ 正確：定義在 module scope
+const MyChart = ({ data, ... }) => { ... };   // 函式型別穩定，React 可 reconcile
+const CUS360Demo = () => { return <MyChart data={...} /> };
+
+❌ 錯誤：定義在父函式或渲染函式內部
+const CUS360Demo = () => {
+  const MyChart = () => { ... };   // 每次 re-render 都是新型別 → 強制 remount → 動畫重播
+  return <MyChart />;
+};
+```
+
+### 11.3 動畫觸發條件
+
+使用 `useEffect` 的 dependency array 控制動畫時機：
+
+| 觸發時機 | dependency | 說明 |
+|----------|-----------|------|
+| 資料改變時（切換客戶） | `[dataKey]` | `dataKey` 為資料的字串指紋，例如 `values.join(",")` 或 `series.map(d=>`${d.a},${d.b}`).join("\|")` |
+| 每次 mount 都觸發 | `[]` | 適用於定義在 module scope 的元件：tab 切換不會 remount，故 `[]` 不會重播；切換客戶 props 改變，元件被複用但 effect 不重跑——此時應改用 `[dataKey]` |
+
+**已套用此規範的元件：**
+- `MonthlyBarHover`：`useEffect([values.join(","), startAnim])`，資料變才播
+- `AUMChart`：`useEffect([aumKey])`，`aumKey = aumSeries.map(d=>${d.liq},${d.inv}).join("|")`
+
+### 11.4 長條圖動畫實作模板
+
+```jsx
+// 定義於 module scope（函式外）
+const MyBarChart = ({ values, ...rest }) => {
+  const dataKey = values.join(",");
+  const [animPct, setAnimPct] = React.useState(0);
+  const animRef = React.useRef(null);
+  React.useEffect(() => {
+    setAnimPct(0);
+    const start = performance.now();
+    const dur = 700;
+    const tick = (now) => {
+      const t = Math.min((now - start) / dur, 1);
+      setAnimPct(1 - Math.pow(1 - t, 3)); // ease-out cubic
+      if (t < 1) animRef.current = requestAnimationFrame(tick);
+    };
+    animRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animRef.current);
+  }, [dataKey]); // ← 資料指紋變化才重新播放
+  // 渲染時將高度乘以 animPct
+  const barHeight = (v / max) * innerH * animPct;
+  ...
+};
+```
+
 
 1. 所有 **定義在 `CUS360Demo` 之外** 的元件（如 `CustomerProductTree`）的 state 使用 `React.useState`，不 import `useState`
 2. Layout token（`CARD`、`SUBCARD` 等）定義在 `CUS360Demo` 函式最頂部，所有子渲染直接引用字串變數

@@ -206,6 +206,254 @@ const CustomerProductTree = ({ products = [] }) => {
 };
 // ── end CustomerProductTree ────────────────────────────────────────────────
 
+// Hoisted to module scope — same reason as MonthlyBarHover: stable function reference
+// prevents React from unmounting/remounting on every parent state change (e.g. tab switch).
+// Animation fires when aumSeries data changes (new customer), not on tab switch.
+const AUMChart = ({
+  W, H, PAD_X, PAD_TOP, innerH, CHART_BOTTOM,
+  aumYTicks, aumUnitLabel, aumSeries,
+  aumToH, barX, barW, slotW, monthLabels, fmtAUM,
+}) => {
+  const [hoverIdx, setHoverIdx] = React.useState(null);
+  const [animPct, setAnimPct] = React.useState(0);
+  const animRef = React.useRef(null);
+  const aumKey = aumSeries.map(d => `${d.liq},${d.inv}`).join("|");
+  React.useEffect(() => {
+    setAnimPct(0);
+    const start = performance.now();
+    const dur = 700;
+    const tick = (now) => {
+      const t = Math.min((now - start) / dur, 1);
+      setAnimPct(1 - Math.pow(1 - t, 3)); // ease-out cubic
+      if (t < 1) animRef.current = requestAnimationFrame(tick);
+    };
+    animRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animRef.current);
+  }, [aumKey]);
+  return (
+    <div className="bg-white p-4 rounded-lg shadow flex-1 min-w-0">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-lg font-semibold text-gray-800">過去 12 個月 AUM</h4>
+        <div className="flex gap-3">
+          <div className="flex items-center gap-1.5 text-xs text-gray-600">
+            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: '#14b8a6' }}></span>存款
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-gray-600">
+            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: '#0891b2' }}></span>財管
+          </div>
+        </div>
+      </div>
+      <div className="relative">
+        <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="block overflow-visible">
+          <defs>
+            <linearGradient id="aumGradLiq" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.9" />
+              <stop offset="100%" stopColor="#14b8a6" stopOpacity="0.5" />
+            </linearGradient>
+            <linearGradient id="aumGradInv" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#0891b2" stopOpacity="0.9" />
+              <stop offset="100%" stopColor="#0891b2" stopOpacity="0.5" />
+            </linearGradient>
+          </defs>
+          {aumYTicks.map(t => (
+            <g key={t.v}>
+              <line x1={PAD_X} x2={W - PAD_X} y1={t.y} y2={t.y} stroke="#f0fdfa" strokeWidth="1" />
+              <text x={PAD_X - 4} y={t.y + 3} fontSize="8" fill="#9ca3af" textAnchor="end">{t.v}{aumUnitLabel}</text>
+            </g>
+          ))}
+          {aumSeries.map((d, i) => {
+            const hLiq = aumToH(d.liq) * animPct;
+            const hInv = aumToH(d.inv) * animPct;
+            const yLiq = CHART_BOTTOM - hLiq;
+            const yInv = yLiq - hInv;
+            const isHov = hoverIdx === i;
+            return (
+              <g key={i}>
+                <rect x={barX(i)} y={yInv} width={barW} height={Math.max(0, hInv)} rx={2}
+                  fill={isHov ? '#0891b2' : 'url(#aumGradInv)'} fillOpacity={isHov ? 1 : 0.85} />
+                <rect x={barX(i)} y={yLiq} width={barW} height={Math.max(0, hLiq)} rx={2}
+                  fill={isHov ? '#14b8a6' : 'url(#aumGradLiq)'} fillOpacity={isHov ? 1 : 0.85} />
+                <rect x={barX(i) - 2} y={PAD_TOP} width={barW + 4} height={innerH}
+                  fill="transparent"
+                  onMouseEnter={() => setHoverIdx(i)}
+                  onMouseLeave={() => setHoverIdx(null)} />
+              </g>
+            );
+          })}
+          {monthLabels.map((lbl, i) => (
+            <text key={i} x={PAD_X + i * slotW + slotW / 2} y={CHART_BOTTOM + 13}
+              fontSize="8" fill={hoverIdx === i ? '#0f766e' : '#9ca3af'}
+              textAnchor="middle" fontWeight={hoverIdx === i ? 'bold' : 'normal'}>{lbl}</text>
+          ))}
+        </svg>
+        {hoverIdx !== null && (() => {
+          const d = aumSeries[hoverIdx];
+          const xPct = (PAD_X + hoverIdx * slotW + slotW / 2) / W * 100;
+          const clamp = Math.min(Math.max(xPct, 5), 68);
+          return (
+            <div className="absolute top-0 pointer-events-none z-10" style={{ left: `${clamp}%` }}>
+              <div className="bg-white border border-teal-100 rounded-lg shadow-md px-2 py-1.5 text-xs whitespace-nowrap">
+                <div className="font-semibold text-gray-700 mb-1">{monthLabels[hoverIdx]}</div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: '#14b8a6' }}></span>
+                  <span className="text-gray-600">存款</span>
+                  <span className="font-medium ml-auto pl-3 text-teal-700">{fmtAUM(d.liq)}{aumUnitLabel}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: '#0891b2' }}></span>
+                  <span className="text-gray-600">財管</span>
+                  <span className="font-medium ml-auto pl-3 text-teal-700">{fmtAUM(d.inv)}{aumUnitLabel}</span>
+                </div>
+                <div className="border-t border-gray-100 mt-1 pt-1 flex justify-between gap-3">
+                  <span className="text-gray-500">合計</span>
+                  <span className="font-semibold text-gray-700">{fmtAUM(d.total)}{aumUnitLabel}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+      <div className="text-xs text-gray-400 mt-3">* 月末 AUM（{aumUnitLabel}），含存款與財管資產</div>
+    </div>
+  );
+};
+
+// Hoisted to module scope so its function reference is stable across parent re-renders.
+// If defined inside CUS360Demo, every state change (e.g. assetAllocTab) creates a new
+// function type, causing React to unmount+remount the component and re-trigger animation.
+const MonthlyBarHover = ({
+  values = [],
+  labels = [],
+  height = 64,
+  color = "#0d9488",
+}) => {
+  const ref = React.useRef(null);
+  const [w, setW] = React.useState(320);
+  const [hover, setHover] = React.useState(null);
+  // Animation: track a 0→1 progress that grows bars from the bottom
+  const [animPct, setAnimPct] = React.useState(0);
+  const animRef = React.useRef(null);
+  const startAnim = React.useCallback(() => {
+    setAnimPct(0);
+    const start = performance.now();
+    const dur = 700; // ms
+    const tick = (now) => {
+      const t = Math.min((now - start) / dur, 1);
+      // ease-out cubic
+      const eased = 1 - Math.pow(1 - t, 3);
+      setAnimPct(eased);
+      if (t < 1) animRef.current = requestAnimationFrame(tick);
+    };
+    animRef.current = requestAnimationFrame(tick);
+  }, []);
+  React.useEffect(() => {
+    startAnim();
+    return () => cancelAnimationFrame(animRef.current);
+  }, [values.join(","), startAnim]);
+  React.useEffect(() => {
+    if (!ref.current) return;
+    const el = ref.current;
+    const ro = new ResizeObserver((e) => {
+      for (const r of e) {
+        const nw = Math.max(260, Math.round(r.contentRect.width));
+        if (nw !== w) setW(nw);
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [w]);
+  if (!values.length)
+    return <div className="text-xs text-gray-500">無資料</div>;
+  const max = Math.max(...values);
+  const PAD_X = 8;
+  const PAD_Y = 6;
+  const innerW = w - PAD_X * 2;
+  const innerH = height - PAD_Y * 2;
+  const segW = innerW / values.length;
+  const barW = Math.max(4, segW * 0.55);
+  const baseY = height - PAD_Y;
+  const bars = values.map((v, i) => {
+    const fullH = (v / Math.max(1, max)) * (innerH - 4);
+    const h = fullH * animPct;
+    const x = PAD_X + i * segW + (segW - barW) / 2;
+    const y = baseY - h;
+    return { x, y, h, v, i };
+  });
+  return (
+    <div ref={ref} className="w-full relative">
+      <svg
+        width="100%"
+        viewBox={`0 0 ${w} ${height}`}
+        height={height}
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <linearGradient id={`barGrad-${color.replace('#','')}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.9" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.45" />
+          </linearGradient>
+        </defs>
+        {bars.map((b) => (
+          <rect
+            key={b.i}
+            x={b.x}
+            y={b.y}
+            width={barW}
+            height={Math.max(0, b.h)}
+            rx={3}
+            fill={hover === b.i ? color : `url(#barGrad-${color.replace('#','')})`}
+            fillOpacity={hover === b.i ? 1 : 0.85}
+          />
+        ))}
+        {bars.map((b) => (
+          <rect
+            key={"hz" + b.i}
+            x={PAD_X + b.i * segW}
+            y={0}
+            width={segW}
+            height={height}
+            fill="transparent"
+            onMouseEnter={() => setHover(b.i)}
+            onMouseLeave={() => setHover(null)}
+          />
+        ))}
+      </svg>
+      {hover != null && (
+        <div
+          className="absolute z-10 px-2 py-1 bg-white border border-teal-100 rounded-lg shadow-md text-xs pointer-events-none"
+          style={{
+            left: Math.min(
+              Math.max(bars[hover].x + barW / 2 - 40, 4),
+              w - 84
+            ),
+            top: 2,
+          }}
+        >
+          <div className="font-bold text-teal-700">
+            {values[hover].toLocaleString()}
+          </div>
+          <div className="text-gray-400">
+            {labels[hover] || `${hover + 1}月`}
+          </div>
+        </div>
+      )}
+      <div className="flex justify-between items-start text-xs mt-1">
+        {(labels.length ? labels : values.map((_, i) => `${i + 1}月`)).map(
+          (m, i) => (
+            <div
+              key={i}
+              className="text-center"
+              style={{ width: `${100 / values.length}%` }}
+            >
+              <div className="text-gray-400 text-[10px]">{m}</div>
+            </div>
+          )
+        )}
+      </div>
+    </div>
+  );
+};
+
 const CUS360Demo = () => {
   const [activeModule, setActiveModule] = useState("search");
   // Theme tokens used across the demo (centralized for easy tweaks)
@@ -7062,7 +7310,7 @@ const CUS360Demo = () => {
   const [showMaskedData, setShowMaskedData] = useState(true);
   const [activeTab, setActiveTab] = useState("basic");
   const [assetAllocTab, setAssetAllocTab] = useState("l1");
-  const aumAnimatedRef = React.useRef(new Set()); // tracks which customer IDs have already played AUM entry animation
+
   const [pendingAnchor, setPendingAnchor] = useState(null); // { anchorId } — scroll after tab render
   const [insightModal, setInsightModal] = useState(null); // { type, data } — insight popup
   const [filters, setFilters] = useState({
@@ -9289,139 +9537,6 @@ const CUS360Demo = () => {
       </div>
     );
   };
-  // Monthly bar chart with stable hover zones
-  const MonthlyBarHover = ({
-    values = [],
-    labels = [],
-    height = 64,
-    color = "#0d9488",
-  }) => {
-    const ref = React.useRef(null);
-    const [w, setW] = React.useState(320);
-    const [hover, setHover] = React.useState(null);
-    // Animation: track a 0→1 progress that grows bars from the bottom
-    const [animPct, setAnimPct] = React.useState(0);
-    const animRef = React.useRef(null);
-    const startAnim = React.useCallback(() => {
-      setAnimPct(0);
-      const start = performance.now();
-      const dur = 700; // ms
-      const tick = (now) => {
-        const t = Math.min((now - start) / dur, 1);
-        // ease-out cubic
-        const eased = 1 - Math.pow(1 - t, 3);
-        setAnimPct(eased);
-        if (t < 1) animRef.current = requestAnimationFrame(tick);
-      };
-      animRef.current = requestAnimationFrame(tick);
-    }, []);
-    React.useEffect(() => {
-      startAnim();
-      return () => cancelAnimationFrame(animRef.current);
-    }, [values.join(","), startAnim]);
-    React.useEffect(() => {
-      if (!ref.current) return;
-      const el = ref.current;
-      const ro = new ResizeObserver((e) => {
-        for (const r of e) {
-          const nw = Math.max(260, Math.round(r.contentRect.width));
-          if (nw !== w) setW(nw);
-        }
-      });
-      ro.observe(el);
-      return () => ro.disconnect();
-    }, [w]);
-    if (!values.length)
-      return <div className="text-xs text-gray-500">無資料</div>;
-    const max = Math.max(...values);
-    const PAD_X = 8;
-    const PAD_Y = 6;
-    const innerW = w - PAD_X * 2;
-    const innerH = height - PAD_Y * 2;
-    const segW = innerW / values.length;
-    const barW = Math.max(4, segW * 0.55);
-    const baseY = height - PAD_Y;
-    const bars = values.map((v, i) => {
-      const fullH = (v / Math.max(1, max)) * (innerH - 4);
-      const h = fullH * animPct;
-      const x = PAD_X + i * segW + (segW - barW) / 2;
-      const y = baseY - h;
-      return { x, y, h, v, i };
-    });
-    return (
-      <div ref={ref} className="w-full relative">
-        <svg
-          width="100%"
-          viewBox={`0 0 ${w} ${height}`}
-          height={height}
-          preserveAspectRatio="none"
-        >
-          <defs>
-            <linearGradient id={`barGrad-${color.replace('#','')}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity="0.9" />
-              <stop offset="100%" stopColor={color} stopOpacity="0.45" />
-            </linearGradient>
-          </defs>
-          {bars.map((b) => (
-            <rect
-              key={b.i}
-              x={b.x}
-              y={b.y}
-              width={barW}
-              height={Math.max(0, b.h)}
-              rx={3}
-              fill={hover === b.i ? color : `url(#barGrad-${color.replace('#','')})`}
-              fillOpacity={hover === b.i ? 1 : 0.85}
-            />
-          ))}
-          {bars.map((b) => (
-            <rect
-              key={"hz" + b.i}
-              x={PAD_X + b.i * segW}
-              y={0}
-              width={segW}
-              height={height}
-              fill="transparent"
-              onMouseEnter={() => setHover(b.i)}
-              onMouseLeave={() => setHover(null)}
-            />
-          ))}
-        </svg>
-        {hover != null && (
-          <div
-            className="absolute z-10 px-2 py-1 bg-white border border-teal-100 rounded-lg shadow-md text-xs pointer-events-none"
-            style={{
-              left: Math.min(
-                Math.max(bars[hover].x + barW / 2 - 40, 4),
-                w - 84
-              ),
-              top: 2,
-            }}
-          >
-            <div className="font-bold text-teal-700">
-              {values[hover].toLocaleString()}
-            </div>
-            <div className="text-gray-400">
-              {labels[hover] || `${hover + 1}月`}
-            </div>
-          </div>
-        )}
-        <div className="flex justify-between items-start text-xs mt-1">
-          {(labels.length ? labels : values.map((_, i) => `${i + 1}月`)).map(
-            (m, i) => (
-              <div
-                key={i}
-                className="text-center"
-                style={{ width: `${100 / values.length}%` }}
-              >
-                <div className="text-gray-400 text-[10px]">{m}</div>
-              </div>
-            )
-          )}
-        </div>
-      </div>
-    );
-  };
   // Interactive donut component (hover tooltip) used for product share & tier distribution
   const DonutInteractive = ({
     data = [],
@@ -10526,115 +10641,6 @@ const CUS360Demo = () => {
           return d;
         };
 
-        // ── AUM Chart component ────────────────────────────────────────────────────
-        const AUMChart = () => {
-          const custId = selectedCustomer && (selectedCustomer.id || selectedCustomer.name);
-          const alreadyPlayed = aumAnimatedRef.current.has(custId);
-          const [hoverIdx, setHoverIdx] = React.useState(null);
-          const [animPct, setAnimPct] = React.useState(alreadyPlayed ? 1 : 0);
-          const animRef = React.useRef(null);
-          React.useEffect(() => {
-            if (alreadyPlayed) return; // tab switch remount — skip animation
-            aumAnimatedRef.current.add(custId);
-            setAnimPct(0);
-            const start = performance.now();
-            const dur = 700;
-            const tick = (now) => {
-              const t = Math.min((now - start) / dur, 1);
-              setAnimPct(1 - Math.pow(1 - t, 3)); // ease-out cubic
-              if (t < 1) animRef.current = requestAnimationFrame(tick);
-            };
-            animRef.current = requestAnimationFrame(tick);
-            return () => cancelAnimationFrame(animRef.current);
-          }, []);
-          return (
-            <div className="bg-white p-4 rounded-lg shadow flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-lg font-semibold text-gray-800">過去 12 個月 AUM</h4>
-                <div className="flex gap-3">
-                  <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                    <span className="inline-block w-3 h-3 rounded-sm" style={{ background: '#14b8a6' }}></span>存款
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                    <span className="inline-block w-3 h-3 rounded-sm" style={{ background: '#0891b2' }}></span>財管
-                  </div>
-                </div>
-              </div>
-              <div className="relative">
-                <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="block overflow-visible">
-                  <defs>
-                    <linearGradient id="aumGradLiq" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.9" />
-                      <stop offset="100%" stopColor="#14b8a6" stopOpacity="0.5" />
-                    </linearGradient>
-                    <linearGradient id="aumGradInv" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#0891b2" stopOpacity="0.9" />
-                      <stop offset="100%" stopColor="#0891b2" stopOpacity="0.5" />
-                    </linearGradient>
-                  </defs>
-                  {aumYTicks.map(t => (
-                    <g key={t.v}>
-                      <line x1={PAD_X} x2={W - PAD_X} y1={t.y} y2={t.y} stroke="#f0fdfa" strokeWidth="1" />
-                      <text x={PAD_X - 4} y={t.y + 3} fontSize="8" fill="#9ca3af" textAnchor="end">{t.v}{aumUnitLabel}</text>
-                    </g>
-                  ))}
-                  {aumSeries.map((d, i) => {
-                    const hLiq = aumToH(d.liq) * animPct;
-                    const hInv = aumToH(d.inv) * animPct;
-                    const yLiq = CHART_BOTTOM - hLiq;
-                    const yInv = yLiq - hInv;
-                    const isHov = hoverIdx === i;
-                    return (
-                      <g key={i}>
-                        <rect x={barX(i)} y={yInv} width={barW} height={Math.max(0, hInv)} rx={2}
-                          fill={isHov ? '#0891b2' : 'url(#aumGradInv)'} fillOpacity={isHov ? 1 : 0.85} />
-                        <rect x={barX(i)} y={yLiq} width={barW} height={Math.max(0, hLiq)} rx={2}
-                          fill={isHov ? '#14b8a6' : 'url(#aumGradLiq)'} fillOpacity={isHov ? 1 : 0.85} />
-                        <rect x={barX(i) - 2} y={PAD_TOP} width={barW + 4} height={innerH}
-                          fill="transparent"
-                          onMouseEnter={() => setHoverIdx(i)}
-                          onMouseLeave={() => setHoverIdx(null)} />
-                      </g>
-                    );
-                  })}
-                  {monthLabels.map((lbl, i) => (
-                    <text key={i} x={PAD_X + i * slotW + slotW / 2} y={CHART_BOTTOM + 13}
-                      fontSize="8" fill={hoverIdx === i ? '#0f766e' : '#9ca3af'}
-                      textAnchor="middle" fontWeight={hoverIdx === i ? 'bold' : 'normal'}>{lbl}</text>
-                  ))}
-                </svg>
-                {hoverIdx !== null && (() => {
-                  const d = aumSeries[hoverIdx];
-                  const xPct = (PAD_X + hoverIdx * slotW + slotW / 2) / W * 100;
-                  const clamp = Math.min(Math.max(xPct, 5), 68);
-                  return (
-                    <div className="absolute top-0 pointer-events-none z-10" style={{ left: `${clamp}%` }}>
-                      <div className="bg-white border border-teal-100 rounded-lg shadow-md px-2 py-1.5 text-xs whitespace-nowrap">
-                        <div className="font-semibold text-gray-700 mb-1">{monthLabels[hoverIdx]}</div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: '#14b8a6' }}></span>
-                          <span className="text-gray-600">存款</span>
-                          <span className="font-medium ml-auto pl-3 text-teal-700">{fmtAUM(d.liq)}{aumUnitLabel}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: '#0891b2' }}></span>
-                          <span className="text-gray-600">財管</span>
-                          <span className="font-medium ml-auto pl-3 text-teal-700">{fmtAUM(d.inv)}{aumUnitLabel}</span>
-                        </div>
-                        <div className="border-t border-gray-100 mt-1 pt-1 flex justify-between gap-3">
-                          <span className="text-gray-500">合計</span>
-                          <span className="font-semibold text-gray-700">{fmtAUM(d.total)}{aumUnitLabel}</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-              <div className="text-xs text-gray-400 mt-3">* 月末 AUM（{aumUnitLabel}），含存款與財管資產</div>
-            </div>
-          );
-        };
-
         // ── ROI Chart component ────────────────────────────────────────────────────
         const ROIChart = () => {
           const [hoverMonth, setHoverMonth] = React.useState(null);
@@ -10719,7 +10725,11 @@ const CUS360Demo = () => {
 
         return (
           <div className="flex gap-4 mt-4">
-            <AUMChart />
+            <AUMChart
+              W={W} H={H} PAD_X={PAD_X} PAD_TOP={PAD_TOP} innerH={innerH} CHART_BOTTOM={CHART_BOTTOM}
+              aumYTicks={aumYTicks} aumUnitLabel={aumUnitLabel} aumSeries={aumSeries}
+              aumToH={aumToH} barX={barX} barW={barW} slotW={slotW} monthLabels={monthLabels} fmtAUM={fmtAUM}
+            />
             {heldProducts.length > 0 ? <ROIChart /> : (
               <div className="bg-white p-4 rounded-lg shadow flex-1 min-w-0 flex items-center justify-center">
                 <span className="text-sm text-gray-400">未持有投資商品</span>
