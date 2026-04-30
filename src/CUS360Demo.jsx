@@ -454,6 +454,18 @@ const MonthlyBarHover = ({
   );
 };
 
+// Shared loading spinner — SVG + label, container provided by caller
+const SpinnerBlock = ({ text = "載入中…" }) => (
+  <>
+    <svg className="animate-spin" width="48" height="48" viewBox="0 0 40 40" fill="none">
+      <circle cx="20" cy="20" r="16" stroke="#99f6e4" strokeWidth="4" />
+      <path d="M36 20a16 16 0 0 0-16-16" stroke="#0d9488" strokeWidth="4" strokeLinecap="round" />
+    </svg>
+    <div className="mt-4 text-base font-semibold text-teal-700">{text}</div>
+    <div className="mt-1 text-xs text-gray-400">請稍候</div>
+  </>
+);
+
 const CUS360Demo = () => {
   const [activeModule, setActiveModule] = useState("search");
   // Theme tokens used across the demo (centralized for easy tweaks)
@@ -838,12 +850,7 @@ const CUS360Demo = () => {
         {/* 1s 載入動畫覆蓋層 — 固定高度遮罩，內容模糊隱藏在下方 */}
         {dashLoading ? (
           <div className="min-h-[70vh] flex flex-col items-center justify-center">
-            <svg className="animate-spin" width="48" height="48" viewBox="0 0 40 40" fill="none">
-              <circle cx="20" cy="20" r="16" stroke="#99f6e4" strokeWidth="4" />
-              <path d="M36 20a16 16 0 0 0-16-16" stroke="#0d9488" strokeWidth="4" strokeLinecap="round" />
-            </svg>
-            <div className="mt-4 text-base font-semibold text-teal-700">資料更新中…</div>
-            <div className="mt-1 text-xs text-gray-400">請稍候</div>
+            <SpinnerBlock text="資料更新中…" />
           </div>
         ) : (<>
         {/* 報表區間選單 */}
@@ -9684,12 +9691,7 @@ const CUS360Demo = () => {
   const renderSearchModule = () => {
     if (searchLoading) return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center">
-        <svg className="animate-spin" width="48" height="48" viewBox="0 0 40 40" fill="none">
-          <circle cx="20" cy="20" r="16" stroke="#99f6e4" strokeWidth="4" />
-          <path d="M36 20a16 16 0 0 0-16-16" stroke="#0d9488" strokeWidth="4" strokeLinecap="round" />
-        </svg>
-        <div className="mt-4 text-base font-semibold text-teal-700">查詢中…</div>
-        <div className="mt-1 text-xs text-gray-400">請稍候</div>
+        <SpinnerBlock text="查詢中…" />
       </div>
     );
     return (
@@ -9880,12 +9882,7 @@ const CUS360Demo = () => {
       Array.isArray(filterResults) && filterResults.length === 0;
     if (filterLoading) return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center">
-        <svg className="animate-spin" width="48" height="48" viewBox="0 0 40 40" fill="none">
-          <circle cx="20" cy="20" r="16" stroke="#99f6e4" strokeWidth="4" />
-          <path d="M36 20a16 16 0 0 0-16-16" stroke="#0d9488" strokeWidth="4" strokeLinecap="round" />
-        </svg>
-        <div className="mt-4 text-base font-semibold text-teal-700">篩選中…</div>
-        <div className="mt-1 text-xs text-gray-400">請稍候</div>
+        <SpinnerBlock text="篩選中…" />
       </div>
     );
     return (
@@ -10236,13 +10233,6 @@ const CUS360Demo = () => {
       </h2>
       <div className="space-y-4">
         <div>
-          {/* Debug banner for diagnosing blank-panel issues (remove in prod) */}
-          <div className="mb-2 p-2 text-xs bg-yellow-50 border border-yellow-100 rounded text-gray-800">
-            除錯: 模組={activeModule} | 選取客戶=
-            {selectedCustomer
-              ? selectedCustomer.id + " / " + selectedCustomer.name
-              : "null"}
-          </div>
           <h3 className="font-semibold text-gray-800 mb-3">您的權限</h3>
           <div className="space-y-2">
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -13096,12 +13086,7 @@ const CUS360Demo = () => {
                   {/* Form area */}
                   {loginLoading ? (
                     <div className="px-8 py-12 flex flex-col items-center justify-center">
-                      <svg className="animate-spin" width="48" height="48" viewBox="0 0 40 40" fill="none">
-                        <circle cx="20" cy="20" r="16" stroke="#99f6e4" strokeWidth="4" />
-                        <path d="M36 20a16 16 0 0 0-16-16" stroke="#0d9488" strokeWidth="4" strokeLinecap="round" />
-                      </svg>
-                      <div className="mt-4 text-base font-semibold text-teal-700">登入中…</div>
-                      <div className="mt-1 text-xs text-gray-400">請稍候</div>
+                      <SpinnerBlock text="登入中…" />
                     </div>
                   ) : (
                   <div className="px-8 py-4 space-y-3">
@@ -13193,12 +13178,7 @@ const CUS360Demo = () => {
           <div className="relative">
             {searchLoading && (
               <div className="absolute inset-0 z-40 min-h-[50vh] flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm rounded-xl">
-                <svg className="animate-spin" width="48" height="48" viewBox="0 0 40 40" fill="none">
-                  <circle cx="20" cy="20" r="16" stroke="#99f6e4" strokeWidth="4" />
-                  <path d="M36 20a16 16 0 0 0-16-16" stroke="#0d9488" strokeWidth="4" strokeLinecap="round" />
-                </svg>
-                <div className="mt-4 text-base font-semibold text-teal-700">載入中…</div>
-                <div className="mt-1 text-xs text-gray-400">請稍候</div>
+                <SpinnerBlock text="載入中…" />
               </div>
             )}
             {(() => {
