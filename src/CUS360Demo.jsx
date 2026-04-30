@@ -7068,6 +7068,19 @@ const CUS360Demo = () => {
     );
   };
 
+  // centralized login behavior with loading animation
+  const doLogin = (role) => {
+    setLoginLoading(true);
+    setTimeout(() => {
+      setCurrentRole(role);
+      setShowMaskedData(true);
+      setIsLoggedIn(true);
+      setLoginError("");
+      setLoginLoading(false);
+      setActiveModule("search");
+    }, 800);
+  };
+
   // centralized logout behavior
   const performLogout = () => {
     setIsLoggedIn(false);
@@ -7270,6 +7283,7 @@ const CUS360Demo = () => {
 
   // Auth + UI state
   const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+  const [loginLoading, setLoginLoading] = React.useState(false);
   const [currentRole, setCurrentRole] = React.useState("manager"); // "manager" | "specialist"
   const [queryHistory, setQueryHistory] = React.useState([]); // max 5 entries
   const [loginUser, setLoginUser] = React.useState("");
@@ -7288,6 +7302,9 @@ const CUS360Demo = () => {
   const [showMaskedData, setShowMaskedData] = useState(true);
   const [activeTab, setActiveTab] = useState("basic");
   const [assetAllocTab, setAssetAllocTab] = useState("l1");
+
+  // Reset asset alloc tab to 概覽 whenever a new customer is selected
+  useEffect(() => { if (selectedCustomer) setAssetAllocTab("l1"); }, [selectedCustomer]);
 
   const [pendingAnchor, setPendingAnchor] = useState(null); // { anchorId } — scroll after tab render
   const [insightModal, setInsightModal] = useState(null); // { type, data } — insight popup
@@ -10692,10 +10709,11 @@ const CUS360Demo = () => {
                   {roiYTicks.map(t => (
                     <g key={t.v}>
                       <line x1={PAD_X} x2={W - PAD_X} y1={t.y} y2={t.y}
-                        stroke={t.v === 0 ? '#0d9488' : '#f0fdfa'}
-                        strokeWidth={t.v === 0 ? 1.5 : 1} />
+                        stroke={t.v === 0 ? '#6b7280' : '#f0fdfa'}
+                        strokeWidth={t.v === 0 ? 1 : 1}
+                        strokeDasharray={t.v === 0 ? '4 3' : undefined} />
                       <text x={PAD_X - 4} y={t.y + 3} fontSize="8" textAnchor="end"
-                        fill={t.v === 0 ? '#0d9488' : '#9ca3af'}
+                        fill={t.v === 0 ? '#6b7280' : '#9ca3af'}
                         fontWeight={t.v === 0 ? 'bold' : 'normal'}>
                         {t.v === 0 ? '0%' : `${t.v > 0 ? '+' : ''}${t.v}%`}
                       </text>
@@ -10793,9 +10811,13 @@ const CUS360Demo = () => {
           key="spouse"
           className={`${SUBCARD} ${isBankCustomer ? "border border-teal-200 bg-teal-50/40 cursor-pointer hover:bg-teal-50 hover:shadow-md transition-all" : ""}`}
           onClick={isBankCustomer ? () => {
-            setSelectedCustomer(spouseCustomer);
-            setActiveTab("basic");
-            window.scrollTo({ top: 0, behavior: "instant" });
+            setSearchLoading(true);
+            setTimeout(() => {
+              setSearchLoading(false);
+              setSelectedCustomer(spouseCustomer);
+              setActiveTab("basic");
+              window.scrollTo({ top: 0, behavior: "instant" });
+            }, 800);
           } : undefined}
           title={isBankCustomer ? `點擊查看 ${spouseName} 的客戶資料` : undefined}
         >
@@ -13059,37 +13081,47 @@ const CUS360Demo = () => {
                   style={{ background: "rgba(255,255,255,0.97)", backdropFilter: "blur(16px)" }}>
 
                   {/* Header band */}
-                  <div className="px-8 pt-8 pb-6 text-center"
+                  <div className="px-8 pt-5 pb-4 text-center"
                     style={{ background: "linear-gradient(135deg, #0d7377 0%, #14a085 100%)" }}>
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-3 shadow-lg"
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-2 shadow-lg"
                       style={{ background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.3)" }}>
-                      <TrendingUp className="w-8 h-8 text-white" />
+                      <TrendingUp className="w-6 h-6 text-white" />
                     </div>
-                    <div className="text-white text-xl font-bold tracking-wide">客戶 360 戰情室</div>
-                    <div className="text-teal-100 text-xs mt-1 opacity-80">Customer Intelligence Platform</div>
+                    <div className="text-white text-lg font-bold tracking-wide">客戶 360 戰情室</div>
+                    <div className="text-teal-100 text-xs mt-0.5 opacity-80">Customer Intelligence Platform</div>
                   </div>
 
                   {/* Form area */}
-                  <div className="px-8 py-7 space-y-4">
+                  {loginLoading ? (
+                    <div className="px-8 py-12 flex flex-col items-center justify-center">
+                      <svg className="animate-spin" width="48" height="48" viewBox="0 0 40 40" fill="none">
+                        <circle cx="20" cy="20" r="16" stroke="#99f6e4" strokeWidth="4" />
+                        <path d="M36 20a16 16 0 0 0-16-16" stroke="#0d9488" strokeWidth="4" strokeLinecap="round" />
+                      </svg>
+                      <div className="mt-4 text-base font-semibold text-teal-700">登入中…</div>
+                      <div className="mt-1 text-xs text-gray-400">請稍候</div>
+                    </div>
+                  ) : (
+                  <div className="px-8 py-4 space-y-3">
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">使用者帳號</label>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">使用者帳號</label>
                       <input
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition"
+                        className="w-full px-4 py-2 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition"
                         value={loginUser}
                         onChange={(e) => setLoginUser(e.target.value)}
                         placeholder="請輸入使用者代號"
-                        onKeyDown={(e) => { if (e.key === "Enter") { if (loginUser === "demo" && loginPass === "demo") { setCurrentRole("manager"); setShowMaskedData(true); setIsLoggedIn(true); setLoginError(""); setActiveModule("search"); } else { setLoginError("登入失敗：請使用 demo / demo。"); } } }}
+                        onKeyDown={(e) => { if (e.key === "Enter") { if (loginUser === "demo" && loginPass === "demo") { doLogin("manager"); } else { setLoginError("登入失敗：請使用 demo / demo。"); } } }}
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">密碼</label>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">密碼</label>
                       <input
                         type="password"
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition"
+                        className="w-full px-4 py-2 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition"
                         value={loginPass}
                         onChange={(e) => setLoginPass(e.target.value)}
                         placeholder="請輸入密碼"
-                        onKeyDown={(e) => { if (e.key === "Enter") { if (loginUser === "demo" && loginPass === "demo") { setCurrentRole("manager"); setShowMaskedData(true); setIsLoggedIn(true); setLoginError(""); setActiveModule("search"); } else { setLoginError("登入失敗：請使用 demo / demo。"); } } }}
+                        onKeyDown={(e) => { if (e.key === "Enter") { if (loginUser === "demo" && loginPass === "demo") { doLogin("manager"); } else { setLoginError("登入失敗：請使用 demo / demo。"); } } }}
                       />
                     </div>
 
@@ -13100,11 +13132,11 @@ const CUS360Demo = () => {
                     )}
 
                     <button
-                      className="w-full py-2.5 rounded-xl text-white text-sm font-semibold shadow-md transition-all active:scale-[0.98]"
+                      className="w-full py-2 rounded-xl text-white text-sm font-semibold shadow-md transition-all active:scale-[0.98]"
                       style={{ background: "linear-gradient(135deg, #0d7377, #14a085)" }}
                       onClick={() => {
                         if (loginUser === "demo" && loginPass === "demo") {
-                          setCurrentRole("manager"); setShowMaskedData(true); setIsLoggedIn(true); setLoginError(""); setActiveModule("search");
+                          doLogin("manager");
                         } else {
                           setLoginError("登入失敗：請使用 demo / demo。");
                         }
@@ -13114,8 +13146,8 @@ const CUS360Demo = () => {
                     </button>
 
                     {/* DEMO quick-login section */}
-                    <div className="pt-1">
-                      <div className="flex items-center gap-2 mb-2">
+                    <div className="pt-0">
+                      <div className="flex items-center gap-2 mb-1.5">
                         <div className="flex-1 h-px bg-gray-100" />
                         <span className="text-[10px] text-gray-300 uppercase tracking-widest font-medium">Demo 快速體驗</span>
                         <div className="flex-1 h-px bg-gray-100" />
@@ -13123,24 +13155,25 @@ const CUS360Demo = () => {
                       <div className="flex gap-2">
                         <button
                           className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg border border-dashed border-teal-200 bg-teal-50/60 hover:bg-teal-100/80 transition-all text-teal-700"
-                          onClick={() => { setCurrentRole("manager"); setShowMaskedData(true); setIsLoggedIn(true); setLoginError(""); setActiveModule("search"); }}
+                          onClick={() => { doLogin("manager"); }}
                         >
                           <Shield className="w-3 h-3 opacity-70" />
                           <span className="text-[11px] font-medium">主管（林經理）</span>
                         </button>
                         <button
                           className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg border border-dashed border-cyan-200 bg-cyan-50/60 hover:bg-cyan-100/80 transition-all text-cyan-700"
-                          onClick={() => { setCurrentRole("specialist"); setShowMaskedData(true); setIsLoggedIn(true); setLoginError(""); setActiveModule("search"); }}
+                          onClick={() => { doLogin("specialist"); }}
                         >
                           <Users className="w-3 h-3 opacity-70" />
                           <span className="text-[11px] font-medium">專員（楊專員）</span>
                         </button>
                       </div>
-                      <div className="text-center text-[10px] text-gray-300 mt-2">
+                      <div className="text-center text-[10px] text-gray-300 mt-1">
                         demo / demo
                       </div>
                     </div>
                   </div>
+                  )}
                 </div>
 
                 {/* Footer text */}
@@ -13155,7 +13188,17 @@ const CUS360Demo = () => {
         {/* Top bar now contains the module buttons and logout; lower duplicate removed */}
 
         {isLoggedIn ? (
-          <div>
+          <div className="relative">
+            {searchLoading && (
+              <div className="absolute inset-0 z-40 min-h-[50vh] flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm rounded-xl">
+                <svg className="animate-spin" width="48" height="48" viewBox="0 0 40 40" fill="none">
+                  <circle cx="20" cy="20" r="16" stroke="#99f6e4" strokeWidth="4" />
+                  <path d="M36 20a16 16 0 0 0-16-16" stroke="#0d9488" strokeWidth="4" strokeLinecap="round" />
+                </svg>
+                <div className="mt-4 text-base font-semibold text-teal-700">載入中…</div>
+                <div className="mt-1 text-xs text-gray-400">請稍候</div>
+              </div>
+            )}
             {(() => {
               switch (activeModule) {
                 case "search":
