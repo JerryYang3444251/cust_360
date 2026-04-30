@@ -4,7 +4,11 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   base: mode === 'development' ? '/' : './',
-  plugins: [react()],
+  plugins: [react({
+    babel: {
+      compact: false,
+    },
+  })],
   server: {
     // Allow Codesandbox preview hosts
     allowedHosts: ['6zw67f-5173.csb.app', '6zw67f-5175.csb.app', '6zw67f-5176.csb.app','hk3q2w-5173.csb.app','hk3q2w-5174.csb.app'],

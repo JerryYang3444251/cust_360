@@ -8050,9 +8050,9 @@ const CUS360Demo = () => {
     return `${prefix}***@${domain}`;
   });
   const maskId = makeMaskFunction((s) => {
-    // 中度遮罩: 保留前 2 碼，其餘以 * 替代 (A1********)
-    if (s.length <= 2) return "*".repeat(s.length);
-    return s.slice(0, 2) + "*".repeat(s.length - 2);
+    // 低度遮罩（個資法）: 保留前 1 碼 + 後 4 碼，中間以 * 取代 → A*****6789
+    if (s.length <= 5) return s.slice(0, 1) + "*".repeat(Math.max(0, s.length - 1));
+    return s.slice(0, 1) + "*".repeat(s.length - 5) + s.slice(-4);
   });
   const maskAddress = makeMaskFunction((s) =>
     s.replace(/[0-9０-９]+/g, (m) => "*".repeat(Math.min(4, m.length)))
@@ -8071,13 +8071,15 @@ const CUS360Demo = () => {
     return chars.join("");
   };
   const maskAccount = makeMaskFunction((s) => {
-    // Keep bank code (prefix before first dash) and last segment; mask middle digits
-    const parts = s.split('-');
-    if (parts.length >= 3) {
-      const mid = parts.slice(1, -1).map(p => '*'.repeat(p.length)).join('-');
-      return `${parts[0]}-${mid}-${parts[parts.length - 1]}`;
-    }
-    return maskDigitsKeepLast(s, 4);
+    // 低度遮罩: 保留前 5 碼數字 + 後 4 碼數字，中間以 * 取代，保留分隔符位置
+    // 例: 0000123456789012 → 00001*******9012
+    const chars = String(s).split("");
+    const digitIndices = chars.reduce((acc, ch, i) => { if (/\d/.test(ch)) acc.push(i); return acc; }, []);
+    const n = digitIndices.length;
+    if (n <= 9) return maskDigitsKeepLast(s, 4);
+    const keepSet = new Set([...digitIndices.slice(0, 5), ...digitIndices.slice(-4)]);
+    digitIndices.forEach((idx) => { if (!keepSet.has(idx)) chars[idx] = "*"; });
+    return chars.join("");
   });
   const maskCard = makeMaskFunction((s) => {
     // PCI DSS 一般顯示用: 僅顯示後 4 碼，格式 ****-****-****-XXXX
