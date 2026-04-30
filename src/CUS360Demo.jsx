@@ -213,6 +213,7 @@ const AUMChart = ({
   W, H, PAD_X, PAD_TOP, innerH, CHART_BOTTOM,
   aumYTicks, aumUnitLabel, aumSeries,
   aumToH, barX, barW, slotW, monthLabels, fmtAUM,
+  compact,
 }) => {
   const [hoverIdx, setHoverIdx] = React.useState(null);
   const [animPct, setAnimPct] = React.useState(0);
@@ -231,9 +232,9 @@ const AUMChart = ({
     return () => cancelAnimationFrame(animRef.current);
   }, [aumKey]);
   return (
-    <div className="bg-white p-4 rounded-lg shadow flex-1 min-w-0">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-lg font-semibold text-gray-800">過去 12 個月 AUM</h4>
+    <div className={compact ? "bg-gray-50 p-2 rounded-md flex-1 min-w-0" : "bg-white p-4 rounded-lg shadow flex-1 min-w-0"}>
+      <div className={compact ? "flex items-center justify-between mb-1" : "flex items-center justify-between mb-3"}>
+        <h4 className={compact ? "font-semibold text-xs text-gray-800" : "text-lg font-semibold text-gray-800"}>過去 12 個月 AUM</h4>
         <div className="flex gap-3">
           <div className="flex items-center gap-1.5 text-xs text-gray-600">
             <span className="inline-block w-3 h-3 rounded-sm" style={{ background: '#14b8a6' }}></span>存款
@@ -965,7 +966,7 @@ const CUS360Demo = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className={compact ? "grid grid-cols-3 gap-2" : "grid grid-cols-3 gap-4"}>
           <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow border border-teal-50 p-4">
             <div className="text-xs font-bold text-teal-600 uppercase tracking-widest mb-2">客戶等級分布</div>
             <div className="mt-1">
@@ -7163,6 +7164,19 @@ const CUS360Demo = () => {
             <div className="text-sm bg-white bg-opacity-10 px-3 py-1 rounded-full">
               即時
             </div>
+            {activeModule === "detail" && selectedCustomer && (
+              <div className="flex items-center bg-white/15 rounded-lg p-0.5 gap-0.5">
+                {[{ value: "tabs", label: "頁籤" }, { value: "onepage", label: "一頁" }].map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setViewMode(value)}
+                    className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${viewMode === value ? "bg-white text-teal-700 shadow-sm" : "text-white/80 hover:text-white"}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
             <button
               onClick={() => setShowLogoutConfirm(true)}
               className="ml-2 px-3 py-2 bg-red-500 hover:bg-red-600 rounded text-white text-sm"
@@ -7309,6 +7323,7 @@ const CUS360Demo = () => {
   const [showMaskedData, setShowMaskedData] = useState(true);
   const [activeTab, setActiveTab] = useState("basic");
   const [assetAllocTab, setAssetAllocTab] = useState("l1");
+  const [viewMode, setViewMode] = useState("tabs"); // "tabs" | "onepage"
 
   // Reset asset alloc tab to 概覽 whenever a new customer is selected
   useEffect(() => { if (selectedCustomer) setAssetAllocTab("l1"); }, [selectedCustomer]);
@@ -10307,190 +10322,161 @@ const CUS360Demo = () => {
     </div>
   );
 
-  const renderFinancialCharts = () => {
+  const renderFinancialCharts = (compact = false) => {
     // Reorganized: separate NetWorth/Liabilities, Income Sources+3mo trend, and Asset Allocation
     return (
       <>
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h4 className="text-lg font-semibold text-gray-800 mb-3">
-            總資產 / 總負債
-          </h4>
-          {selectedCustomer ? (
-            (() => {
-              const f = getCustomerFinance(selectedCustomer);
-              return (
-                <div className="space-y-3">
-                  <div className="text-sm text-gray-600">總資產</div>
-                  <div className="text-2xl font-bold text-teal-600">
-                    NT$ {f.netWorth.toLocaleString()}
-                  </div>
-                  <div className="text-sm text-gray-600">總負債</div>
-                  <div className="text-2xl font-bold text-teal-500">
-                    NT$ {f.loan.toLocaleString()}
-                  </div>
-                  {/* 移除貸款估算值顯示 */}
-                </div>
-              );
-            })()
-          ) : (
-            <div className="text-sm text-gray-500">
-              請選取客戶以顯示資產與負債數值。
-            </div>
-          )}
-        </div>
+      {selectedCustomer ? (() => {
+        const f = getCustomerFinance(selectedCustomer);
+        // ── Income data ───────────────────────────────────────────────
+        const series = generateMonthlySeries(selectedCustomer, 6);
+        const lastMonthAvg = series.length ? series[series.length - 1] : 0;
+        const incomeSources = generateIncomeSources(selectedCustomer);
+        // ── Asset allocation data ─────────────────────────────────────
+        const allProdsFA = generateCustomerProducts(selectedCustomer);
+        const ASSET_L1 = new Set(['存款', '財管']);
+        const EXCLUDE_L2 = new Set(['保險']);
+        const assetProds = allProdsFA.filter(p => ASSET_L1.has(p.l1) && !EXCLUDE_L2.has(p.l2));
+        const depositProds = assetProds.filter(p => p.l1 === '存款');
+        const investProds  = assetProds.filter(p => p.l1 === '財管');
+        const DEP_W = { '台幣活期存款': 40, '台幣活期儲蓄存款': 30, '台幣定期存款': 30, '外幣活期存款': 12, '外幣定期存款': 18 };
+        const INV_W = { '股票型': 25, '固定收益型': 20, '平衡型': 20, '組合型': 15, '貨幣市場型': 15, '期貨信託型': 10, '國內ETF': 18, '境外ETF': 18, '海外債': 22, '結構型': 10, '安養信託': 18, '保險金信託': 12, '不動產信託': 18, '價金信託': 12, '其他信託': 8 };
+        const L4_PALETTE = { '存款': ['#14b8a6', '#0d9488', '#5eead4', '#99f6e4'], '財管': ['#06b6d4', '#0891b2', '#22d3ee', '#67e8f9', '#a5f3fc', '#0e7490'] };
+        const allocatePool = (prods, poolAmt, weightMap, palette) => {
+          if (!prods.length || poolAmt <= 0) return [];
+          const totalW = prods.reduce((acc, p) => acc + (weightMap[p.l4] || 15), 0) || 1;
+          const items = prods.map((p, idx) => ({ label: p.l4, l1: p.l1, value: Math.round(poolAmt * (weightMap[p.l4] || 15) / totalW), color: palette[idx % palette.length] }));
+          let diff = poolAmt - items.reduce((acc, x) => acc + x.value, 0);
+          if (diff !== 0) items[0].value += diff;
+          return items.filter(x => x.value > 0);
+        };
+        const itemsAll = assetAllocTab === 'l1'
+          ? [depositProds.length > 0 && { label: '存款', value: f.liquid, color: '#14b8a6' }, investProds.length > 0 && { label: '財管', value: f.invest, color: '#06b6d4' }].filter(Boolean)
+          : [...allocatePool(depositProds, f.liquid, DEP_W, L4_PALETTE['存款']), ...allocatePool(investProds, f.invest, INV_W, L4_PALETTE['財管'])];
+        const colors = itemsAll.map(x => x.color);
+        const assetTotal = itemsAll.reduce((acc, x) => acc + x.value, 0) || 1;
+        const data = (() => {
+          const d = itemsAll.map(it => ({ label: it.label, value: Math.max(1, Math.round((it.value / assetTotal) * 100)) }));
+          let sum = d.reduce((acc, x) => acc + x.value, 0);
+          for (let i = 0; sum > 100 && i < d.length; i++) { if (d[i].value > 1) { d[i].value--; sum--; i = -1; } }
+          for (let i = 0; sum < 100 && i < d.length; i++) { d[i].value++; sum++; }
+          return d;
+        })();
 
-        <div className="bg-white p-4 rounded-lg shadow col-span-1">
-          <h4 className="text-lg font-semibold text-gray-800 mb-3">
-            收入來源 & 近期收入趨勢
-          </h4>
-          {selectedCustomer ? (
-            (() => {
-              const series = generateMonthlySeries(selectedCustomer, 6);
-              const lastMonthAvg = series.length
-                ? series[series.length - 1]
-                : 0;
-              const incomeSources = generateIncomeSources(selectedCustomer);
-              return (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm text-gray-600">
-                        最近 3 個月平均收入
-                      </div>
-                      <div className="text-2xl font-bold text-teal-600">
-                        NT$ {lastMonthAvg.toLocaleString()}
-                      </div>
-                    </div>
-                    <div className="text-sm text-gray-500">最近走勢 (月)</div>
+        if (compact) return (
+          <div className="space-y-2">
+            {/* Row 1: 總資產/總負債 — full width */}
+            <div className="bg-gray-50 p-2 rounded-md">
+              <h4 className="font-semibold text-xs text-gray-800 mb-1">總資產 / 總負債</h4>
+              <div className="flex gap-4">
+                <div className="flex justify-between items-center text-xs flex-1 border-r border-gray-200 pr-4">
+                  <span className="text-gray-500">總資產</span>
+                  <span className="font-semibold text-teal-600 tabular-nums">NT$ {f.netWorth.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs flex-1">
+                  <span className="text-gray-500">總負債</span>
+                  <span className="font-semibold text-teal-500 tabular-nums">NT$ {f.loan.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+            {/* Row 2: 收入趨勢 + 資產配置 — 2 col */}
+            <div className="grid grid-cols-2 gap-2">
+              {/* Income */}
+              <div className="bg-gray-50 p-2 rounded-md">
+                <h4 className="font-semibold text-xs text-gray-800 mb-1">收入來源 & 近期收入趨勢</h4>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-500">近 3 月平均收入</span>
+                    <span className="font-semibold text-teal-600 tabular-nums">NT$ {lastMonthAvg.toLocaleString()}</span>
                   </div>
-                  <div>
-                    <MonthlyBarHover
-                      values={series}
-                      labels={series.map((_, i) => `${i + 1}月`)}
-                      height={64}
-                      color="#0ea5a4"
-                    />
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {incomeSources.map((s, i) => (
-                      <div
-                        key={i}
-                        className="p-2 bg-gray-50 rounded border text-sm"
-                      >
-                        <div className="text-xs text-gray-600">{s.name}</div>
-                        <div className="font-medium">
-                          NT$ {s.amount.toLocaleString()}
-                        </div>
-                        <div className="text-xs text-gray-500">{s.pct}%</div>
+                  <MonthlyBarHover values={series} labels={series.map((_, i) => `${i + 1}月`)} height={40} color="#0ea5a4" />
+                  <div className="space-y-0.5">
+                    {incomeSources.map((src, i) => (
+                      <div key={i} className="flex justify-between items-center text-xs border-b border-gray-100 pb-0.5 last:border-0">
+                        <span className="text-gray-500">{src.name}</span>
+                        <span className="font-medium tabular-nums text-gray-800">NT$ {src.amount.toLocaleString()} <span className="text-gray-400">({src.pct}%)</span></span>
                       </div>
                     ))}
                   </div>
                 </div>
-              );
-            })()
-          ) : (
-            <div className="text-sm text-gray-500">
-              請選取客戶以顯示收入來源與趨勢。
-            </div>
-          )}
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-lg font-semibold text-gray-800">資產配置</h4>
-            {selectedCustomer && (
-              <div className="flex gap-0.5 text-xs bg-gray-100 rounded-lg p-0.5">
-                <button
-                  className={`px-2.5 py-1 rounded-md transition-colors ${assetAllocTab === 'l1' ? 'bg-white shadow text-teal-700 font-semibold' : 'text-gray-500 hover:text-gray-700'}`}
-                  onClick={() => setAssetAllocTab('l1')}
-                >概覽</button>
-                <button
-                  className={`px-2.5 py-1 rounded-md transition-colors ${assetAllocTab === 'l3' ? 'bg-white shadow text-teal-700 font-semibold' : 'text-gray-500 hover:text-gray-700'}`}
-                  onClick={() => setAssetAllocTab('l3')}
-                >細項</button>
               </div>
-            )}
+              {/* Asset Allocation */}
+              <div className="bg-gray-50 p-2 rounded-md">
+                <div className="flex items-center justify-between mb-1">
+                  <h4 className="font-semibold text-xs text-gray-800">資產配置</h4>
+                  <div className="flex gap-0.5 text-xs bg-gray-200 rounded-lg p-0.5">
+                    <button className={`px-1.5 py-0.5 rounded-md transition-colors ${assetAllocTab === 'l1' ? 'bg-white shadow text-teal-700 font-semibold' : 'text-gray-500 hover:text-gray-700'}`} onClick={() => setAssetAllocTab('l1')}>概覽</button>
+                    <button className={`px-1.5 py-0.5 rounded-md transition-colors ${assetAllocTab === 'l3' ? 'bg-white shadow text-teal-700 font-semibold' : 'text-gray-500 hover:text-gray-700'}`} onClick={() => setAssetAllocTab('l3')}>細項</button>
+                  </div>
+                </div>
+                {itemsAll.length === 0 ? <div className="text-xs text-gray-400">暫無資產資料</div> : (
+                  <div className="space-y-0.5">
+                    {itemsAll.map((it, i) => (
+                      <div key={`${it.label}-${i}`} className="flex items-center text-xs border-b border-gray-100 pb-0.5 last:border-0">
+                        <span className="flex items-center gap-1 text-gray-600 min-w-0 flex-1">
+                          <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: colors[i] }}></span>
+                          <span className="truncate">{it.label}</span>
+                        </span>
+                        <span className="font-medium text-gray-800 tabular-nums flex-shrink-0 ml-1 text-right">NT$ {it.value.toLocaleString()}</span>
+                        <span className="text-gray-400 tabular-nums flex-shrink-0 ml-2 text-right w-7">{data[i]?.value ?? 0}%</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-          <div className="rounded-lg p-3 bg-gray-50 flex items-center gap-4">
-            {selectedCustomer ? (
-              (() => {
-                // ── 一致性規則 ─────────────────────────────────────────────────
-                // Rule 1: f.liquid (存款池) and f.invest (投資池) are canonical pool sizes.
-                // Rule 2: 概覽 shows f.liquid and f.invest directly — no scraping.
-                // Rule 3: 細項 distributes each pool proportionally by product weights,
-                //         so sum(細項 存款) = f.liquid and sum(細項 財管) = f.invest.
-                // Rule 4: 保險 is excluded (not an investable asset).
-                // ────────────────────────────────────────────────────────────────
-                const f = getCustomerFinance(selectedCustomer);
-                const allProds = generateCustomerProducts(selectedCustomer);
-                const ASSET_L1 = new Set(['存款', '財管']);
-                const EXCLUDE_L2 = new Set(['保險']);
-                const assetProds = allProds.filter(p => ASSET_L1.has(p.l1) && !EXCLUDE_L2.has(p.l2));
-                const depositProds = assetProds.filter(p => p.l1 === '存款');
-                const investProds  = assetProds.filter(p => p.l1 === '財管');
+        );
 
-                // Canonical weights per L4 within each pool
-                const DEP_W = {
-                  '台幣活期存款': 40, '台幣活期儲蓄存款': 30,
-                  '台幣定期存款': 30, '外幣活期存款': 12, '外幣定期存款': 18,
-                };
-                const INV_W = {
-                  '股票型': 25, '固定收益型': 20, '平衡型': 20, '組合型': 15,
-                  '貨幣市場型': 15, '期貨信託型': 10,
-                  '國內ETF': 18, '境外ETF': 18,
-                  '海外債': 22, '結構型': 10,
-                  '安養信託': 18, '保險金信託': 12, '不動產信託': 18, '價金信託': 12, '其他信託': 8,
-                };
-
-                const L4_PALETTE = {
-                  '存款': ['#14b8a6', '#0d9488', '#5eead4', '#99f6e4'],
-                  '財管': ['#06b6d4', '#0891b2', '#22d3ee', '#67e8f9', '#a5f3fc', '#0e7490'],
-                };
-
-                // Normalize product amounts within a pool so they sum to exactly `poolAmt`
-                const allocatePool = (prods, poolAmt, weightMap, palette) => {
-                  if (!prods.length || poolAmt <= 0) return [];
-                  const totalW = prods.reduce((s, p) => s + (weightMap[p.l4] || 15), 0) || 1;
-                  const items = prods.map((p, idx) => ({
-                    label: p.l4, l1: p.l1,
-                    value: Math.round(poolAmt * (weightMap[p.l4] || 15) / totalW),
-                    color: palette[idx % palette.length],
-                  }));
-                  // Adjust rounding so sum = poolAmt exactly
-                  let diff = poolAmt - items.reduce((s, x) => s + x.value, 0);
-                  if (diff !== 0) items[0].value += diff;
-                  return items.filter(x => x.value > 0);
-                };
-
-                let itemsAll;
-                if (assetAllocTab === 'l1') {
-                  // 概覽: canonical pool totals only
-                  itemsAll = [
-                    depositProds.length > 0 && { label: '存款', value: f.liquid, color: '#14b8a6' },
-                    investProds.length > 0  && { label: '財管', value: f.invest, color: '#06b6d4' },
-                  ].filter(Boolean);
-                } else {
-                  // 細項: proportional allocation within each pool
-                  itemsAll = [
-                    ...allocatePool(depositProds, f.liquid, DEP_W, L4_PALETTE['存款']),
-                    ...allocatePool(investProds,  f.invest, INV_W, L4_PALETTE['財管']),
-                  ];
-                }
-
-                const colors = itemsAll.map(x => x.color);
-                if (itemsAll.length === 0) return <div className="text-sm text-gray-400">暫無資產資料</div>;
-
-                const total = itemsAll.reduce((s, x) => s + x.value, 0) || 1;
-                const data = itemsAll.map(it => ({ label: it.label, value: Math.max(1, Math.round((it.value / total) * 100)) }));
-                let sum = data.reduce((s, x) => s + x.value, 0);
-                for (let i = 0; sum > 100 && i < data.length; i++) { if (data[i].value > 1) { data[i].value--; sum--; i = -1; } }
-                for (let i = 0; sum < 100 && i < data.length; i++) { data[i].value++; sum++; }
-
-                return (
+        // ── Non-compact: original 3-col grid ─────────────────────────
+        return (
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h4 className="text-lg font-semibold text-gray-800 mb-3">總資產 / 總負債</h4>
+              <div className="space-y-3">
+                <div className="text-sm text-gray-600">總資產</div>
+                <div className="text-2xl font-bold text-teal-600">NT$ {f.netWorth.toLocaleString()}</div>
+                <div className="text-sm text-gray-600">總負債</div>
+                <div className="text-2xl font-bold text-teal-500">NT$ {f.loan.toLocaleString()}</div>
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow col-span-1">
+              <h4 className="text-lg font-semibold text-gray-800 mb-3">收入來源 &amp; 近期收入趨勢</h4>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-gray-600">最近 3 個月平均收入</div>
+                    <div className="text-2xl font-bold text-teal-600">NT$ {lastMonthAvg.toLocaleString()}</div>
+                  </div>
+                  <div className="text-sm text-gray-500">最近走勢 (月)</div>
+                </div>
+                <div>
+                  <MonthlyBarHover values={series} labels={series.map((_, i) => `${i + 1}月`)} height={64} color="#0ea5a4" />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {incomeSources.map((src, i) => (
+                    <div key={i} className="p-2 bg-gray-50 rounded border text-sm">
+                      <div className="text-xs text-gray-600">{src.name}</div>
+                      <div className="font-medium">NT$ {src.amount.toLocaleString()}</div>
+                      <div className="text-xs text-gray-500">{src.pct}%</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-lg font-semibold text-gray-800">資產配置</h4>
+                <div className="flex gap-0.5 text-xs bg-gray-100 rounded-lg p-0.5">
+                  <button className={`px-2.5 py-1 rounded-md transition-colors ${assetAllocTab === 'l1' ? 'bg-white shadow text-teal-700 font-semibold' : 'text-gray-500 hover:text-gray-700'}`} onClick={() => setAssetAllocTab('l1')}>概覽</button>
+                  <button className={`px-2.5 py-1 rounded-md transition-colors ${assetAllocTab === 'l3' ? 'bg-white shadow text-teal-700 font-semibold' : 'text-gray-500 hover:text-gray-700'}`} onClick={() => setAssetAllocTab('l3')}>細項</button>
+                </div>
+              </div>
+              <div className="rounded-lg p-3 bg-gray-50 flex items-center gap-4">
+                {itemsAll.length === 0 ? <div className="text-sm text-gray-400">暫無資產資料</div> : (
                   <div className="flex items-center gap-4 w-full">
                     <DonutInteractive data={data} colors={colors} size={96} />
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
                         {itemsAll.map((it, i) => (
                           <div key={`${it.label}-${i}`} className="flex items-center gap-1.5">
@@ -10504,18 +10490,16 @@ const CUS360Demo = () => {
                       </div>
                     </div>
                   </div>
-                );
-              })()
-            ) : (
-              <div className="text-sm text-gray-500">
-                請選取客戶以顯示資產配置；或在搜尋欄輸入完整識別號以檢視明細。
+                )}
               </div>
-            )}
+            </div>
           </div>
-        </div>
-      </div>
+        );
+      })() : (
+        <div className="text-sm text-gray-500 p-2">請選取客戶以顯示財務資訊。</div>
+      )}
 
-      {/* 12-month AUM stacked bar & ROI trend — side-by-side */}
+            {/* 12-month AUM stacked bar & ROI trend — side-by-side */}
       {selectedCustomer && (() => {
         const s = seedFromId(selectedCustomer);
         const f = getCustomerFinance(selectedCustomer);
@@ -10686,9 +10670,9 @@ const CUS360Demo = () => {
             setHoverMonth(Math.min(11, Math.max(0, Math.round((xRaw - PAD_X) / innerW * 11))));
           };
           return (
-            <div className="bg-white p-4 rounded-lg shadow flex-1 min-w-0">
-              <div className="mb-3">
-                <h4 className="text-lg font-semibold text-gray-800 whitespace-nowrap">12 個月滾動投資報酬率</h4>
+            <div className={compact ? "bg-gray-50 p-2 rounded-md flex-1 min-w-0" : "bg-white p-4 rounded-lg shadow flex-1 min-w-0"}>
+              <div className={compact ? "mb-1" : "mb-3"}>
+                <h4 className={compact ? "font-semibold text-xs text-gray-800 whitespace-nowrap" : "text-lg font-semibold text-gray-800 whitespace-nowrap"}>12 個月滾動投資報酬率</h4>
                 <div className="flex gap-x-3 gap-y-1 flex-wrap mt-1.5">
                   {roiSeries.map(sr => (
                     <div key={sr.label} className="flex items-center gap-1.5 text-xs text-gray-600 whitespace-nowrap">
@@ -10761,14 +10745,15 @@ const CUS360Demo = () => {
         };
 
         return (
-          <div className="flex gap-4 mt-4">
+          <div className={compact ? "flex gap-2 mt-2" : "flex gap-4 mt-4"}>
             <AUMChart
               W={W} H={H} PAD_X={PAD_X} PAD_TOP={PAD_TOP} innerH={innerH} CHART_BOTTOM={CHART_BOTTOM}
               aumYTicks={aumYTicks} aumUnitLabel={aumUnitLabel} aumSeries={aumSeries}
               aumToH={aumToH} barX={barX} barW={barW} slotW={slotW} monthLabels={monthLabels} fmtAUM={fmtAUM}
+              compact={compact}
             />
             {heldProducts.length > 0 ? <ROIChart /> : (
-              <div className="bg-white p-4 rounded-lg shadow flex-1 min-w-0 flex items-center justify-center">
+              <div className={compact ? "bg-gray-50 p-2 rounded-md flex-1 min-w-0 flex items-center justify-center" : "bg-white p-4 rounded-lg shadow flex-1 min-w-0 flex items-center justify-center"}>
                 <span className="text-sm text-gray-400">未持有投資商品</span>
               </div>
             )}
@@ -10818,9 +10803,9 @@ const CUS360Demo = () => {
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <Users className="w-5 h-5 text-pink-500 flex-shrink-0" />
-                <span className="font-bold text-md">{spouseName}</span>
-                <span className="px-2 py-1 bg-pink-100 text-pink-700 rounded text-xs font-medium">配偶</span>
+                <Users className="w-4 h-4 text-pink-500 flex-shrink-0" />
+                <span className="font-medium text-sm">{spouseName}</span>
+                <span className="px-1.5 py-0.5 bg-pink-100 text-pink-700 rounded text-xs font-medium">配偶</span>
                 {isBankCustomer && (
                   <span className="flex items-center gap-1 px-2 py-1 bg-teal-100 text-teal-700 rounded text-xs font-bold border border-teal-300">
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
@@ -10828,7 +10813,7 @@ const CUS360Demo = () => {
                   </span>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm ml-7">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs ml-5">
                 {isBankCustomer && spouseCid && (
                   <div>
                     <span className="text-gray-500">客戶編號: </span>
@@ -10897,10 +10882,10 @@ const CUS360Demo = () => {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <Users className="w-5 h-5 text-blue-400 flex-shrink-0" />
-                    <span className="font-bold text-md">{child.name}</span>
+                    <span className="font-medium text-sm">{child.name}</span>
                     <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">子女</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm ml-7">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs ml-5">
                     <div><span className="text-gray-500">年齡: </span><span className="font-medium">{ageDisplay}</span></div>
                     <div><span className="text-gray-500">出生年份: </span><span className="font-medium">{childBirthYear} 年</span></div>
                     <div><span className="text-gray-500">受益人: </span><span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">是</span></div>
@@ -10938,10 +10923,10 @@ const CUS360Demo = () => {
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <Users className="w-5 h-5 text-blue-400 flex-shrink-0" />
-                  <span className="font-bold text-md">{childName}</span>
+                  <span className="font-medium text-sm">{childName}</span>
                   <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">子女</span>
                 </div>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm ml-7">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs ml-5">
                   <div><span className="text-gray-500">年齡: </span><span className="font-medium">{ageDisplay}</span></div>
                   <div><span className="text-gray-500">出生年份: </span><span className="font-medium">{childBirthYear} 年</span></div>
                   <div><span className="text-gray-500">受益人: </span><span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">是</span></div>
@@ -10965,10 +10950,10 @@ const CUS360Demo = () => {
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <Users className="w-5 h-5 text-orange-500 flex-shrink-0" />
-              <span className="font-bold text-md">{managerName}（E{String(10000 + (seed % 89999)).slice(0,5)}）</span>
+              <span className="font-medium text-sm">{managerName}（E{String(10000 + (seed % 89999)).slice(0,5)}）</span>
               <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs font-medium">經管人員</span>
             </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm ml-7">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs ml-5">
               <div><span className="text-gray-500">經管分行: </span><span className="font-medium">{managerBranch}</span></div>
               <div><span className="text-gray-500">關係起日: </span><span className="font-medium">{2018 + (seed % 6)}/0{(seed % 9) + 1}/01</span></div>
               <div><span className="text-gray-500">在職狀況: </span><span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">在職</span></div>
@@ -10983,24 +10968,24 @@ const CUS360Demo = () => {
     if (!allCards.length) return null;
     return (
       <div className={SUBCARD}>
-        <h4 className="text-lg font-semibold text-gray-800 mb-3">客戶關係人資訊</h4>
+        <h4 className="font-semibold text-sm text-gray-800 mb-1.5">客戶關係人資訊</h4>
         <div className="space-y-3">{allCards}</div>
       </div>
     );
   };
 
   // Generic section renderer used in detail pages
-  const renderSection = (section) => {
+  const renderSection = (section, compact = false) => {
     if (!section) return <div className="text-sm text-gray-500">無資料</div>;
     // simple key/value list
     if (Array.isArray(section.data) && section.data.length > 0) {
       return (
-        <div className="grid gap-2 text-sm">
+        <div className={compact ? "space-y-1" : "grid gap-2 text-sm"}>
           {section.data.map((d, i) => {
             const val = maskValue(d.label, d.value, Boolean(d.masked));
             return (
-              <div key={i} className="flex justify-between border-b pb-1">
-                <div className="text-gray-600">{d.label}</div>
+              <div key={i} className={compact ? "flex justify-between border-b border-gray-50 pb-0.5 last:border-0 text-xs" : "flex justify-between border-b pb-1"}>
+                <div className={compact ? "text-gray-500" : "text-gray-600"}>{d.label}</div>
                 <div className="font-medium text-right">{val}</div>
               </div>
             );
@@ -12078,6 +12063,473 @@ const CUS360Demo = () => {
     };
   };
 
+  // ─── One-Page Mode (銀行櫃員速覽) ────────────────────────────────────────
+  const renderOnePageView = () => {
+    if (!selectedCustomer) return null;
+    const c = selectedCustomer;
+    const f = getCustomerFinance(c);
+    const seed = seedFromId(c);
+    const allInfo = generateCustomerBasicInfo(c);
+    const riskLevel = c.riskLevel || 'low';
+    const sf = seed + 777;
+    const rflags = {
+      blacklist:         riskLevel === 'high' && Boolean(sf & 1),
+      depositAlert:      riskLevel === 'high' ? Boolean((sf >> 1) & 1) : riskLevel === 'medium' ? Boolean((sf >> 6) & 1) : false,
+      courtSeizure:      riskLevel === 'high' && Boolean((sf >> 2) & 1),
+      overdueCollection: riskLevel === 'high' ? Boolean((sf >> 3) & 1) : riskLevel === 'medium' ? Boolean((sf >> 7) & 1) : false,
+      guaranteeAbnormal: riskLevel === 'high' && Boolean((sf >> 4) & 1),
+      cardAbnormal:      riskLevel === 'high' ? Boolean((sf >> 5) & 1) : riskLevel === 'medium' ? Boolean((sf >> 8) & 1) : false,
+    };
+    const hasAnyFlag = Object.values(rflags).some(Boolean);
+    const investSeed = seed + 4242;
+    const investModes = ["保守型", "穩健型", "積極型", "高度積極"];
+    const investMode  = investModes[investSeed % investModes.length];
+    const parseTS2 = (sv) => { const m = String(sv).match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/); if (m) return new Date(+m[1], +m[2]-1, +m[3]).getTime(); const d = new Date(sv); return isNaN(d) ? 0 : d.getTime(); };
+
+    // Section divider header
+    const SecHeader = ({ Icon, title }) => (
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-teal-50 border-l-4 border-teal-500 rounded-r-md">
+        <Icon className="w-4 h-4 text-teal-600 flex-shrink-0" />
+        <span className="text-sm font-bold text-teal-700">{title}</span>
+      </div>
+    );
+
+    // Pre-compute data needed for multiple sections
+    const allProds = generateCustomerProducts(c);
+    const transfers5 = generateRecentTransfers(c, 5);
+    const cards5 = generateRecentCardAuths(c, 5);
+    const transferTotal = transfers5.reduce((sum, t) => { const n = parseInt(t.amount.replace(/[^0-9-]/g, ''), 10); return sum + (isNaN(n) ? 0 : Math.abs(n)); }, 0);
+    const fR = getCustomerFinance(c);
+    const rSeed = seedFromId(c);
+    const approval = new Date(2018 + (rSeed % 5), rSeed % 12, (rSeed % 26) + 1);
+    const expiry = new Date(approval); expiry.setFullYear(approval.getFullYear() + 3);
+    const available = Math.max(0, (fR.creditLimit || 0) - Math.round((fR.cardSpend3M || 0) / 3));
+    const s = rSeed + 777;
+    const dateFor = (offset) => new Date(2019 + ((s + offset) % 6), (s + offset) % 12, ((s + offset) % 26) + 1).toLocaleDateString();
+    const dRisk = allInfo.risk || { title: '', sections: [] };
+    const rawCh = generateCustomerInteractions(c, 5, 7);
+    const maxTime = Math.max(...rawCh.map(it => parseTS2(it.time)));
+    const custSeed = seedFromId(c);
+    const showPending = c.id === 'C001' || custSeed % 3 === 0;
+    let pendingAssigned = false;
+    const ch = rawCh.map((it) => {
+      const isNewest = showPending && !pendingAssigned && parseTS2(it.time) === maxTime;
+      if (isNewest) pendingAssigned = true;
+      return { ...it, status: isNewest ? '處理中' : '已發生', customerId: c.id, ...(isNewest && c.id === 'C001' ? { detail: '消費爭議款處理' } : {}) };
+    });
+    const fRating = getCustomerFinance(c);
+    const cardFees      = Math.round(((fRating.cardSpend3M || 0) / 3) * 0.005);
+    const depositMargin = Math.round((fRating.liquid || 0) * 0.001);
+    const wealthFees    = Math.round((fRating.invest || 0) * 0.002);
+    const loanInterest  = Math.round((fRating.loan || 0) * 0.03);
+    const investFees    = Math.round((fRating.invest || 0) * 0.0015);
+    const total = Math.max(1, cardFees + depositMargin + wealthFees + loanInterest + investFees);
+    const contribColors = ["#14b8a6", "#06b6d4", "#34d399", "#0ea5a4", "#7dd3fc"];
+    const contribItems = [
+      { label: '信用卡手續費 / 年費估值', value: cardFees },
+      { label: '存款利差貢獻',            value: depositMargin },
+      { label: '財富管理/顧問費用',        value: wealthFees },
+      { label: '貸款利息貢獻',            value: loanInterest },
+      { label: '投資相關手續費',           value: investFees },
+    ].filter(it => it.value > 0);
+    const donutData = contribItems.map(it => ({ label: it.label, value: Math.max(1, Math.round((it.value / total) * 100)) }));
+    const iSeed = seed + 4242;
+    const iMode = investModes[iSeed % investModes.length];
+    const iUpdated = new Date(2021 + (iSeed % 4), (iSeed >> 2) % 12, ((iSeed >> 3) % 26) + 1).toLocaleDateString();
+    const proInvestor = Boolean((iSeed >> 5) & 1);
+
+    return (
+      <div className="space-y-2">
+        {/* ── Header ─────────────────────────────────────────────────── */}
+        <div className="bg-gradient-to-r from-teal-700 to-teal-600 text-white px-4 py-2.5 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-teal-700 text-lg font-bold flex-shrink-0">
+              {c.name?.charAt(0) || '?'}
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-base font-bold">{c.name}</span>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getTierBgClass(c.vipLevel)}`}>{getTierDisplayLabel(c.vipLevel)}</span>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${riskLevel === 'high' ? 'bg-red-600 text-white' : riskLevel === 'medium' ? 'bg-yellow-500 text-white' : 'bg-teal-500 text-white'}`}>風險評級: {c.riskScore}</span>
+                <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs">{investMode}</span>
+              </div>
+              <div className="text-teal-100 text-xs mt-0.5">
+                {c.id} ・ {c.age}歲 ・ {c.gender === 'male' ? '男' : '女'} ・ {c.maritalStatus} ・ {c.occupation || '—'} ・ {c.nationality}
+              </div>
+            </div>
+          </div>
+          <button onClick={() => setActiveModule("search")} className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded text-white text-xs flex-shrink-0">返回搜尋</button>
+        </div>
+
+        {/* ── Alert Banner ────────────────────────────────────────────── */}
+        <div className={`px-3 py-1.5 rounded-lg flex items-center gap-2 flex-wrap ${hasAnyFlag ? 'bg-red-50 border border-red-300' : 'bg-green-50 border border-green-200'}`}>
+          <span className={`text-xs font-bold ${hasAnyFlag ? 'text-red-700' : 'text-green-700'}`}>{hasAnyFlag ? '客戶警示' : '無異常警示'}</span>
+          {rflags.blacklist         && <span className="px-2 py-0.5 bg-red-600 text-white text-xs rounded font-semibold animate-pulse">黑名單</span>}
+          {rflags.depositAlert      && <span className="px-2 py-0.5 bg-yellow-500 text-white text-xs rounded font-semibold">存款警示</span>}
+          {rflags.courtSeizure      && <span className="px-2 py-0.5 bg-red-600 text-white text-xs rounded font-semibold">法院扣押</span>}
+          {rflags.overdueCollection && <span className="px-2 py-0.5 bg-red-600 text-white text-xs rounded font-semibold">逾期/催收</span>}
+          {rflags.guaranteeAbnormal && <span className="px-2 py-0.5 bg-red-600 text-white text-xs rounded font-semibold">授信保證異常</span>}
+          {rflags.cardAbnormal      && <span className="px-2 py-0.5 bg-red-600 text-white text-xs rounded font-semibold">信用卡異常</span>}
+          {!hasAnyFlag && <span className="text-xs text-green-600">所有往來狀態正常，可正常服務</span>}
+        </div>
+
+        {/* ── Quick Stats ──────────────────────────────────────────────── */}
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { label: '總資產',   value: `NT$ ${f.netWorth.toLocaleString()}`,      hi: true },
+            { label: '總負債',   value: `NT$ ${f.loan.toLocaleString()}` },
+            { label: '月收入',   value: `NT$ ${f.monthlyIncome.toLocaleString()}` },
+            { label: '行銷分數', value: String(f.marketingScore) },
+          ].map(({ label, value, hi }) => (
+            <div key={label} className={SUBCARD}>
+              <div className="text-xs text-gray-500 mb-0.5">{label}</div>
+              <div className={`text-base font-bold tabular-nums ${hi ? 'text-teal-600' : 'text-gray-800'}`}>{value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── 基本資訊 + 聯絡資訊（服務基本所需，置頂一列）────────────── */}
+        <div className="flex gap-3 items-stretch">
+          {/* 基本資訊：子卡片兩欄，關係人資訊全寬 */}
+          <div className="flex-1 min-w-0 space-y-2">
+            <SecHeader Icon={FileText} title="基本資訊" />
+            {(() => {
+              const d = allInfo.basic || { title: '', sections: [] };
+              return (
+                <div className="space-y-2">
+                  {/* 身份/證件 + 名稱工作 + 關係人 三欄並排 */}
+                  <div className="grid grid-cols-3 gap-2 items-stretch">
+                    <div className={SUBCARD}>
+                      <h4 className="font-semibold text-sm mb-1.5 text-gray-800">身份 / 證件資訊</h4>
+                      <div className="space-y-1 text-xs">
+                        {[
+                          { label: '個人國籍', value: c.nationality },
+                          { label: '學歷',     value: c.education },
+                          { label: '婚姻狀態', value: c.maritalStatus },
+                          { label: '證件類別', value: c.idType },
+                          { label: '證件號碼', value: showMaskedData ? maskId(c.idCard) : c.idCard },
+                        ].map(({ label, value }) => (
+                          <div key={label} className="flex justify-between border-b border-gray-50 pb-0.5 last:border-0">
+                            <span className="text-gray-500">{label}</span>
+                            <span className="font-medium text-gray-800">{value || '—'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {d.sections.map((section, idx) => (
+                        <div key={idx} className={`${SUBCARD} flex-1`}>
+                          <h4 className="font-semibold text-sm mb-1.5 text-gray-800">{section.name}</h4>
+                          {renderSection(section, true)}
+                        </div>
+                      ))}
+                    </div>
+                    <div>{renderRelationships()}</div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+          {/* 聯絡資訊：固定較窄寬度 */}
+          <div className="w-72 flex-shrink-0 space-y-2 flex flex-col">
+            <SecHeader Icon={Users} title="聯絡資訊" />
+            {(() => {
+              const d = allInfo.contact || { title: '', sections: [] };
+              return (
+                <div className="flex-1 space-y-2 flex flex-col">
+                  {d.sections.map((section, idx) => (
+                    <div key={idx} className={`${SUBCARD} flex-1`}>
+                      <h4 className="font-semibold text-sm mb-1.5 text-gray-800">{section.name}</h4>
+                      {renderSection(section, true)}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+
+        {/* ── 業務往來（全寬）══════════════════════════════════════════ */}
+        <div className="space-y-2">
+          <SecHeader Icon={Star} title="業務往來" />
+          <div className="space-y-2">
+            <div className={SUBCARD}>
+              <h4 className="font-semibold text-sm mb-1.5 text-gray-800">客戶業務往來累計</h4>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { label: '持有產品總數',       value: `${allProds.length} 項` },
+                  { label: '近三個月信用卡消費',  value: `NT$ ${f.cardSpend3M.toLocaleString()}` },
+                  { label: '近五筆轉帳合計',      value: `NT$ ${transferTotal.toLocaleString()}` },
+                  { label: '信用卡利用率',        value: `${f.creditUtilPct}%` },
+                ].map(st => (
+                  <div key={st.label} className="bg-gray-50 rounded-lg p-2.5">
+                    <div className="text-xs text-gray-500 mb-0.5">{st.label}</div>
+                    <div className="font-semibold text-gray-800 text-sm tabular-nums">{st.value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className={SUBCARD}>
+                <h4 className="font-semibold text-sm mb-1.5 text-gray-800">客戶開辦業務</h4>
+                <CustomerProductTree key={c.id} products={allProds} />
+              </div>
+              <div className="space-y-2">
+                <div className={SUBCARD}>
+                  <h4 className="font-semibold text-sm mb-1.5 text-gray-800">近五筆轉帳</h4>
+                  <div className="space-y-1 text-xs">
+                    {transfers5.map((t, i) => (
+                      <div key={i} className="flex justify-between border-b border-gray-50 py-0.5 last:border-0">
+                        <span className="text-gray-700 truncate flex-1 mr-2">{t.merchant} <span className="text-gray-400">{t.time}</span></span>
+                        <span className="font-medium tabular-nums flex-shrink-0">{t.amount}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className={SUBCARD}>
+                  <h4 className="font-semibold text-sm mb-1.5 text-gray-800">近五筆信用卡授權明細</h4>
+                  <div className="space-y-1 text-xs">
+                    {cards5.map((t, i) => (
+                      <div key={i} className="flex justify-between border-b border-gray-50 py-0.5 last:border-0">
+                        <span className="text-gray-700 truncate flex-1 mr-2">{t.merchant} <span className="text-gray-400">{t.time}</span></span>
+                        <span className="font-medium tabular-nums flex-shrink-0">{t.amount}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── 其餘 8 個模組：兩欄獨立堆疊 ─────────────────────────────────── */}
+        <div className="flex gap-3 items-start">
+
+          {/* 左欄：基本資訊 / 風險資訊 / 互動紀錄 / 標籤資訊 */}
+          <div className="flex-1 min-w-0 space-y-3">
+
+            {/* TAB 3: 風險資訊 */}
+            <div className="space-y-2">
+              <SecHeader Icon={Shield} title="風險資訊" />
+              <div className="space-y-2">
+                {dRisk.sections.length > 0 && (
+                  <div className="space-y-2">
+                    {dRisk.sections.map((section, idx) => (
+                      <div key={idx} className={SUBCARD}>
+                        <h4 className="font-semibold text-sm mb-1.5 text-gray-800">{section.name}</h4>
+                        {renderSection(section, true)}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className={SUBCARD}>
+                  <h4 className="font-semibold text-sm mb-1.5 text-gray-800">客戶信用限額</h4>
+                  <div className="space-y-1 text-xs">
+                    {[
+                      { label: '信用卡 / 預借額度',  value: fR.creditLimit ? `NT$ ${fR.creditLimit.toLocaleString()}` : 'N/A' },
+                      { label: '擔保品鑑估值',       value: fR.collateralEstimated ? `NT$ ${fR.collateralEstimated.toLocaleString()}` : '無' },
+                      { label: '信用卡目前可用額度', value: fR.creditLimit ? `NT$ ${available.toLocaleString()}` : 'N/A' },
+                      { label: '核准日期',           value: approval.toLocaleDateString() },
+                      { label: '有效日期',           value: expiry.toLocaleDateString() },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="flex justify-between border-b border-gray-50 pb-0.5 last:border-0">
+                        <span className="text-gray-500">{label}</span>
+                        <span className="font-medium text-gray-800">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className={SUBCARD}>
+                  <h4 className="font-semibold text-sm mb-1.5 text-gray-800">違約 / 重大事件資訊</h4>
+                  <div className="space-y-1 text-xs">
+                    {[
+                      { label: '拒絕往來 / 黑名單', flag: rflags.blacklist,         yes: '是',                   no: '否',   yc: 'bg-red-600 text-white animate-pulse' },
+                      { label: '存款警示',          flag: rflags.depositAlert,      yes: '已警示',               no: '否',   yc: 'bg-yellow-500 text-white' },
+                      { label: '法院扣押',          flag: rflags.courtSeizure,      yes: '有',                   no: '無',   yc: 'bg-red-600 text-white' },
+                      { label: '逾期/催收/呆帳',    flag: rflags.overdueCollection, yes: '存在',                 no: '無',   yc: 'bg-red-600 text-white' },
+                      { label: '授信保證異常',      flag: rflags.guaranteeAbnormal, yes: '異常',                 no: '正常', yc: 'bg-red-600 text-white' },
+                      { label: '信用卡往來異常',    flag: rflags.cardAbnormal,      yes: `異常 (${dateFor(3)})`, no: '無',   yc: 'bg-red-600 text-white' },
+                    ].map(({ label, flag, yes, no, yc }) => (
+                      <div key={label} className="flex justify-between border-b border-gray-50 pb-0.5 last:border-0">
+                        <span className="text-gray-500">{label}</span>
+                        <span className="font-medium">
+                          {flag ? <span className={`px-1.5 py-0.5 rounded text-xs ${yc}`}>{yes}</span> : <span className="text-gray-600">{no}</span>}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* TAB 6: 互動紀錄 */}
+            <div className="space-y-2">
+              <SecHeader Icon={Clock} title="互動紀錄" />
+              <div className={SUBCARD}>
+                <h4 className="font-semibold text-sm mb-1.5 text-gray-800">通路互動紀錄</h4>
+                <InteractionTimeline
+                  items={ch}
+                  onItemClick={(item) => { setSelectedInteractionItem(item); setShowEventModal(true); }}
+                />
+              </div>
+            </div>
+
+            {/* TAB 8: 標籤資訊（緊湊 inline） */}
+            <div className="space-y-2">
+              <SecHeader Icon={Filter} title="標籤資訊" />
+              {(() => {
+                const intentTags = (c.tags || []).filter(t => typeof t === 'string' && t.includes('意圖'));
+                const otherTags  = (c.tags || []).filter(t => typeof t === 'string' && !t.includes('意圖'));
+                const structuredByCat = {};
+                (c.structuredTags || []).forEach(t => {
+                  if (!structuredByCat[t.category]) structuredByCat[t.category] = [];
+                  structuredByCat[t.category].push(t.name);
+                });
+                return (
+                  <div className="space-y-2">
+                    {intentTags.length > 0 && (
+                      <div className={SUBCARD}>
+                        <h4 className="font-semibold text-sm mb-1.5 text-gray-800">意圖標籤</h4>
+                        <div className="flex flex-wrap gap-1">
+                          {intentTags.map((t, i) => <span key={i} className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full text-xs font-medium">{t}</span>)}
+                        </div>
+                      </div>
+                    )}
+                    {otherTags.length > 0 && (
+                      <div className={SUBCARD}>
+                        <h4 className="font-semibold text-sm mb-1.5 text-gray-800">行為標籤</h4>
+                        <div className="flex flex-wrap gap-1">
+                          {otherTags.map((t, i) => <span key={i} className="px-2 py-0.5 bg-teal-50 text-teal-700 rounded-full text-xs">{t}</span>)}
+                        </div>
+                      </div>
+                    )}
+                    {Object.entries(structuredByCat).filter(([, ns]) => ns.length > 0).map(([cat, ns]) => (
+                      <div key={cat} className={SUBCARD}>
+                        <h4 className="font-semibold text-sm mb-1.5 text-gray-800">{cat}</h4>
+                        <div className="flex flex-wrap gap-1">
+                          {ns.map((n, i) => <span key={i} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs">{n}</span>)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+
+          </div>{/* end left column */}
+
+          {/* 右欄：聯絡資訊 / 財務狀況 / 評價資訊 / 偏好資訊 */}
+          <div className="flex-1 min-w-0 space-y-3">
+
+            {/* TAB 4: 財務狀況 */}
+            <div className="space-y-2">
+              <SecHeader Icon={TrendingUp} title="財務狀況" />
+              <div className={SUBCARD}>
+                <h4 className="font-semibold text-sm mb-1.5 text-gray-800">財務狀況視覺化分析</h4>
+                {renderFinancialCharts(true)}
+              </div>
+            </div>
+
+            {/* TAB 7: 評價資訊 */}
+            <div className="space-y-2">
+              <SecHeader Icon={Star} title="評價資訊" />
+              <div className="space-y-2">
+                <div className={SUBCARD}>
+                  <h4 className="font-semibold text-sm mb-1.5 text-gray-800">客戶貢獻度</h4>
+                  <div className="rounded-lg p-2 bg-gray-50 flex items-center gap-4">
+                    <div className="flex-shrink-0">
+                      <DonutInteractive data={donutData} colors={contribColors.slice(0, contribItems.length)} size={120} centerText={{ line1: `${(total / 1000).toFixed(1)}K`, line2: '年貢獻' }} />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      {contribItems.map((it, i) => (
+                        <div key={it.label} className="flex items-center gap-1.5 text-xs">
+                          <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: contribColors[i] }} />
+                          <span className="text-gray-700 flex-1 truncate">{it.label}</span>
+                          <span className="font-semibold text-gray-800 tabular-nums">NT$ {it.value.toLocaleString()}</span>
+                          <span className="text-gray-400 w-8 text-right tabular-nums">{Math.round((it.value / total) * 100)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className={SUBCARD}>
+                  <h4 className="font-semibold text-sm mb-1.5 text-gray-800">客戶投資屬性資訊</h4>
+                  <div className="space-y-1 text-xs">
+                    {[
+                      { label: '投資屬性',         value: iMode },
+                      { label: '投資屬性更新日期', value: iUpdated },
+                      { label: '專業投資人',       value: proInvestor ? '是' : '否' },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="flex justify-between border-b border-gray-50 pb-0.5 last:border-0">
+                        <span className="text-gray-500">{label}</span>
+                        <span className="font-medium text-gray-800">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* TAB 9: 偏好資訊（緊湊 inline） */}
+            <div className="space-y-2">
+              <SecHeader Icon={Users} title="偏好資訊" />
+              {(() => {
+                const prefsData = generateCustomerBasicInfo(c).preferences;
+                if (!prefsData) return null;
+                return (
+                  <div className="space-y-2">
+                    {prefsData.sections.map((section, sIdx) => (
+                      <div key={sIdx} className={SUBCARD}>
+                        <h4 className="font-semibold text-sm mb-1.5 text-gray-800">{section.name}</h4>
+                        {section.preferences && section.preferences.length > 0 ? (
+                          <div className="space-y-1">
+                            {section.preferences.map((p, i) => {
+                              const raw = p.score || p.percentage || p.usage;
+                              const pct = raw ? parsePercent(raw) : null;
+                              const label = p.label || p.name || p.product || p.category || (p.channel ? channelLabel(p.channel) : '') || '';
+                              const val = p.value || p.status || '';
+                              return (
+                                <div key={i} className="flex items-center gap-2 text-xs border-b border-gray-50 pb-0.5 last:border-0">
+                                  <span className="text-gray-600 flex-1 truncate">{label}</span>
+                                  {pct !== null && pct > 0 ? (
+                                    <>
+                                      <div className="w-16 bg-gray-200 rounded-full h-1.5 flex-shrink-0">
+                                        <div className="h-1.5 rounded-full bg-teal-500" style={{ width: `${Math.max(4, pct)}%` }} />
+                                      </div>
+                                      <span className="text-gray-700 font-medium w-7 text-right flex-shrink-0 tabular-nums">{Math.round(pct)}%</span>
+                                    </>
+                                  ) : (
+                                    <span className="text-gray-800 font-medium flex-shrink-0">{val}</span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : section.items ? (
+                          <div className="space-y-1 text-xs">
+                            {section.items.map((it, i) => (
+                              <div key={i} className="flex justify-between border-b border-gray-50 pb-0.5 last:border-0">
+                                <span className="text-gray-500">{it.label || it.name}</span>
+                                <span className="font-medium text-gray-800">{it.value || it.status || '—'}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+
+          </div>{/* end right column */}
+        </div>{/* end flex two-col */}
+
+        {renderInsightModal()}
+      </div>
+    );
+  };
+
   const renderDetailView = () => {
     if (!selectedCustomer)
       return (
@@ -12085,6 +12537,9 @@ const CUS360Demo = () => {
           請從左側或搜尋結果選擇客戶以檢視詳細資料。
         </div>
       );
+
+    // Delegate to one-page mode when toggled
+    if (viewMode === "onepage") return renderOnePageView();
 
     // 使用全局的generateCustomerBasicInfo函数
     const currentData = (generateCustomerBasicInfo(selectedCustomer)[activeTab] || detailedCustomerData[activeTab]) || {
