@@ -6837,80 +6837,76 @@ const CUS360Demo = () => {
   };
 
   const handleSearch = () => {
-    // Smart search: try exact identifier (idCard/creditCard/accountNumber),
-    // otherwise fallback to name substring (Chinese/English). If a single
-    // match is found, open the detail view.
-    const normalize = (s) =>
-      (s || "")
-        .toString()
-        .replace(/[^0-9A-Za-z]/g, "")
-        .toLowerCase();
+    // Format validation based on selected searchType
     const qRaw = (searchQuery || "").toString().trim();
     if (!qRaw) {
+      setSearchValidationError("");
       setSearchPerformed(true);
       setSearchResults([]);
       setSelectedCustomer(null);
       return;
     }
 
-    // Auto-detect search type based on input content
-    let autoSearchType = "name";
-    const hasChinese = /[\u4E00-\u9FFF]/.test(qRaw);
-    const qNorm = qRaw.replace(/[-\s]/g, "");
-
-    if (hasChinese) {
-      // 含中文 → 姓名
-      autoSearchType = "name";
-    } else if (/^\d{10,16}$/.test(qNorm)) {
-      // 10~16 位純數字 → 信用卡號或帳號
-      // 信用卡號通常 16 位；帳號通常含分隔符
-      autoSearchType = qRaw.includes("-") && qNorm.length <= 12 ? "accountNumber" : "creditCard";
-    } else if (/^[A-Z][0-9]{9}$/i.test(qNorm)) {
-      // 1 英文字母 + 9 數字 → 身分證
-      autoSearchType = "idCard";
-    } else if (/^\d{3}-\d{7}-\d$/.test(qRaw) || /^\d{11,12}$/.test(qNorm)) {
-      // 帳號格式
-      autoSearchType = "accountNumber";
-    } else if (/[A-Za-z]/.test(qRaw)) {
-      // 含英文但不符合身分證格式 → 姓名（英文名）
-      autoSearchType = "name";
+    // Validate format based on the user-selected search type
+    if (searchType === "idCard") {
+      if (!/^[A-Za-z][12][0-9]{8}$/.test(qRaw)) {
+        setSearchValidationError("客戶編號格式錯誤：應為 1 個英文字母 + 數字 1 或 2 + 8 位數字（例如 A123456789）");
+        return;
+      }
+    } else if (searchType === "creditCard") {
+      const ccNorm = qRaw.replace(/[-\s*X]/g, "");
+      if (!/^\d{16}$/.test(ccNorm)) {
+        setSearchValidationError("信用卡號格式錯誤：應為 16 位數字，可含連字號（例如 4559-****-****-1234）");
+        return;
+      }
+    } else if (searchType === "accountNumber") {
+      if (!/^\d{3}-\d{7}-\d$/.test(qRaw) && !/^\d{11,12}$/.test(qRaw.replace(/-/g, ""))) {
+        setSearchValidationError("存款帳號格式錯誤：應為 XXX-XXXXXXX-X 格式（例如 004-1234567-8）");
+        return;
+      }
     }
 
-    // Exact match against the selected identifier field only (no fuzzy fallback)
+    setSearchValidationError("");
+    setSearchLoading(true);
+
+    const normalize = (s) =>
+      (s || "")
+        .toString()
+        .replace(/[^0-9A-Za-z]/g, "")
+        .toLowerCase();
+
+    // 嚴格使用使用者所選的查詢欄位，不做自動偵測
     const fieldMap = {
       idCard: "idCard",
       creditCard: "creditCard",
       accountNumber: "accountNumber",
       name: "name",
     };
-    const field = fieldMap[autoSearchType] || "name";
-    
-    // For name search, use fuzzy matching (supports both Chinese and English); for others, use exact match
-    const found = mockCustomers.filter((c) => {
-      if (field === "name") {
-        // Support both Chinese names and English names with partial matching
-        const nameValue = (c[field] || "").toString();
-        const queryLower = qRaw.toLowerCase();
-        const nameValueLower = nameValue.toLowerCase();
-        // Direct substring match for Chinese and mixed text
-        return nameValueLower.includes(queryLower);
-      } else {
-        const q = normalize(qRaw);
-        return normalize(c[field]) === q;
-      }
-    });
-    
-    setSearchPerformed(true);
-    setSearchResults(found);
+    const field = fieldMap[searchType] || "name";
 
-    if (found && found.length === 1) {
-      // auto-open detail for single exact match
-      setSelectedCustomer(found[0]);
-      setActiveModule("detail");
-    } else {
-      setSelectedCustomer(null);
-      setActiveModule("search");
-    }
+    setTimeout(() => {
+      // 姓名欄位使用模糊比對；其他欄位一律精準比對
+      const found = mockCustomers.filter((c) => {
+        if (field === "name") {
+          const nameValue = (c[field] || "").toString();
+          return nameValue.toLowerCase().includes(qRaw.toLowerCase());
+        } else {
+          return normalize(c[field]) === normalize(qRaw);
+        }
+      });
+
+      setSearchLoading(false);
+      setSearchPerformed(true);
+      setSearchResults(found);
+
+      if (found && found.length === 1) {
+        setSelectedCustomer(found[0]);
+        setActiveModule("detail");
+      } else {
+        setSelectedCustomer(null);
+        setActiveModule("search");
+      }
+    }, 800);
   };
 
   // Export helpers and modal
@@ -7138,25 +7134,7 @@ const CUS360Demo = () => {
             </div>
           </div>
 
-          <div className="flex-1 px-6">
-            <div className="max-w-xl mx-auto flex gap-2">
-              <input
-                className="flex-1 rounded-full px-4 py-2 bg-white bg-opacity-20 placeholder-white/80 border border-white/10 text-white"
-                placeholder="快速搜尋：姓名、證號、卡號或帳號…"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSearch();
-                }}
-              />
-              <button
-                onClick={handleSearch}
-                className="px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full text-white text-sm border border-white/20 transition-all"
-              >
-                搜尋
-              </button>
-            </div>
-          </div>
+          <div className="flex-1" />
 
           <div className="flex items-center gap-4">
             <div className="text-sm text-white/90">
@@ -7320,11 +7298,12 @@ const CUS360Demo = () => {
     idType: "",
   });
   // Grouped tag filters: array of groups; each group has join ('AND'|'OR') across groups and conditions with op ('AND'|'OR'|'NOT')
-  const [tagGroups, setTagGroups] = useState([
-    { join: 'AND', conditions: [{ op: 'AND', category: '', tag: '' }] }
-  ]);
+  const [tagGroups, setTagGroups] = useState([]);
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [filterResults, setFilterResults] = useState(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [filterLoading, setFilterLoading] = useState(false);
+  const [searchValidationError, setSearchValidationError] = useState("");
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedInteractionItem, setSelectedInteractionItem] = useState(null);
   // Floating assistant UI state
@@ -9683,7 +9662,18 @@ const CUS360Demo = () => {
     );
   };
 
-  const renderSearchModule = () => (
+  const renderSearchModule = () => {
+    if (searchLoading) return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center">
+        <svg className="animate-spin" width="48" height="48" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="16" stroke="#99f6e4" strokeWidth="4" />
+          <path d="M36 20a16 16 0 0 0-16-16" stroke="#0d9488" strokeWidth="4" strokeLinecap="round" />
+        </svg>
+        <div className="mt-4 text-base font-semibold text-teal-700">查詢中…</div>
+        <div className="mt-1 text-xs text-gray-400">請稍候</div>
+      </div>
+    );
+    return (
     <div className="space-y-3">
       <div className={CARD}>
         <h2 className="text-lg font-semibold mb-2 flex items-center gap-2 text-gray-800">
@@ -9698,11 +9688,11 @@ const CUS360Demo = () => {
             <div className="flex gap-2">
               <select
                 value={searchType}
-                onChange={(e) => setSearchType(e.target.value)}
+                onChange={(e) => { setSearchType(e.target.value); setSearchValidationError(""); }}
                 className="px-3 py-2 border border-teal-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300"
               >
                 <option value="name">客戶姓名</option>
-                <option value="idCard">證件號碼</option>
+                <option value="idCard">客戶編號</option>
                 <option value="creditCard">信用卡號</option>
                 <option value="accountNumber">存款帳號</option>
               </select>
@@ -9710,18 +9700,27 @@ const CUS360Demo = () => {
               <input
                 type="text"
                 placeholder={searchType === 'name' ? '輸入姓名 (支援模糊搜尋)' : '輸入選擇的識別號 (精準比對)'}
-                className="flex-1 px-3 py-2 border border-teal-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300"
+                className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300 ${searchValidationError ? "border-red-400 bg-red-50" : "border-teal-100"}`}
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => { setSearchQuery(e.target.value); setSearchValidationError(""); }}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               />
               <button
                 onClick={handleSearch}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                disabled={searchLoading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
                 搜尋
               </button>
             </div>
+            {searchValidationError && (
+              <div className="mt-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600 flex items-center gap-2">
+                <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
+                </svg>
+                {searchValidationError}
+              </div>
+            )}
             <p className="text-sm text-gray-500 mt-2">
               {searchType === 'name' ? '輸入客戶姓名進行查詢（支援部分字符匹配）' : '請選擇一種識別號並輸入完整號碼以查得客戶。'}
             </p>
@@ -9777,9 +9776,13 @@ const CUS360Demo = () => {
               key={customer.id}
               onClick={() => {
                 console.log("[CUS360Demo] sample/search click", customer);
-                setSelectedCustomer(customer);
-                setActiveModule("detail");
-                setActiveTab("basic");
+                setSearchLoading(true);
+                setTimeout(() => {
+                  setSearchLoading(false);
+                  setSelectedCustomer(customer);
+                  setActiveModule("detail");
+                  setActiveTab("basic");
+                }, 800);
               }}
               className="p-2 border rounded-lg hover:bg-gray-50 cursor-pointer flex justify-between items-center"
             >
@@ -9848,13 +9851,24 @@ const CUS360Demo = () => {
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
   const renderFilterModule = () => {
     const displayedList =
       filterResults === null ? mockCustomers : filterResults;
     const noResults =
       Array.isArray(filterResults) && filterResults.length === 0;
+    if (filterLoading) return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center">
+        <svg className="animate-spin" width="48" height="48" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="16" stroke="#99f6e4" strokeWidth="4" />
+          <path d="M36 20a16 16 0 0 0-16-16" stroke="#0d9488" strokeWidth="4" strokeLinecap="round" />
+        </svg>
+        <div className="mt-4 text-base font-semibold text-teal-700">篩選中…</div>
+        <div className="mt-1 text-xs text-gray-400">請稍候</div>
+      </div>
+    );
     return (
       <div className={CARD}>
         <h2 className="text-md font-semibold mb-2 flex items-center gap-2">
@@ -9991,6 +10005,8 @@ const CUS360Demo = () => {
           <div className="flex gap-3">
             <button
               onClick={() => {
+                setFilterLoading(true);
+                setTimeout(() => {
                 // apply filters to mockCustomers including tag conditions
                 const results = mockCustomers.filter((c) => {
                   if (filters.vipLevel && filters.vipLevel !== "all") {
@@ -10046,8 +10062,11 @@ const CUS360Demo = () => {
                   return true;
                 });
                 setFilterResults(results);
+                setFilterLoading(false);
+                }, 800);
               }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              disabled={filterLoading}
             >
               套用篩選
             </button>
@@ -12549,7 +12568,7 @@ const CUS360Demo = () => {
                           </div>
                         </div>
                         <div className="flex justify-between">
-                          <div className="text-gray-600">證件號碼</div>
+                          <div className="text-gray-600">客戶編號</div>
                           <div className="font-medium text-right">
                             {showMaskedData
                               ? maskId(selectedCustomer.idCard)
