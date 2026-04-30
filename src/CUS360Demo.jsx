@@ -9064,19 +9064,19 @@ const CUS360Demo = () => {
           channel: "定存到期",
           time: twoMonthsLater.toLocaleDateString("zh-TW") + " 09:00",
           detail: "您的台幣定存即將到期，建議評估續存/轉存與利率方案。",
-          status: "提醒",
+          status: "提醒", summary: "定存即將到期", _type: "event",
         },
         {
           channel: "人生大事",
           time: past1.toLocaleDateString("zh-TW") + " 10:00",
           detail: "結婚：婚姻狀態更新，提供家庭保險與房貸試算。",
-          status: "已發生",
+          status: "已發生", summary: "結婚", _type: "event",
         },
         {
           channel: "人生大事",
           time: past2.toLocaleDateString("zh-TW") + " 09:30",
           detail: "購屋：購屋完成，提供房貸與保費整合建議。",
-          status: "已發生",
+          status: "已發生", summary: "購屋", _type: "event",
         },
       ];
     }
@@ -9092,13 +9092,13 @@ const CUS360Demo = () => {
           channel: "保單續繳",
           time: oneMonthLater.toLocaleDateString("zh-TW") + " 09:00",
           detail: "新生兒醫療險首次年繳即將到期，建議確認保障內容並視需要調整。",
-          status: "提醒",
+          status: "提醒", summary: "保費即將到期", _type: "event",
         },
         {
           channel: "人生大事",
           time: sixMonthsAgo.toLocaleString(),
           detail: "生子：新生兒相關教育基金與保險建議。",
-          status: "已發生",
+          status: "已發生", summary: "生子", _type: "event",
         },
       ];
     }
@@ -9109,13 +9109,13 @@ const CUS360Demo = () => {
     const reminderType = seed % 5; // 0,1 → 定存到期; 2 → 保單續繳; 3 → 信用卡年費; 4 → 無提醒
     if (reminderType < 2) {
       const d1 = new Date(now.getFullYear(), now.getMonth() + ((seed % 3) + 1), (seed % 28) + 1);
-      events.push({ channel: "定存到期", time: d1.toLocaleString(), detail: "您的定存即將到期，建議評估續存/轉存與利率方案。", status: "提醒" });
+      events.push({ channel: "定存到期", time: d1.toLocaleString(), detail: "您的定存即將到期，建議評估續存/轉存與利率方案。", status: "提醒", summary: "定存即將到期", _type: "event" });
     } else if (reminderType === 2) {
       const d2 = new Date(now.getFullYear(), now.getMonth() + ((seed % 2) + 1), (seed % 20) + 1);
-      events.push({ channel: "保單續繳", time: d2.toLocaleString(), detail: "壽險/醫療險保費即將到期，請確認繳費方式與保障內容是否需調整。", status: "提醒" });
+      events.push({ channel: "保單續繳", time: d2.toLocaleString(), detail: "壽險/醫療險保費即將到期，請確認繳費方式與保障內容是否需調整。", status: "提醒", summary: "保費即將到期", _type: "event" });
     } else if (reminderType === 3) {
       const d3 = new Date(now.getFullYear(), now.getMonth() + 1, (seed % 25) + 1);
-      events.push({ channel: "信用卡年費", time: d3.toLocaleString(), detail: "信用卡年費即將扣款，建議評估是否刷卡達標免年費或升級方案。", status: "提醒" });
+      events.push({ channel: "信用卡年費", time: d3.toLocaleString(), detail: "信用卡年費即將扣款，建議評估是否刷卡達標免年費或升級方案。", status: "提醒", summary: "年費即將到期", _type: "event" });
     }
     // else reminderType === 4 → no upcoming reminder for this customer
     // Life events candidates
@@ -9148,6 +9148,8 @@ const CUS360Demo = () => {
         time: past.toLocaleString(),
         detail: `${c.label}：${c.note}`,
         status: "已發生",
+        summary: c.label,
+        _type: "event",
       });
     }
     return events;
@@ -11037,10 +11039,13 @@ const CUS360Demo = () => {
     ) {
       return (
         <div className="space-y-1">
-          <InteractionTimeline items={section.interactions} />
-          {section.name === "客戶服務紀錄" && (
-            <div className="text-[11px] text-gray-500">請點擊查看服務紀錄</div>
-          )}
+          <InteractionTimeline
+            items={section.interactions}
+            onItemClick={(item) => {
+              setSelectedInteractionItem(item);
+              setShowEventModal(true);
+            }}
+          />
         </div>
       );
     }
@@ -11093,65 +11098,52 @@ const CUS360Demo = () => {
       return isNaN(d) ? new Date(0) : d;
     };
     const data = [...items].sort((a, b) => parseTS(b.time) - parseTS(a.time));
+    const getColors = (it, idx) => {
+      const status = it.status || (idx % 2 === 0 ? "處理中" : "已解決");
+      const isWarn = status === "處理中" || status === "提醒";
+      const isSuccess = status === "已解決" || status === "已發生";
+      return {
+        status,
+        statusColor: isWarn ? "bg-yellow-400" : isSuccess ? "bg-green-500" : "bg-teal-500",
+        badgeCls: isWarn ? "bg-yellow-100 text-yellow-800" : isSuccess ? "bg-green-100 text-green-800" : "bg-teal-100 text-teal-800",
+      };
+    };
     return (
-      <div className="relative">
-        {/* Axis passes exactly through bubble centers (24px bubble => center at 12px from row top) */}
-        <div className="absolute left-0 right-0 top-12 h-px bg-gradient-to-r from-teal-200 via-teal-400 to-teal-200 z-0" />
-        <div className="overflow-x-auto pb-2">
-          <div className="flex items-stretch gap-6 min-w-max px-2">
+      <div className="overflow-x-auto pb-2">
+        <div className="min-w-max px-2">
+          {/* Row 1: date labels */}
+          <div className="flex gap-6 mb-1">
+            {data.map((it, idx) => (
+              <div key={idx} className="w-44 text-center text-[11px] text-gray-500 font-medium">{it.time}</div>
+            ))}
+          </div>
+          {/* Row 2: axis line + dots — line centers perfectly via top-1/2 */}
+          <div className="relative flex gap-6">
+            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px bg-gradient-to-r from-teal-200 via-teal-400 to-teal-200" />
             {data.map((it, idx) => {
-              const status = it.status || (idx % 2 === 0 ? "處理中" : "已解決");
-              const isWarn = status === "處理中" || status === "提醒";
-              const isSuccess = status === "已解決" || status === "已發生";
-              const statusColor = isWarn
-                ? "bg-yellow-400"
-                : isSuccess
-                ? "bg-green-500"
-                : "bg-teal-500";
-              const badgeCls = isWarn
-                ? "bg-yellow-100 text-yellow-800"
-                : isSuccess
-                ? "bg-green-100 text-green-800"
-                : "bg-teal-100 text-teal-800";
+              const { statusColor } = getColors(it, idx);
               return (
-                <div
-                  key={idx}
-                  className="flex flex-col items-center text-xs w-44"
-                >
-                  {/* tick mark on axis */}
+                <div key={idx} className="w-44 flex justify-center relative z-10">
+                  <div className={`w-4 h-4 rounded-full shadow ${statusColor}`} />
+                </div>
+              );
+            })}
+          </div>
+          {/* Row 3: cards */}
+          <div className="flex gap-6 mt-2">
+            {data.map((it, idx) => {
+              const { status, badgeCls } = getColors(it, idx);
+              return (
+                <div key={idx} className="w-44">
                   <div
-                    className="w-px h-3 bg-teal-300"
-                    style={{ position: "relative", top: "-6px" }}
-                  ></div>
-                  <div className="flex flex-col items-center">
-                    <div className="text-[11px] text-gray-500 font-medium mb-1">
-                      {it.time}
+                    className="p-2 rounded-lg bg-white shadow border border-teal-100 hover:shadow-md transition cursor-pointer text-xs"
+                    onClick={() => { if (onItemClick) onItemClick(it); }}
+                  >
+                    <div className="font-medium text-gray-800 truncate mb-1 flex items-center gap-1">
+                      <span>{it.channel}</span>
+                      <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${badgeCls}`}>{status}</span>
                     </div>
-                    <div className="relative flex items-center justify-center z-10">
-                      <div
-                        className={`w-6 h-6 rounded-full flex items-center justify-center shadow ${statusColor} text-white font-bold`}
-                      >
-                        {idx + 1}
-                      </div>
-                    </div>
-                    <div
-                      className="mt-2 p-2 w-full rounded-lg bg-white shadow border border-teal-100 hover:shadow-md transition cursor-pointer"
-                      onClick={() => {
-                        if (onItemClick) onItemClick(it);
-                      }}
-                    >
-                      <div className="font-medium text-gray-800 truncate mb-1 flex items-center gap-1">
-                        <span>{it.channel}</span>
-                        <span
-                          className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${badgeCls}`}
-                        >
-                          {status}
-                        </span>
-                      </div>
-                      <div className="text-gray-600 leading-snug line-clamp-3">
-                        {it.detail}
-                      </div>
-                    </div>
+                    <div className="text-gray-600 leading-snug line-clamp-2">{it.summary || it.detail}</div>
                   </div>
                 </div>
               );
@@ -13208,7 +13200,7 @@ const CUS360Demo = () => {
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-4">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-lg font-semibold text-gray-800">
-                  服務紀錄明細
+                  {selectedInteractionItem._type === 'event' ? '事件紀錄明細' : '服務紀錄明細'}
                 </h3>
                 <button
                   className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200"
@@ -13221,42 +13213,23 @@ const CUS360Demo = () => {
                 </button>
               </div>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between border-b pb-1">
-                  <span className="text-gray-600">服務時間</span>
-                  <span className="font-medium">
-                    {selectedInteractionItem.time}
-                  </span>
-                </div>
-                <div className="flex justify-between border-b pb-1">
-                  <span className="text-gray-600">服務通路</span>
-                  <span className="font-medium">
-                    {selectedInteractionItem.channel}
-                  </span>
-                </div>
-                <div className="flex justify-between border-b pb-1">
-                  <span className="text-gray-600">服務項目</span>
-                  <span className="font-medium text-right ml-4">
-                    {selectedInteractionItem.detail}
-                  </span>
-                </div>
-                <div className="flex justify-between border-b pb-1">
-                  <span className="text-gray-600">處理狀態</span>
-                  <span className="font-medium">
-                    {selectedInteractionItem.status || "—"}
-                  </span>
-                </div>
-                <div className="flex justify-between border-b pb-1">
-                  <span className="text-gray-600">服務員編</span>
-                  <span className="font-medium">
-                    {selectedInteractionItem.agentId || "E00000"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">客戶編號</span>
-                  <span className="font-medium">
-                    {selectedInteractionItem.customerId || selectedCustomer?.id}
-                  </span>
-                </div>
+                {selectedInteractionItem._type === 'event' ? (
+                  <>
+                    <div className="flex justify-between border-b pb-1"><span className="text-gray-600">事件時間</span><span className="font-medium">{selectedInteractionItem.time}</span></div>
+                    <div className="flex justify-between border-b pb-1"><span className="text-gray-600">事件類型</span><span className="font-medium">{selectedInteractionItem.channel}</span></div>
+                    <div className="flex justify-between border-b pb-1"><span className="text-gray-600">事件說明</span><span className="font-medium text-right ml-4">{selectedInteractionItem.detail}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-600">狀態</span><span className="font-medium">{selectedInteractionItem.status || '—'}</span></div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between border-b pb-1"><span className="text-gray-600">服務時間</span><span className="font-medium">{selectedInteractionItem.time}</span></div>
+                    <div className="flex justify-between border-b pb-1"><span className="text-gray-600">服務通路</span><span className="font-medium">{selectedInteractionItem.channel}</span></div>
+                    <div className="flex justify-between border-b pb-1"><span className="text-gray-600">服務項目</span><span className="font-medium text-right ml-4">{selectedInteractionItem.detail}</span></div>
+                    <div className="flex justify-between border-b pb-1"><span className="text-gray-600">處理狀態</span><span className="font-medium">{selectedInteractionItem.status || '—'}</span></div>
+                    <div className="flex justify-between border-b pb-1"><span className="text-gray-600">服務員編</span><span className="font-medium">{selectedInteractionItem.agentId || 'E00000'}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-600">客戶編號</span><span className="font-medium">{selectedInteractionItem.customerId || selectedCustomer?.id}</span></div>
+                  </>
+                )}
               </div>
             </div>
           </div>
