@@ -22,7 +22,18 @@ import {
 // Same-type products are grouped under one row; expanding shows all instances stacked.
 // Defined outside CUS360Demo so the component reference is stable and
 // React does NOT unmount/remount it on every parent re-render.
-const CustomerProductTree = ({ products = [], layout = "vertical" }) => {
+const maskAcctNum = (s) => {
+  if (!s) return s;
+  const chars = String(s).split("");
+  const di = chars.reduce((a, ch, i) => { if (/\d/.test(ch)) a.push(i); return a; }, []);
+  const n = di.length;
+  if (n <= 9) { let seen = 0; for (let i = chars.length - 1; i >= 0 && seen < 4; i--) { if (/\d/.test(chars[i])) seen++; else chars[i] = "*"; } return chars.join(""); }
+  const keep = new Set([...di.slice(0, 5), ...di.slice(-4)]);
+  di.forEach((idx) => { if (!keep.has(idx)) chars[idx] = "*"; });
+  return chars.join("");
+};
+
+const CustomerProductTree = ({ products = [], layout = "vertical", masked = false }) => {
   const [expanded, setExpanded] = React.useState({});
   const toggle = (key) =>
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -55,8 +66,13 @@ const CustomerProductTree = ({ products = [], layout = "vertical" }) => {
   if (!products.length)
     return <div className="text-sm text-gray-400 py-2">尚無產品資料</div>;
 
+  const l1Count = Object.keys(tree).length;
+
   return (
-    <div className={layout === "horizontal" ? "grid grid-cols-4 gap-2" : "space-y-2"}>
+    <div
+      className={layout === "horizontal" ? "grid gap-2" : "space-y-2"}
+      style={layout === "horizontal" ? { gridTemplateColumns: `repeat(${l1Count}, 1fr)` } : undefined}
+    >
       {Object.entries(tree).map(([l1, l2Map]) => {
         const isL1Open = !!expanded[l1];
         // total = number of unique L4 groups (not raw product count)
@@ -177,12 +193,16 @@ const CustomerProductTree = ({ products = [], layout = "vertical" }) => {
                                           </div>
                                         )}
                                         <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
-                                          {product.details.map((d, di) => (
-                                            <div key={di} className="flex flex-col">
-                                              <span className="text-gray-400">{d.label}</span>
-                                              <span className="font-medium text-gray-800">{d.value}</span>
-                                            </div>
-                                          ))}
+                                          {product.details.map((d, di) => {
+                                            const isAcct = /帳號/.test(d.label);
+                                            const displayVal = masked && isAcct ? maskAcctNum(d.value) : d.value;
+                                            return (
+                                              <div key={di} className="flex flex-col">
+                                                <span className="text-gray-400">{d.label}</span>
+                                                <span className="font-medium text-gray-800">{displayVal}</span>
+                                              </div>
+                                            );
+                                          })}
                                         </div>
                                       </div>
                                     ))}
@@ -7328,7 +7348,7 @@ const CUS360Demo = () => {
             </div>
             {activeModule === "detail" && selectedCustomer && (
               <div className="flex items-center bg-white/15 rounded-lg p-0.5 gap-0.5">
-                {[{ value: "tabs", label: "頁籤" }, { value: "onepage", label: "一頁" }].map(({ value, label }) => (
+                {[{ value: "tabs", label: "分頁檢視" }, { value: "onepage", label: "單頁檢視" }].map(({ value, label }) => (
                   <button
                     key={value}
                     onClick={() => setViewMode(value)}
@@ -8564,59 +8584,62 @@ const CUS360Demo = () => {
     return s;
   };
 
-  const generateRecentTransfers = (customer, n = 5) => {
-    const seed = seedFromId(customer);
+  const generateRecentTransfers = (customer, n = 20, days = 30) => {
     const merchants = [
-      "中鼎商業銀行",
-      "王大明",
-      "李美華",
-      "張三貿易",
-      "電商平台",
-      "房東",
-      "旅行社",
-      "薪資發放",
+      "中鼎商業銀行", "王大明", "李美華", "張三貿易", "電商平台",
+      "房東", "旅行社", "薪資發放", "水電費扣繳", "網路書店",
+      "便利商店轉帳", "醫療費用", "股票申購款", "保險費繳納",
     ];
+    let rng = seedFromId(customer);
+    const next = () => { rng = (rng * 1664525 + 1013904223) & 0x7fffffff; return rng; };
     const out = [];
     for (let i = 0; i < n; i++) {
-      const dayOffset = (seed + i * 7) % 30;
+      const dayOffset = next() % days;
+      const hour = next() % 24;
+      const min = next() % 60;
       const date = new Date();
-      date.setDate(date.getDate() - dayOffset - i);
-      const amount = Math.round(((seed >> i % 10) % 90000) + 1000);
-      const counterparty = merchants[(seed + i) % merchants.length];
+      date.setHours(hour, min, 0, 0);
+      date.setDate(date.getDate() - dayOffset);
+      const amount = (next() % 90000) + 1000;
+      const counterparty = merchants[next() % merchants.length];
       out.push({
-        time: date.toLocaleString(),
+        time: date.toLocaleString("zh-TW"),
         merchant: counterparty,
         amount: `NT$ ${amount.toLocaleString()}`,
+        _ts: date.getTime(),
       });
     }
-    return out;
+    out.sort((a, b) => b._ts - a._ts);
+    return out.map(({ _ts, ...rest }) => rest);
   };
 
-  const generateRecentCardAuths = (customer, n = 5) => {
-    const seed = seedFromId(customer) + 97;
+  const generateRecentCardAuths = (customer, n = 25, days = 30) => {
     const merchants = [
-      "順豐便利商店",
-      "晨星咖啡",
-      "城央購物廣場",
-      "裕豐量販",
-      "速達外送",
-      "文薈書店",
-      "捷運儲值",
+      "順豐便利商店", "晨星咖啡", "城央購物廣場", "裕豐量販", "速達外送",
+      "文薈書店", "捷運儲值", "百貨公司", "藥妝店", "網路購物",
+      "加油站", "診所自費", "電影院", "健身房月費",
     ];
+    let rng = seedFromId(customer) + 97;
+    const next = () => { rng = (rng * 1664525 + 1013904223) & 0x7fffffff; return rng; };
     const out = [];
     for (let i = 0; i < n; i++) {
-      const dayOffset = (seed + i * 3) % 20;
+      const dayOffset = next() % days;
+      const hour = next() % 24;
+      const min = next() % 60;
       const date = new Date();
-      date.setDate(date.getDate() - dayOffset - i);
-      const amount = Math.round(((seed >> i % 8) % 8000) + 120);
-      const merchant = merchants[(seed + i * 11) % merchants.length];
+      date.setHours(hour, min, 0, 0);
+      date.setDate(date.getDate() - dayOffset);
+      const amount = (next() % 8000) + 120;
+      const merchant = merchants[next() % merchants.length];
       out.push({
-        time: date.toLocaleString(),
+        time: date.toLocaleString("zh-TW"),
         merchant,
         amount: `NT$ ${amount.toLocaleString()}`,
+        _ts: date.getTime(),
       });
     }
-    return out;
+    out.sort((a, b) => b._ts - a._ts);
+    return out.map(({ _ts, ...rest }) => rest);
   };
 
   // ── generateCustomerProducts ───────────────────────────────────────────────
@@ -11208,16 +11231,31 @@ const CUS360Demo = () => {
   // Generic section renderer used in detail pages
   const renderSection = (section, compact = false) => {
     if (!section) return <div className="flex items-center justify-center py-6"><span className="text-sm text-gray-400">無資料</span></div>;
+    // address segment formatter
+    const formatAddr = (val) => {
+      if (!val || typeof val !== 'string') return val;
+      // match: country（...）city district rest
+      const m = val.match(/^(中華民國[^\u4e00-\u9fff]*（[^）]*）)([\u4e00-\u9fff]{2,3}[市縣])([\u4e00-\u9fff]{1,4}[區鄉鎮市])(.+)$/);
+      if (!m) return val;
+      return (
+        <span className="text-right">
+          <span className="block text-gray-400">{m[1]}</span>
+          <span className="block">{m[2]}{m[3]}</span>
+          <span className="block">{m[4]}</span>
+        </span>
+      );
+    };
     // simple key/value list
     if (Array.isArray(section.data) && section.data.length > 0) {
       return (
         <div className={compact ? "space-y-1" : "grid gap-2 text-sm"}>
           {section.data.map((d, i) => {
             const val = maskValue(d.label, d.value, Boolean(d.masked));
+            const isAddr = typeof d.label === 'string' && d.label.includes('地址');
             return (
               <div key={i} className={compact ? "flex justify-between border-b border-gray-50 pb-0.5 last:border-0 text-xs" : "flex justify-between border-b pb-1"}>
-                <div className={compact ? "text-gray-500" : "text-gray-600"}>{d.label}</div>
-                <div className="font-medium text-right">{val}</div>
+                <div className={compact ? "text-gray-500 whitespace-nowrap" : "text-gray-600 whitespace-nowrap"}>{d.label}</div>
+                <div className="font-medium text-right">{isAddr ? formatAddr(val) : val}</div>
               </div>
             );
           })}
@@ -12399,9 +12437,10 @@ const CUS360Demo = () => {
 
     // Pre-compute data needed for multiple sections
     const allProds = generateCustomerProducts(c);
-    const transfers5 = generateRecentTransfers(c, 5);
-    const cards5 = generateRecentCardAuths(c, 5);
-    const transferTotal = transfers5.reduce((sum, t) => { const n = parseInt(t.amount.replace(/[^0-9-]/g, ''), 10); return sum + (isNaN(n) ? 0 : Math.abs(n)); }, 0);
+    const transfersMonth = generateRecentTransfers(c, 20, 30);
+    const cardsMonth = generateRecentCardAuths(c, 25, 30);
+    const transfers3M = generateRecentTransfers(c, 60, 90);
+    const transferTotal3M = transfers3M.reduce((sum, t) => { const n = parseInt(t.amount.replace(/[^0-9-]/g, ''), 10); return sum + (isNaN(n) ? 0 : Math.abs(n)); }, 0);
     const fR = getCustomerFinance(c);
     const rSeed = seedFromId(c);
     const approval = new Date(2018 + (rSeed % 5), rSeed % 12, (rSeed % 26) + 1);
@@ -12527,7 +12566,7 @@ const CUS360Demo = () => {
 
           return (
             <div className={SUBCARD}>
-              <div className="flex items-center gap-2 mb-2.5">
+              <div className="flex items-center gap-2 mb-1.5">
                 <span className="text-sm font-bold text-gray-800">⚡ 行動建議方案</span>
                 <span className="text-[11px] text-gray-400">依客戶意圖排序・點擊卡片查看完整話術與推薦產品</span>
               </div>
@@ -12549,7 +12588,7 @@ const CUS360Demo = () => {
                       onClick={() => setInsightModal({ type: 'intent', data: insight, customer: c })}
                     >
                       {/* 卡片頂部：意圖名稱 + 優先標章 */}
-                      <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-t-lg ${isPriority ? 'bg-amber-100' : 'bg-gray-50'}`}>
+                      <div className={`flex items-center gap-1.5 px-2 py-1 rounded-t-lg ${isPriority ? 'bg-amber-100' : 'bg-gray-50'}`}>
                         {isPriority && (
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
                         )}
@@ -12559,12 +12598,12 @@ const CUS360Demo = () => {
                         )}
                       </div>
                       {/* 卡片主體：推薦產品 */}
-                      <div className="px-2.5 py-1.5 flex-1">
-                        <div className="text-[10px] text-gray-400 mb-0.5">建議推薦產品</div>
+                      <div className="px-2 py-1 flex-1">
+                        <div className="text-[10px] text-gray-400 mb-0">建議推薦產品</div>
                         <div className="text-xs font-semibold text-teal-700 leading-snug">{topProduct}</div>
                       </div>
                       {/* 卡片底部：點擊提示 */}
-                      <div className={`px-2.5 py-1 rounded-b-lg text-[10px] font-medium flex items-center justify-between border-t ${
+                      <div className={`px-2 py-0.5 rounded-b-lg text-[10px] font-medium flex items-center justify-between border-t ${
                         isPriority ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-gray-100 text-teal-600 bg-gray-50'
                       }`}>
                         <span>查看話術與完整方案</span>
@@ -12639,15 +12678,16 @@ const CUS360Demo = () => {
         <div className="space-y-2">
           <SecHeader Icon={Star} title="業務往來" />
           <div className="space-y-2">
-            {/* Row 1: 累計統計 | 近五筆轉帳 | 近五筆信用卡授權明細 */}
-            <div className="grid grid-cols-3 gap-3 items-start">
+            {/* Row 1: 累計統計 | 近一個月轉帳明細 | 近一個月信用卡授權明細 */}
+            <div className="grid grid-cols-3 gap-3">
+              {/* 左欄：決定行高 */}
               <div className={SUBCARD}>
                 <h4 className="font-semibold text-sm mb-1.5 text-gray-800">客戶業務往來累計</h4>
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     { label: '持有產品總數',       value: `${allProds.length} 項` },
                     { label: '近三個月信用卡消費',  value: `NT$ ${f.cardSpend3M.toLocaleString()}` },
-                    { label: '近五筆轉帳合計',      value: `NT$ ${transferTotal.toLocaleString()}` },
+                    { label: '近三個月轉帳合計',      value: `NT$ ${transferTotal3M.toLocaleString()}` },
                     { label: '信用卡額度動用率',        value: `${f.creditUtilPct}%` },
                   ].map(st => (
                     <div key={st.label} className="bg-gray-50 rounded-lg p-2.5">
@@ -12657,35 +12697,41 @@ const CUS360Demo = () => {
                   ))}
                 </div>
               </div>
-              <div className={SUBCARD}>
-                <h4 className="font-semibold text-sm mb-1.5 text-gray-800">近五筆轉帳</h4>
-                <div className="space-y-1 text-xs">
-                  {transfers5.map((t, i) => (
-                    <div key={i} className="grid border-b border-gray-50 py-0.5 last:border-0" style={{gridTemplateColumns:'5rem 1fr auto',gap:'0.5rem'}}>
-                      <span className="text-gray-700 truncate">{t.merchant}</span>
-                      <span className="text-gray-400 truncate">{t.time}</span>
-                      <span className="font-medium tabular-nums text-right">{t.amount}</span>
-                    </div>
-                  ))}
+              {/* 中欄：absolute 填滿行高，列表 scroll */}
+              <div className="relative">
+                <div className={`${SUBCARD} absolute inset-0 flex flex-col overflow-hidden`}>
+                  <h4 className="font-semibold text-sm mb-1.5 text-gray-800 flex-shrink-0">近一個月轉帳明細</h4>
+                  <div className="flex-1 min-h-0 overflow-y-auto space-y-0 text-xs">
+                    {transfersMonth.map((t, i) => (
+                      <div key={i} className="grid border-b border-gray-50 py-0.5 last:border-0" style={{gridTemplateColumns:'5rem 1fr auto',gap:'0.5rem'}}>
+                        <span className="text-gray-700 truncate">{t.merchant}</span>
+                        <span className="text-gray-400 truncate">{t.time}</span>
+                        <span className="font-medium tabular-nums text-right">{t.amount}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-              <div className={SUBCARD}>
-                <h4 className="font-semibold text-sm mb-1.5 text-gray-800">近五筆信用卡授權明細</h4>
-                <div className="space-y-1 text-xs">
-                  {cards5.map((t, i) => (
-                    <div key={i} className="grid border-b border-gray-50 py-0.5 last:border-0" style={{gridTemplateColumns:'5rem 1fr auto',gap:'0.5rem'}}>
-                      <span className="text-gray-700 truncate">{t.merchant}</span>
-                      <span className="text-gray-400 truncate">{t.time}</span>
-                      <span className="font-medium tabular-nums text-right">{t.amount}</span>
-                    </div>
-                  ))}
+              {/* 右欄：absolute 填滿行高，列表 scroll */}
+              <div className="relative">
+                <div className={`${SUBCARD} absolute inset-0 flex flex-col overflow-hidden`}>
+                  <h4 className="font-semibold text-sm mb-1.5 text-gray-800 flex-shrink-0">近一個月信用卡授權明細</h4>
+                  <div className="flex-1 min-h-0 overflow-y-auto space-y-0 text-xs">
+                    {cardsMonth.map((t, i) => (
+                      <div key={i} className="grid border-b border-gray-50 py-0.5 last:border-0" style={{gridTemplateColumns:'5rem 1fr auto',gap:'0.5rem'}}>
+                        <span className="text-gray-700 truncate">{t.merchant}</span>
+                        <span className="text-gray-400 truncate">{t.time}</span>
+                        <span className="font-medium tabular-nums text-right">{t.amount}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
             {/* Row 2: 客戶開辦業務 — 四種產品橫排一列 */}
             <div className={SUBCARD}>
               <h4 className="font-semibold text-sm mb-1.5 text-gray-800">客戶開辦業務</h4>
-              <CustomerProductTree key={c.id} products={allProds} layout="horizontal" />
+              <CustomerProductTree key={c.id} products={allProds} layout="horizontal" masked={showMaskedData} />
             </div>
           </div>
         </div>
@@ -13469,49 +13515,49 @@ const CUS360Demo = () => {
           )}
 
           {/* Business tab: product tree + recent transactions */}
-          {activeTab === "business" && selectedCustomer && (
+          {activeTab === "business" && selectedCustomer && (() => {
+            const f = getCustomerFinance(selectedCustomer);
+            const allProds = generateCustomerProducts(selectedCustomer);
+            const transfers = generateRecentTransfers(selectedCustomer, 20, 30);
+            const transfers3M = generateRecentTransfers(selectedCustomer, 60, 90);
+            const transferTotal3M = transfers3M.reduce((sum, t) => {
+              const num = parseInt(t.amount.replace(/[^0-9-]/g, ""), 10);
+              return sum + (isNaN(num) ? 0 : Math.abs(num));
+            }, 0);
+            const cards = generateRecentCardAuths(selectedCustomer, 25, 30);
+            const stats = [
+              { label: "持有產品總數",       value: `${allProds.length} 項` },
+              { label: "近三個月信用卡消費",  value: `NT$ ${f.cardSpend3M.toLocaleString()}` },
+              { label: "近三個月轉帳合計",      value: `NT$ ${transferTotal3M.toLocaleString()}` },
+              { label: "信用卡額度動用率",        value: `${f.creditUtilPct}%` },
+            ];
+            return (
             <div className="space-y-4">
               {/* 客戶業務往來累計 */}
-              {(() => {
-                const f = getCustomerFinance(selectedCustomer);
-                const allProds = generateCustomerProducts(selectedCustomer);
-                const transfers = generateRecentTransfers(selectedCustomer, 5);
-                const transferTotal = transfers.reduce((sum, t) => {
-                  const num = parseInt(t.amount.replace(/[^0-9-]/g, ""), 10);
-                  return sum + (isNaN(num) ? 0 : Math.abs(num));
-                }, 0);
-                const stats = [
-                  { label: "持有產品總數",       value: `${allProds.length} 項` },
-                  { label: "近三個月信用卡消費",  value: `NT$ ${f.cardSpend3M.toLocaleString()}` },
-                  { label: "近五筆轉帳合計",      value: `NT$ ${transferTotal.toLocaleString()}` },
-                  { label: "信用卡額度動用率",        value: `${f.creditUtilPct}%` },
-                ];
-                return (
-                  <div className={SUBCARD}>
-                    <h4 className="font-bold text-md mb-3 text-gray-800">客戶業務往來累計</h4>
-                    <div className="grid grid-cols-4 gap-3">
-                      {stats.map((st) => (
-                        <div key={st.label} className="bg-gray-50 rounded-lg p-3">
-                          <div className="text-xs text-gray-500 mb-1">{st.label}</div>
-                          <div className="font-semibold text-gray-800 text-sm">{st.value}</div>
-                        </div>
-                      ))}
+              <div className={SUBCARD}>
+                <h4 className="font-bold text-md mb-3 text-gray-800">客戶業務往來累計</h4>
+                <div className="grid grid-cols-4 gap-3">
+                  {stats.map((st) => (
+                    <div key={st.label} className="bg-gray-50 rounded-lg p-3">
+                      <div className="text-xs text-gray-500 mb-1">{st.label}</div>
+                      <div className="font-semibold text-gray-800 text-sm">{st.value}</div>
                     </div>
-                  </div>
-                );
-              })()}
+                  ))}
+                </div>
+              </div>
               <div className={SUBCARD}>
                 <h4 className="font-bold text-md mb-3 text-gray-800">客戶開辦業務</h4>
                 <CustomerProductTree
                   key={selectedCustomer.id}
-                  products={generateCustomerProducts(selectedCustomer)}
+                  products={allProds}
+                  masked={showMaskedData}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className={SUBCARD}>
-                  <div className="font-bold text-md mb-2 text-gray-800">近五筆轉帳</div>
-                  <div className="space-y-2 text-sm">
-                    {generateRecentTransfers(selectedCustomer, 5).map((t, i) => (
+                  <div className="font-bold text-md mb-2 text-gray-800">近一個月轉帳明細</div>
+                  <div className="max-h-80 overflow-y-auto space-y-2 text-sm">
+                    {transfers.map((t, i) => (
                       <div key={i} className={SUBCARD}>
                         <div className="flex justify-between border-b pb-1">
                           <div className="font-medium">{t.merchant}</div>
@@ -13523,9 +13569,9 @@ const CUS360Demo = () => {
                   </div>
                 </div>
                 <div className={SUBCARD}>
-                  <div className="font-bold text-md mb-2 text-gray-800">近五筆信用卡授權明細</div>
-                  <div className="space-y-2 text-sm">
-                    {generateRecentCardAuths(selectedCustomer, 5).map((t, i) => (
+                  <div className="font-bold text-md mb-2 text-gray-800">近一個月信用卡授權明細</div>
+                  <div className="max-h-80 overflow-y-auto space-y-2 text-sm">
+                    {cards.map((t, i) => (
                       <div key={i} className={SUBCARD}>
                         <div className="flex justify-between border-b pb-1">
                           <div className="font-medium">{t.merchant}</div>
@@ -13538,7 +13584,8 @@ const CUS360Demo = () => {
                 </div>
               </div>
             </div>
-          )}
+            );
+          })()}
 
 
           {/* Floating Assistant */}
@@ -14144,32 +14191,6 @@ const CUS360Demo = () => {
 
           {/* Customer Preferences View */}
           {activeTab === "preferences" && renderCustomerPreferences(selectedCustomer)}
-
-          {/* Debug: show currentData summary to diagnose missing sections */}
-          <div className="mt-3 p-2 bg-gray-50 rounded text-xs text-gray-700">
-            <div className="font-medium mb-1">除錯資訊</div>
-            <div>
-              activeTab: <strong>{activeTab}</strong>
-            </div>
-            <div>
-              currentData.title:{" "}
-              <strong>{currentData && currentData.title}</strong>
-            </div>
-            <div>
-              sections:{" "}
-              <strong>
-                {currentData && Array.isArray(currentData.sections)
-                  ? currentData.sections.map((s) => s.name).join(" | ")
-                  : "[]"}
-              </strong>
-            </div>
-            <div className="mt-2">
-              selectedCustomer (編號/姓名):{" "}
-              <strong>
-                {selectedCustomer?.id} / {selectedCustomer?.name}
-              </strong>
-            </div>
-          </div>
         </div>
       );
     } catch (e) {
