@@ -6570,19 +6570,25 @@ const CUS360Demo = () => {
           name: "聯絡方式與地址",
           data: [
             { label: "手機號碼", value: "0912-***-678", masked: true },
+            { label: "市內電話", value: "(02) 2758-3390", masked: true },
             { label: "電子郵件", value: "wangxm@example.com", masked: false },
             {
-              label: "通訊地址",
-              value: "台北市信義區忠孝東路五段 100 號",
+              label: "居住地址",
+              value: "中華民國（台灣）台北市信義區忠孝東路五段100號8樓",
               masked: true,
             },
-            { label: "城市", value: "台北市", masked: false },
-            { label: "聯絡偏好", value: "行動 App / Email", masked: false },
             {
-              label: "最後同意接收行銷時間",
-              value: "2025-09-12T10:22:00",
-              masked: false,
+              label: "通訊地址",
+              value: "中華民國（台灣）台北市信義區忠孝東路五段100號8樓",
+              masked: true,
             },
+            {
+              label: "戶籍地址",
+              value: "中華民國（台灣）台南市中西區中正路52號",
+              masked: true,
+            },
+            { label: "聯絡偏好", value: "行動 App / Email", masked: false },
+            { label: "行銷同意", value: "允許", masked: false },
           ],
         },
         {
@@ -12145,23 +12151,80 @@ const CUS360Demo = () => {
         sections: [
           {
             name: "聯絡方式與地址",
-            data: [
-              { label: "手機號碼", value: customer.phone || "—" },
-              { label: "電子郵件", value: customer.email || "—" },
-              { label: "通訊地址", value: customer.address || "—" },
-              { label: "城市", value: customer.city || "—" },
-              {
-                label: "聯絡偏好",
-                value: customer.preferredContact === "mobile" ? "行動 App"
-                  : customer.preferredContact === "email" ? "Email"
-                  : customer.preferredContact === "phone" ? "電話"
-                  : customer.preferredContact || "—",
-              },
-              {
-                label: "行銷同意",
-                value: customer.marketingOptIn ? "允許" : "拒絕",
-              },
-            ],
+            data: (() => {
+              const s = seedFromId(customer);
+              const ADDR_POOL = [
+                { city: "台北市信義區", streets: ["忠孝東路五段", "松高路", "基隆路一段", "松仁路"], areaCode: "02" },
+                { city: "台北市大安區", streets: ["仁愛路四段", "復興南路一段", "和平東路一段", "敦化南路一段"], areaCode: "02" },
+                { city: "台北市中山區", streets: ["中山北路二段", "民生東路三段", "長安東路二段", "建國北路一段"], areaCode: "02" },
+                { city: "台北市松山區", streets: ["南京東路四段", "民生東路五段", "八德路三段", "敦化北路"], areaCode: "02" },
+                { city: "台北市大同區", streets: ["重慶北路二段", "民生西路", "太原路", "南京西路"], areaCode: "02" },
+                { city: "新北市板橋區", streets: ["文化路一段", "縣民大道", "府中路", "新府路"], areaCode: "02" },
+                { city: "新北市三重區", streets: ["重新路三段", "中興北街", "龍門路", "集美街"], areaCode: "02" },
+                { city: "新北市中和區", streets: ["中和路", "景平路", "連城路", "員山路"], areaCode: "02" },
+                { city: "台中市西屯區", streets: ["台灣大道三段", "文心路一段", "黎明路二段", "永和路"], areaCode: "04" },
+                { city: "台中市南屯區", streets: ["公益路", "惠中路一段", "大墩路", "精武路"], areaCode: "04" },
+                { city: "台中市北區", streets: ["進化北路", "崇德路一段", "三民路三段", "學士路"], areaCode: "04" },
+                { city: "高雄市鼓山區", streets: ["中華一路", "龍德路", "美術館路", "鼓山一路"], areaCode: "07" },
+                { city: "高雄市左營區", streets: ["自由路", "博愛三路", "翠華路", "崇德路"], areaCode: "07" },
+                { city: "台南市中西區", streets: ["中正路", "民生路一段", "忠義路二段", "西門路一段"], areaCode: "06" },
+                { city: "桃園市中壢區", streets: ["中山東路二段", "延平路", "中正路", "新生路"], areaCode: "03" },
+                { city: "桃園市桃園區", streets: ["中平路", "三民路", "春日路", "民生路"], areaCode: "03" },
+                { city: "新竹市東區", streets: ["光復路一段", "中正路", "東大路一段", "金山十五街"], areaCode: "03" },
+              ];
+              const addr = customer.address || '';
+              const matchEntry = ADDR_POOL.find(e => addr.includes(e.city) || (addr.length >= 3 && e.city.includes(addr.slice(0, 3))));
+              const residEntry = matchEntry || ADDR_POOL[s % ADDR_POOL.length];
+              const residStreet = residEntry.streets[(s + 7) % residEntry.streets.length];
+              const residNum = ((s % 200) + 1);
+              const residFloor = ((s >> 3) % 12) + 1;
+              const residAddr = `中華民國（台灣）${residEntry.city}${residStreet}${residNum}號${residFloor}樓`;
+              // Mailing: 1/3 chance different from residential
+              const diffMailing = (s >> 5) % 3 === 0;
+              let mailAddr;
+              if (diffMailing) {
+                const mEntry = ADDR_POOL[(s + 3) % ADDR_POOL.length];
+                const mStreet = mEntry.streets[(s + 11) % mEntry.streets.length];
+                const mNum = ((s + 13) % 200) + 1;
+                mailAddr = `中華民國（台灣）${mEntry.city}${mStreet}${mNum}號`;
+              } else {
+                mailAddr = residAddr;
+              }
+              // Domicile: 50% chance different (hometown)
+              const diffDomicile = (s >> 8) % 2 === 0;
+              let domAddr;
+              if (diffDomicile) {
+                const dEntry = ADDR_POOL[(s + 5) % ADDR_POOL.length];
+                const dStreet = dEntry.streets[(s + 17) % dEntry.streets.length];
+                const dNum = ((s + 7) % 200) + 1;
+                domAddr = `中華民國（台灣）${dEntry.city}${dStreet}${dNum}號`;
+              } else {
+                domAddr = residAddr;
+              }
+              // Landline: ~60% of customers
+              const hasLandline = (s % 5) >= 2;
+              const areaCode = residEntry.areaCode;
+              const ld1 = String(2000 + (s % 7999)).slice(0, 4);
+              const ld2 = String(1000 + ((s >> 4) % 8999)).slice(0, 4);
+              const landline = hasLandline ? `(${areaCode}) ${ld1}-${ld2}` : null;
+              const contactFields = [
+                { label: "手機號碼", value: customer.phone || "—", masked: true },
+                ...(landline ? [{ label: "市內電話", value: landline, masked: true }] : []),
+                { label: "電子郵件", value: customer.email || "—", masked: false },
+                { label: "居住地址", value: residAddr, masked: true },
+                { label: "通訊地址", value: mailAddr, masked: true },
+                { label: "戶籍地址", value: domAddr, masked: true },
+                {
+                  label: "聯絡偏好",
+                  value: customer.preferredContact === "mobile" ? "行動 App"
+                    : customer.preferredContact === "email" ? "Email"
+                    : customer.preferredContact === "phone" ? "電話"
+                    : customer.preferredContact || "—",
+                },
+                { label: "行銷同意", value: customer.marketingOptIn ? "允許" : "拒絕" },
+              ];
+              return contactFields;
+            })(),
           },
         ],
       },
@@ -12628,26 +12691,21 @@ const CUS360Demo = () => {
         </div>
 
         {/* ── 其餘 8 個模組：兩欄獨立堆疊 ─────────────────────────────────── */}
-        <div className="flex gap-3 items-stretch">
+        <div className="grid gap-3" style={{gridTemplateColumns: '1fr 3fr'}}>
 
-          {/* 左欄：風險資訊 — 1/4 寬 */}
-          <div className="w-1/4 min-w-0 flex flex-col gap-3">
-
-            {/* TAB 3: 風險資訊 */}
-            <div className="space-y-2">
-              <SecHeader Icon={Shield} title="風險資訊" />
-              <div className="space-y-2">
-                {dRisk.sections.length > 0 && (
-                  <div className="space-y-2">
-                    {dRisk.sections.map((section, idx) => (
-                      <div key={idx} className={SUBCARD}>
-                        <h4 className="font-semibold text-sm mb-1.5 text-gray-800">{section.name}</h4>
-                        {renderSection(section, true)}
-                      </div>
-                    ))}
+          {/* 左欄：風險資訊 — 1/4 寬，absolute 填滿行高 */}
+          <div className="relative">
+            <div className="absolute inset-0 flex flex-col gap-2 overflow-hidden">
+              <div className="flex-shrink-0"><SecHeader Icon={Shield} title="風險資訊" /></div>
+              {/* single white card fills remaining height; inner content scrolls */}
+              <div className="flex-1 min-h-0 bg-white rounded-lg shadow-sm overflow-y-auto p-3 flex flex-col gap-3">
+                {dRisk.sections.length > 0 && dRisk.sections.map((section, idx) => (
+                  <div key={idx}>
+                    <h4 className="font-semibold text-sm mb-1.5 text-gray-800">{section.name}</h4>
+                    {renderSection(section, true)}
                   </div>
-                )}
-                <div className={SUBCARD}>
+                ))}
+                <div>
                   <h4 className="font-semibold text-sm mb-1.5 text-gray-800">客戶信用限額</h4>
                   <div className="space-y-1 text-xs">
                     {[
@@ -12664,7 +12722,7 @@ const CUS360Demo = () => {
                     ))}
                   </div>
                 </div>
-                <div className={SUBCARD}>
+                <div>
                   <h4 className="font-semibold text-sm mb-1.5 text-gray-800">違約 / 重大事件資訊</h4>
                   <div className="space-y-1 text-xs">
                     {[
@@ -12685,11 +12743,11 @@ const CUS360Demo = () => {
                   </div>
                 </div>
               </div>
-            </div>
+            </div>{/* end absolute */}
+          </div>{/* end 風險資訊 relative */}
 
-          </div>
-          {/* 財務狀況 — 3/4 寬 */}
-          <div className="w-3/4 min-w-0 flex flex-col gap-2">
+          {/* 財務狀況 — 3/4 寬，決定行高 */}
+          <div className="min-w-0 flex flex-col gap-2">
             <div className="space-y-2">
               <SecHeader Icon={TrendingUp} title="財務狀況" />
               <div className={SUBCARD}>
@@ -13026,8 +13084,6 @@ const CUS360Demo = () => {
           </div>
         </div>{/* end Row C */}
 
-        {renderInsightModal()}
-
         {/* Floating Assistant */}
         <>
           {/* Toggle Button */}
@@ -13216,9 +13272,6 @@ const CUS360Demo = () => {
     try {
       return (
         <div className="space-y-2">
-          {/* Insight Modal */}
-          {renderInsightModal()}
-
           {/* Customer Header Card */}
           <div className="bg-gradient-to-r from-teal-600 to-teal-800 text-white p-4 rounded-lg shadow-lg">
             <div className="flex justify-between items-start">
@@ -14296,6 +14349,7 @@ const CUS360Demo = () => {
             })()}
           </div>
         ) : null}
+        {renderInsightModal()}
         {showEventModal && selectedInteractionItem && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-4">
