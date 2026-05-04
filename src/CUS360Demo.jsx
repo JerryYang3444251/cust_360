@@ -22,7 +22,7 @@ import {
 // Same-type products are grouped under one row; expanding shows all instances stacked.
 // Defined outside CUS360Demo so the component reference is stable and
 // React does NOT unmount/remount it on every parent re-render.
-const CustomerProductTree = ({ products = [] }) => {
+const CustomerProductTree = ({ products = [], layout = "vertical" }) => {
   const [expanded, setExpanded] = React.useState({});
   const toggle = (key) =>
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -56,7 +56,7 @@ const CustomerProductTree = ({ products = [] }) => {
     return <div className="text-sm text-gray-400 py-2">尚無產品資料</div>;
 
   return (
-    <div className="space-y-2">
+    <div className={layout === "horizontal" ? "grid grid-cols-4 gap-2" : "space-y-2"}>
       {Object.entries(tree).map(([l1, l2Map]) => {
         const isL1Open = !!expanded[l1];
         // total = number of unique L4 groups (not raw product count)
@@ -210,31 +210,67 @@ const CustomerProductTree = ({ products = [] }) => {
 // prevents React from unmounting/remounting on every parent state change (e.g. tab switch).
 // Animation fires when aumSeries data changes (new customer), not on tab switch.
 const AUMChart = ({
-  W, H, PAD_X, PAD_TOP, innerH, CHART_BOTTOM,
-  aumYTicks, aumUnitLabel, aumSeries,
-  aumToH, barX, barW, slotW, monthLabels, fmtAUM,
+  aumUnitLabel, aumSeries,
+  monthLabels, fmtAUM,
   compact,
 }) => {
+  const containerRef = React.useRef(null);
+  const [dims, setDims] = React.useState({ w: 560, h: 140 });
   const [hoverIdx, setHoverIdx] = React.useState(null);
   const [animPct, setAnimPct] = React.useState(0);
   const animRef = React.useRef(null);
   const aumKey = aumSeries.map(d => `${d.liq},${d.inv}`).join("|");
+
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      const { width, height } = el.getBoundingClientRect();
+      if (width > 0 && height > 0) setDims({ w: Math.round(width), h: Math.round(height) });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   React.useEffect(() => {
     setAnimPct(0);
     const start = performance.now();
     const dur = 700;
     const tick = (now) => {
       const t = Math.min((now - start) / dur, 1);
-      setAnimPct(1 - Math.pow(1 - t, 3)); // ease-out cubic
+      setAnimPct(1 - Math.pow(1 - t, 3));
       if (t < 1) animRef.current = requestAnimationFrame(tick);
     };
     animRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animRef.current);
   }, [aumKey]);
+
+  const { w: W, h: H } = dims;
+  const PAD_LEFT = 46, PAD_RIGHT = 8, PAD_TOP = 10, PAD_BOTTOM = 42;
+  const PAD_X = PAD_LEFT;
+  const innerW = W - PAD_LEFT - PAD_RIGHT, innerH = H - PAD_TOP - PAD_BOTTOM;
+  const CHART_BOTTOM = PAD_TOP + innerH;
+  const slotW = innerW / 12;
+  const barW = slotW * 0.75;
+  const barX = i => PAD_X + i * slotW + (slotW - barW) / 2;
+  const maxAUM = Math.max(...aumSeries.map(d => d.total), 1);
+  const aumUnit = maxAUM > 1e8 ? 1e8 : maxAUM > 1e4 ? 1e4 : 1;
+  const aumUnitLabelCalc = maxAUM > 1e8 ? '億' : '萬';
+  const fmtAUMCalc = v => Math.round(v / aumUnit);
+  const aumToH = v => innerH * v / maxAUM;
+  const aumRawStep = maxAUM / aumUnit / 4;
+  const aumMag = Math.pow(10, Math.floor(Math.log10(Math.max(aumRawStep, 0.1))));
+  const aumNorm = aumRawStep / aumMag;
+  const aumNiceStep = aumNorm <= 1 ? aumMag : aumNorm <= 2 ? 2 * aumMag : aumNorm <= 5 ? 5 * aumMag : 10 * aumMag;
+  const aumYTicks = Array.from({ length: 5 }, (_, i) => ({
+    v: i * aumNiceStep,
+    y: PAD_TOP + innerH * (1 - (i * aumNiceStep * aumUnit) / maxAUM),
+  })).filter(t => t.v * aumUnit <= maxAUM * 1.05);
+
   return (
-    <div className={compact ? "bg-gray-50 p-2 rounded-md flex-1 min-w-0" : "bg-white p-4 rounded-lg shadow flex-1 min-w-0"}>
-      <div className={compact ? "flex items-center justify-between mb-1" : "flex items-center justify-between mb-3"}>
-        <h4 className={compact ? "font-semibold text-xs text-gray-800" : "text-lg font-semibold text-gray-800"}>過去 12 個月 AUM</h4>
+    <div className={compact ? "bg-gray-50 p-2 rounded-md flex-1 min-w-0 flex flex-col" : "bg-white p-4 rounded-lg shadow flex-1 min-w-0 flex flex-col"}>
+      <div className={compact ? "flex items-center justify-between mb-1 flex-shrink-0" : "flex items-center justify-between mb-3 flex-shrink-0"}>
+        <h4 className={compact ? "font-semibold text-xs text-gray-800" : "text-lg font-semibold text-gray-800"}>過去 12 個月末 AUM</h4>
         <div className="flex gap-3">
           <div className="flex items-center gap-1.5 text-xs text-gray-600">
             <span className="inline-block w-3 h-3 rounded-sm" style={{ background: '#14b8a6' }}></span>存款
@@ -244,8 +280,8 @@ const AUMChart = ({
           </div>
         </div>
       </div>
-      <div className="relative">
-        <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="block overflow-visible">
+      <div ref={containerRef} className="relative flex-1 min-h-0">
+        <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} className="block overflow-visible">
           <defs>
             <linearGradient id="aumGradLiq" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.9" />
@@ -258,8 +294,8 @@ const AUMChart = ({
           </defs>
           {aumYTicks.map(t => (
             <g key={t.v}>
-              <line x1={PAD_X} x2={W - PAD_X} y1={t.y} y2={t.y} stroke="#f0fdfa" strokeWidth="1" />
-              <text x={PAD_X - 4} y={t.y + 3} fontSize="8" fill="#9ca3af" textAnchor="end">{t.v}{aumUnitLabel}</text>
+              <line x1={PAD_X} x2={W - PAD_RIGHT} y1={t.y} y2={t.y} stroke="#f0fdfa" strokeWidth="1" />
+              <text x={PAD_X - 4} y={t.y + 4} fontSize="12" fill="#9ca3af" textAnchor="end">{t.v}{aumUnitLabelCalc}</text>
             </g>
           ))}
           {aumSeries.map((d, i) => {
@@ -281,11 +317,15 @@ const AUMChart = ({
               </g>
             );
           })}
-          {monthLabels.map((lbl, i) => (
-            <text key={i} x={PAD_X + i * slotW + slotW / 2} y={CHART_BOTTOM + 13}
-              fontSize="8" fill={hoverIdx === i ? '#0f766e' : '#9ca3af'}
-              textAnchor="middle" fontWeight={hoverIdx === i ? 'bold' : 'normal'}>{lbl}</text>
-          ))}
+          {monthLabels.map((lbl, i) => {
+            const cx = PAD_X + i * slotW + slotW / 2;
+            return (
+              <text key={i} x={cx} y={CHART_BOTTOM + 26}
+                fontSize="12" fill={hoverIdx === i ? '#0f766e' : '#9ca3af'}
+                textAnchor="end" fontWeight={hoverIdx === i ? 'bold' : 'normal'}
+                transform={`rotate(-45, ${cx}, ${CHART_BOTTOM + 4})`}>{lbl}</text>
+            );
+          })}
         </svg>
         {hoverIdx !== null && (() => {
           const d = aumSeries[hoverIdx];
@@ -298,23 +338,22 @@ const AUMChart = ({
                 <div className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: '#14b8a6' }}></span>
                   <span className="text-gray-600">存款</span>
-                  <span className="font-medium ml-auto pl-3 text-teal-700">{fmtAUM(d.liq)}{aumUnitLabel}</span>
+                  <span className="font-medium ml-auto pl-3 text-teal-700">{fmtAUMCalc(d.liq)}{aumUnitLabelCalc}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: '#0891b2' }}></span>
                   <span className="text-gray-600">財管</span>
-                  <span className="font-medium ml-auto pl-3 text-teal-700">{fmtAUM(d.inv)}{aumUnitLabel}</span>
+                  <span className="font-medium ml-auto pl-3 text-teal-700">{fmtAUMCalc(d.inv)}{aumUnitLabelCalc}</span>
                 </div>
                 <div className="border-t border-gray-100 mt-1 pt-1 flex justify-between gap-3">
                   <span className="text-gray-500">合計</span>
-                  <span className="font-semibold text-gray-700">{fmtAUM(d.total)}{aumUnitLabel}</span>
+                  <span className="font-semibold text-gray-700">{fmtAUMCalc(d.total)}{aumUnitLabelCalc}</span>
                 </div>
               </div>
             </div>
           );
         })()}
       </div>
-      <div className="text-xs text-gray-400 mt-3">* 月末 AUM（{aumUnitLabel}），含存款與財管資產</div>
     </div>
   );
 };
@@ -966,7 +1005,7 @@ const CUS360Demo = () => {
           </div>
         </div>
 
-        <div className={compact ? "grid grid-cols-3 gap-2" : "grid grid-cols-3 gap-4"}>
+        <div className="grid grid-cols-3 gap-4">
           <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow border border-teal-50 p-4">
             <div className="text-xs font-bold text-teal-600 uppercase tracking-widest mb-2">客戶等級分布</div>
             <div className="mt-1">
@@ -10862,15 +10901,34 @@ const CUS360Demo = () => {
 
         // ── ROI Chart component ────────────────────────────────────────────────────
         const ROIChart = () => {
+          const containerRef = React.useRef(null);
+          const [dims, setDims] = React.useState({ w: 560, h: 140 });
           const [hoverMonth, setHoverMonth] = React.useState(null);
+          React.useEffect(() => {
+            const el = containerRef.current;
+            if (!el) return;
+            const ro = new ResizeObserver(() => {
+              const { width, height } = el.getBoundingClientRect();
+              if (width > 0 && height > 0) setDims({ w: Math.round(width), h: Math.round(height) });
+            });
+            ro.observe(el);
+            return () => ro.disconnect();
+          }, []);
+          const { w: W2, h: H2 } = dims;
+          const PAD_LEFT2 = 46, PAD_RIGHT2 = 8, PAD_TOP2 = 10, PAD_BOTTOM2 = 42;
+          const PAD_X2 = PAD_LEFT2;
+          const innerW2 = W2 - PAD_LEFT2 - PAD_RIGHT2, innerH2 = H2 - PAD_TOP2 - PAD_BOTTOM2;
+          const CHART_BOTTOM2 = PAD_TOP2 + innerH2;
+          const roiToX2 = i => PAD_X2 + (i / 11) * innerW2;
+          const roiToY2 = v => PAD_TOP2 + innerH2 * (1 - (v + axisMax) / (2 * axisMax));
           const handleMouseMove = (e) => {
             const rect = e.currentTarget.getBoundingClientRect();
-            const xRaw = (e.clientX - rect.left) / rect.width * W;
-            setHoverMonth(Math.min(11, Math.max(0, Math.round((xRaw - PAD_X) / innerW * 11))));
+            const xRaw = (e.clientX - rect.left) / rect.width * W2;
+            setHoverMonth(Math.min(11, Math.max(0, Math.round((xRaw - PAD_X2) / innerW2 * 11))));
           };
           return (
-            <div className={compact ? "bg-gray-50 p-2 rounded-md flex-1 min-w-0" : "bg-white p-4 rounded-lg shadow flex-1 min-w-0"}>
-              <div className={compact ? "mb-1" : "mb-3"}>
+            <div className={compact ? "bg-gray-50 p-2 rounded-md flex-1 min-w-0 flex flex-col" : "bg-white p-4 rounded-lg shadow flex-1 min-w-0 flex flex-col"}>
+              <div className={compact ? "mb-1 flex-shrink-0" : "mb-3 flex-shrink-0"}>
                 <h4 className={compact ? "font-semibold text-xs text-gray-800 whitespace-nowrap" : "text-lg font-semibold text-gray-800 whitespace-nowrap"}>12 個月滾動投資報酬率</h4>
                 <div className="flex gap-x-3 gap-y-1 flex-wrap mt-1.5">
                   {roiSeries.map(sr => (
@@ -10881,44 +10939,52 @@ const CUS360Demo = () => {
                   ))}
                 </div>
               </div>
-              <div className="relative" onMouseMove={handleMouseMove} onMouseLeave={() => setHoverMonth(null)}>
-                <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="block overflow-visible">
-                  {roiYTicks.map(t => (
+              <div ref={containerRef} className="relative flex-1 min-h-0" onMouseMove={handleMouseMove} onMouseLeave={() => setHoverMonth(null)}>
+                <svg width="100%" height="100%" viewBox={`0 0 ${W2} ${H2}`} className="block overflow-visible">
+                  {roiYTicks.map(t => {
+                    const ty = roiToY2(t.v);
+                    return (
                     <g key={t.v}>
-                      <line x1={PAD_X} x2={W - PAD_X} y1={t.y} y2={t.y}
+                      <line x1={PAD_X2} x2={W2 - PAD_RIGHT2} y1={ty} y2={ty}
                         stroke={t.v === 0 ? '#6b7280' : '#f0fdfa'}
-                        strokeWidth={t.v === 0 ? 1 : 1}
+                        strokeWidth={1}
                         strokeDasharray={t.v === 0 ? '4 3' : undefined} />
-                      <text x={PAD_X - 4} y={t.y + 3} fontSize="8" textAnchor="end"
+                      <text x={PAD_X2 - 4} y={ty + 4} fontSize="12" textAnchor="end"
                         fill={t.v === 0 ? '#6b7280' : '#9ca3af'}
                         fontWeight={t.v === 0 ? 'bold' : 'normal'}>
                         {t.v === 0 ? '0%' : `${t.v > 0 ? '+' : ''}${t.v}%`}
                       </text>
                     </g>
-                  ))}
+                    );
+                  })}
                   {hoverMonth !== null && (
-                    <line x1={roiToX(hoverMonth)} x2={roiToX(hoverMonth)} y1={PAD_TOP} y2={CHART_BOTTOM}
+                    <line x1={roiToX2(hoverMonth)} x2={roiToX2(hoverMonth)} y1={PAD_TOP2} y2={CHART_BOTTOM2}
                       stroke="#d1fae5" strokeWidth="1" strokeDasharray="3 2" />
                   )}
                   {roiSeries.map(sr => {
-                    const pts = sr.values.map((v, i) => ({ x: roiToX(i), y: roiToY(v) }));
+                    const pts = sr.values.map((v, i) => ({ x: roiToX2(i), y: roiToY2(v) }));
                     return (
                       <g key={sr.label}>
                         <path d={toBezier(pts)} fill="none" stroke={sr.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         {hoverMonth !== null && (
-                          <circle cx={roiToX(hoverMonth)} cy={roiToY(sr.values[hoverMonth])} r="3.5" fill={sr.color} stroke="white" strokeWidth="1.5" />
+                          <circle cx={roiToX2(hoverMonth)} cy={roiToY2(sr.values[hoverMonth])} r="3.5" fill={sr.color} stroke="white" strokeWidth="1.5" />
                         )}
                       </g>
                     );
                   })}
-                  {monthLabels.map((lbl, i) => (
-                    <text key={i} x={roiToX(i)} y={CHART_BOTTOM + 13} fontSize="8"
-                      fill={hoverMonth === i ? '#0f766e' : '#9ca3af'}
-                      textAnchor="middle" fontWeight={hoverMonth === i ? 'bold' : 'normal'}>{lbl}</text>
-                  ))}
+                  {monthLabels.map((lbl, i) => {
+                    const cx2 = roiToX2(i);
+                    return (
+                      <text key={i} x={cx2} y={CHART_BOTTOM2 + 26}
+                        fontSize="12"
+                        fill={hoverMonth === i ? '#0f766e' : '#9ca3af'}
+                        textAnchor="end" fontWeight={hoverMonth === i ? 'bold' : 'normal'}
+                        transform={`rotate(-45, ${cx2}, ${CHART_BOTTOM2 + 4})`}>{lbl}</text>
+                    );
+                  })}
                 </svg>
                 {hoverMonth !== null && (() => {
-                  const pct = roiToX(hoverMonth) / W * 100;
+                  const pct = roiToX2(hoverMonth) / W2 * 100;
                   const clampLeft = Math.min(Math.max(pct, 5), 68);
                   return (
                     <div className="absolute top-0 pointer-events-none z-10" style={{ left: `${clampLeft}%` }}>
@@ -10938,17 +11004,15 @@ const CUS360Demo = () => {
                   );
                 })()}
               </div>
-              <div className="text-xs text-gray-400 mt-3">* 12 個月滾動報酬率（%），以 0% 為基準，等距刻度</div>
             </div>
           );
         };
 
         return (
-          <div className={compact ? "flex gap-2 mt-2" : "flex gap-4 mt-4"}>
+          <div className={compact ? "flex gap-2 mt-2" : "flex gap-4 mt-4"} style={{ minHeight: 160 }}>
             <AUMChart
-              W={W} H={H} PAD_X={PAD_X} PAD_TOP={PAD_TOP} innerH={innerH} CHART_BOTTOM={CHART_BOTTOM}
-              aumYTicks={aumYTicks} aumUnitLabel={aumUnitLabel} aumSeries={aumSeries}
-              aumToH={aumToH} barX={barX} barW={barW} slotW={slotW} monthLabels={monthLabels} fmtAUM={fmtAUM}
+              aumUnitLabel={aumUnitLabel} aumSeries={aumSeries}
+              monthLabels={monthLabels} fmtAUM={fmtAUM}
               compact={compact}
             />
             {heldProducts.length > 0 ? <ROIChart /> : (
@@ -10999,42 +11063,16 @@ const CUS360Demo = () => {
           } : undefined}
           title={isBankCustomer ? `點擊查看 ${spouseName} 的客戶資料` : undefined}
         >
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <Users className="w-4 h-4 text-pink-500 flex-shrink-0" />
-                <span className="font-medium text-sm">{spouseName}</span>
-                <span className="px-1.5 py-0.5 bg-pink-100 text-pink-700 rounded text-xs font-medium">配偶</span>
-                {isBankCustomer && (
-                  <span className="flex items-center gap-1 px-2 py-1 bg-teal-100 text-teal-700 rounded text-xs font-bold border border-teal-300">
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
-                    本行客戶
-                  </span>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs ml-5">
-                {isBankCustomer && spouseCid && (
-                  <div>
-                    <span className="text-gray-500">客戶編號: </span>
-                    <span className="font-medium text-teal-700">{spouseCid}</span>
-                  </div>
-                )}
-                <div>
-                  <span className="text-gray-500">關係起日: </span>
-                  <span className="font-medium">{marriageDate}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500">關係狀態: </span>
-                  <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">有效</span>
-                </div>
-                {isBankCustomer && spouseCustomer && (
-                  <div className="col-span-2 mt-1 text-xs text-teal-600 flex items-center gap-1">
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-                    查看關係人資訊
-                  </div>
-                )}
-              </div>
-            </div>
+          <div className="flex items-center gap-2">
+            <Users className="w-3.5 h-3.5 text-pink-500 flex-shrink-0" />
+            <span className="font-medium text-xs">{spouseName}</span>
+            <span className="px-1.5 py-0.5 bg-pink-100 text-pink-700 rounded text-[10px] font-medium">配偶</span>
+            {isBankCustomer && <span className="px-1.5 py-0.5 bg-teal-100 text-teal-700 rounded text-[10px] font-bold border border-teal-300">本行</span>}
+          </div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-0 text-[11px] mt-1 ml-5">
+            {isBankCustomer && spouseCid && <div><span className="text-gray-400">編號 </span><span className="font-medium text-teal-700">{spouseCid}</span></div>}
+            <div><span className="text-gray-400">起日 </span><span className="font-medium">{marriageDate}</span></div>
+            <div><span className="text-gray-400">狀態 </span><span className="px-1.5 py-0 bg-green-100 text-green-700 rounded">有效</span></div>
           </div>
         </div>
       );
@@ -11077,20 +11115,16 @@ const CUS360Demo = () => {
           const ageDisplay = `${child.age} 歲`;
           return (
             <div key={`child-${i}`} className={SUBCARD}>
-              <div className="flex items-start">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <Users className="w-5 h-5 text-blue-400 flex-shrink-0" />
-                    <span className="font-medium text-sm">{child.name}</span>
-                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">子女</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs ml-5">
-                    <div><span className="text-gray-500">年齡: </span><span className="font-medium">{ageDisplay}</span></div>
-                    <div><span className="text-gray-500">出生年份: </span><span className="font-medium">{childBirthYear} 年</span></div>
-                    <div><span className="text-gray-500">受益人: </span><span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">是</span></div>
-                    <div><span className="text-gray-500">關係狀態: </span><span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">有效</span></div>
-                  </div>
-                </div>
+              <div className="flex items-center gap-2">
+                <Users className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                <span className="font-medium text-xs">{child.name}</span>
+                <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-medium">子女</span>
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-0 text-[11px] mt-1 ml-5">
+                <div><span className="text-gray-400">年齡 </span><span className="font-medium">{ageDisplay}</span></div>
+                <div><span className="text-gray-400">出生 </span><span className="font-medium">{childBirthYear}年</span></div>
+                <div><span className="text-gray-400">受益人 </span><span className="px-1.5 py-0 bg-purple-100 text-purple-700 rounded">是</span></div>
+                <div><span className="text-gray-400">狀態 </span><span className="px-1.5 py-0 bg-green-100 text-green-700 rounded">有效</span></div>
               </div>
             </div>
           );
@@ -11118,20 +11152,16 @@ const CUS360Demo = () => {
         const ageDisplay = `${childAge} 歲`;
         return (
           <div key={`child-${i}`} className={SUBCARD}>
-            <div className="flex items-start">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <Users className="w-5 h-5 text-blue-400 flex-shrink-0" />
-                  <span className="font-medium text-sm">{childName}</span>
-                  <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">子女</span>
-                </div>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs ml-5">
-                  <div><span className="text-gray-500">年齡: </span><span className="font-medium">{ageDisplay}</span></div>
-                  <div><span className="text-gray-500">出生年份: </span><span className="font-medium">{childBirthYear} 年</span></div>
-                  <div><span className="text-gray-500">受益人: </span><span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">是</span></div>
-                  <div><span className="text-gray-500">關係狀態: </span><span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">有效</span></div>
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              <Users className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+              <span className="font-medium text-xs">{childName}</span>
+              <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-medium">子女</span>
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-0 text-[11px] mt-1 ml-5">
+              <div><span className="text-gray-400">年齡 </span><span className="font-medium">{ageDisplay}</span></div>
+              <div><span className="text-gray-400">出生 </span><span className="font-medium">{childBirthYear}年</span></div>
+              <div><span className="text-gray-400">受益人 </span><span className="px-1.5 py-0 bg-purple-100 text-purple-700 rounded">是</span></div>
+              <div><span className="text-gray-400">狀態 </span><span className="px-1.5 py-0 bg-green-100 text-green-700 rounded">有效</span></div>
             </div>
           </div>
         );
@@ -11145,20 +11175,16 @@ const CUS360Demo = () => {
     const managerBranch = managerBranches[(seed >> 2) % managerBranches.length];
     const managerCard = (
       <div key="manager" className={SUBCARD}>
-        <div className="flex items-start">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <Users className="w-5 h-5 text-orange-500 flex-shrink-0" />
-              <span className="font-medium text-sm">{managerName}（E{String(10000 + (seed % 89999)).slice(0,5)}）</span>
-              <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs font-medium">經管人員</span>
-            </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs ml-5">
-              <div><span className="text-gray-500">經管分行: </span><span className="font-medium">{managerBranch}</span></div>
-              <div><span className="text-gray-500">關係起日: </span><span className="font-medium">{2018 + (seed % 6)}/0{(seed % 9) + 1}/01</span></div>
-              <div><span className="text-gray-500">在職狀況: </span><span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">在職</span></div>
-              <div><span className="text-gray-500">理專註記: </span><span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">是</span></div>
-            </div>
-          </div>
+        <div className="flex items-center gap-2">
+          <Users className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
+          <span className="font-medium text-xs">{managerName}（E{String(10000 + (seed % 89999)).slice(0,5)}）</span>
+          <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded text-[10px] font-medium">經管人員</span>
+        </div>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-0 text-[11px] mt-1 ml-5">
+          <div><span className="text-gray-400">分行 </span><span className="font-medium">{managerBranch}</span></div>
+          <div><span className="text-gray-400">起日 </span><span className="font-medium">{2018 + (seed % 6)}/0{(seed % 9) + 1}/01</span></div>
+          <div><span className="text-gray-400">狀態 </span><span className="px-1.5 py-0 bg-green-100 text-green-700 rounded">在職</span></div>
+          <div><span className="text-gray-400">理專 </span><span className="px-1.5 py-0 bg-blue-100 text-blue-700 rounded">是</span></div>
         </div>
       </div>
     );
@@ -11168,14 +11194,14 @@ const CUS360Demo = () => {
     return (
       <div className={`${SUBCARD} h-full`}>
         <h4 className="font-semibold text-sm text-gray-800 mb-1.5">客戶關係人資訊</h4>
-        <div className="space-y-3">{allCards}</div>
+        <div className="space-y-1.5">{allCards}</div>
       </div>
     );
   };
 
   // Generic section renderer used in detail pages
   const renderSection = (section, compact = false) => {
-    if (!section) return <div className="text-sm text-gray-500">無資料</div>;
+    if (!section) return <div className="flex items-center justify-center py-6"><span className="text-sm text-gray-400">無資料</span></div>;
     // simple key/value list
     if (Array.isArray(section.data) && section.data.length > 0) {
       return (
@@ -11265,7 +11291,7 @@ const CUS360Demo = () => {
       );
     }
 
-    return <div className="text-sm text-gray-500">無資料</div>;
+    return <div className="flex items-center justify-center py-6"><span className="text-sm text-gray-400">無資料</span></div>;
   };
 
   // Horizontal timeline for interactions
@@ -12302,6 +12328,11 @@ const CUS360Demo = () => {
         <span className="text-sm font-bold text-teal-700">{title}</span>
       </div>
     );
+    const NoData = ({ label = '無資料' }) => (
+      <div className="flex items-center justify-center py-6">
+        <span className="text-sm text-gray-400">{label}</span>
+      </div>
+    );
 
     // Pre-compute data needed for multiple sections
     const allProds = generateCustomerProducts(c);
@@ -12455,7 +12486,7 @@ const CUS360Demo = () => {
                       onClick={() => setInsightModal({ type: 'intent', data: insight, customer: c })}
                     >
                       {/* 卡片頂部：意圖名稱 + 優先標章 */}
-                      <div className={`flex items-center gap-1.5 px-3 py-2 rounded-t-lg ${isPriority ? 'bg-amber-100' : 'bg-gray-50'}`}>
+                      <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-t-lg ${isPriority ? 'bg-amber-100' : 'bg-gray-50'}`}>
                         {isPriority && (
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
                         )}
@@ -12465,15 +12496,12 @@ const CUS360Demo = () => {
                         )}
                       </div>
                       {/* 卡片主體：推薦產品 */}
-                      <div className="px-3 py-2 flex-1">
+                      <div className="px-2.5 py-1.5 flex-1">
                         <div className="text-[10px] text-gray-400 mb-0.5">建議推薦產品</div>
-                        <div className="text-sm font-semibold text-teal-700 leading-snug">{topProduct}</div>
-                        {productReason && (
-                          <div className="text-[10px] text-gray-500 mt-1 line-clamp-2 leading-snug">{productReason}</div>
-                        )}
+                        <div className="text-xs font-semibold text-teal-700 leading-snug">{topProduct}</div>
                       </div>
                       {/* 卡片底部：點擊提示 */}
-                      <div className={`px-3 py-1.5 rounded-b-lg text-[10px] font-medium flex items-center justify-between border-t ${
+                      <div className={`px-2.5 py-1 rounded-b-lg text-[10px] font-medium flex items-center justify-between border-t ${
                         isPriority ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-gray-100 text-teal-600 bg-gray-50'
                       }`}>
                         <span>查看話術與完整方案</span>
@@ -12548,53 +12576,53 @@ const CUS360Demo = () => {
         <div className="space-y-2">
           <SecHeader Icon={Star} title="業務往來" />
           <div className="space-y-2">
-            <div className={SUBCARD}>
-              <h4 className="font-semibold text-sm mb-1.5 text-gray-800">客戶業務往來累計</h4>
-              <div className="grid grid-cols-4 gap-2">
-                {[
-                  { label: '持有產品總數',       value: `${allProds.length} 項` },
-                  { label: '近三個月信用卡消費',  value: `NT$ ${f.cardSpend3M.toLocaleString()}` },
-                  { label: '近五筆轉帳合計',      value: `NT$ ${transferTotal.toLocaleString()}` },
-                  { label: '信用卡利用率',        value: `${f.creditUtilPct}%` },
-                ].map(st => (
-                  <div key={st.label} className="bg-gray-50 rounded-lg p-2.5">
-                    <div className="text-xs text-gray-500 mb-0.5">{st.label}</div>
-                    <div className="font-semibold text-gray-800 text-sm tabular-nums">{st.value}</div>
-                  </div>
-                ))}
+            {/* Row 1: 累計統計 | 近五筆轉帳 | 近五筆信用卡授權明細 */}
+            <div className="grid grid-cols-3 gap-3 items-start">
+              <div className={SUBCARD}>
+                <h4 className="font-semibold text-sm mb-1.5 text-gray-800">客戶業務往來累計</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { label: '持有產品總數',       value: `${allProds.length} 項` },
+                    { label: '近三個月信用卡消費',  value: `NT$ ${f.cardSpend3M.toLocaleString()}` },
+                    { label: '近五筆轉帳合計',      value: `NT$ ${transferTotal.toLocaleString()}` },
+                    { label: '信用卡額度動用率',        value: `${f.creditUtilPct}%` },
+                  ].map(st => (
+                    <div key={st.label} className="bg-gray-50 rounded-lg p-2.5">
+                      <div className="text-xs text-gray-500 mb-0.5">{st.label}</div>
+                      <div className="font-semibold text-gray-800 text-sm tabular-nums">{st.value}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className={SUBCARD}>
+                <h4 className="font-semibold text-sm mb-1.5 text-gray-800">近五筆轉帳</h4>
+                <div className="space-y-1 text-xs">
+                  {transfers5.map((t, i) => (
+                    <div key={i} className="grid border-b border-gray-50 py-0.5 last:border-0" style={{gridTemplateColumns:'5rem 1fr auto',gap:'0.5rem'}}>
+                      <span className="text-gray-700 truncate">{t.merchant}</span>
+                      <span className="text-gray-400 truncate">{t.time}</span>
+                      <span className="font-medium tabular-nums text-right">{t.amount}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className={SUBCARD}>
+                <h4 className="font-semibold text-sm mb-1.5 text-gray-800">近五筆信用卡授權明細</h4>
+                <div className="space-y-1 text-xs">
+                  {cards5.map((t, i) => (
+                    <div key={i} className="grid border-b border-gray-50 py-0.5 last:border-0" style={{gridTemplateColumns:'5rem 1fr auto',gap:'0.5rem'}}>
+                      <span className="text-gray-700 truncate">{t.merchant}</span>
+                      <span className="text-gray-400 truncate">{t.time}</span>
+                      <span className="font-medium tabular-nums text-right">{t.amount}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className={SUBCARD}>
-                <h4 className="font-semibold text-sm mb-1.5 text-gray-800">客戶開辦業務</h4>
-                <CustomerProductTree key={c.id} products={allProds} />
-              </div>
-              <div className="flex flex-col gap-2">
-                <div className={SUBCARD}>
-                  <h4 className="font-semibold text-sm mb-1.5 text-gray-800">近五筆轉帳</h4>
-                  <div className="space-y-1 text-xs">
-                    {transfers5.map((t, i) => (
-                      <div key={i} className="grid border-b border-gray-50 py-0.5 last:border-0" style={{gridTemplateColumns:'5rem 1fr auto',gap:'0.5rem'}}>
-                        <span className="text-gray-700 truncate">{t.merchant}</span>
-                        <span className="text-gray-400 truncate">{t.time}</span>
-                        <span className="font-medium tabular-nums text-right">{t.amount}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className={`${SUBCARD} flex-1`}>
-                  <h4 className="font-semibold text-sm mb-1.5 text-gray-800">近五筆信用卡授權明細</h4>
-                  <div className="space-y-1 text-xs">
-                    {cards5.map((t, i) => (
-                      <div key={i} className="grid border-b border-gray-50 py-0.5 last:border-0" style={{gridTemplateColumns:'5rem 1fr auto',gap:'0.5rem'}}>
-                        <span className="text-gray-700 truncate">{t.merchant}</span>
-                        <span className="text-gray-400 truncate">{t.time}</span>
-                        <span className="font-medium tabular-nums text-right">{t.amount}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+            {/* Row 2: 客戶開辦業務 — 四種產品橫排一列 */}
+            <div className={SUBCARD}>
+              <h4 className="font-semibold text-sm mb-1.5 text-gray-800">客戶開辦業務</h4>
+              <CustomerProductTree key={c.id} products={allProds} layout="horizontal" />
             </div>
           </div>
         </div>
@@ -12602,8 +12630,8 @@ const CUS360Demo = () => {
         {/* ── 其餘 8 個模組：兩欄獨立堆疊 ─────────────────────────────────── */}
         <div className="flex gap-3 items-stretch">
 
-          {/* 左欄：基本資訊 / 風險資訊 / 互動紀錄 / 標籤資訊 */}
-          <div className="flex-1 min-w-0 flex flex-col gap-3">
+          {/* 左欄：風險資訊 — 1/4 寬 */}
+          <div className="w-1/4 min-w-0 flex flex-col gap-3">
 
             {/* TAB 3: 風險資訊 */}
             <div className="space-y-2">
@@ -12659,13 +12687,29 @@ const CUS360Demo = () => {
               </div>
             </div>
 
-            {/* TAB 6: 互動紀錄 — 兩欄緊湊列表 */}
+          </div>
+          {/* 財務狀況 — 3/4 寬 */}
+          <div className="w-3/4 min-w-0 flex flex-col gap-2">
             <div className="space-y-2">
-              <SecHeader Icon={Clock} title="互動紀錄" />
+              <SecHeader Icon={TrendingUp} title="財務狀況" />
+              <div className={SUBCARD}>
+                <h4 className="font-semibold text-sm mb-1.5 text-gray-800">財務狀況視覺化分析</h4>
+                {renderFinancialCharts(true)}
+              </div>
+            </div>
+          </div>
+        </div>{/* end Row A */}
+
+        {/* ── Row B: 互動紀錄 + 評價資訊 ── */}
+        {/* grid layout: right col sets row height; left col uses absolute inset-0 to fill without contributing to height */}
+        <div className="grid gap-3" style={{gridTemplateColumns: '1fr 1fr'}}>
+          {/* 左側: 互動紀錄 — relative wrapper, content absolutely fills grid cell */}
+          <div className="relative">
+            {/* absolute inset-0: height = grid row height (set by right col); flex-col enables height chain */}
+            <div className="absolute inset-0 flex flex-col gap-2 overflow-hidden">
+              <div className="flex-shrink-0"><SecHeader Icon={Clock} title="互動紀錄" /></div>
               {(() => {
-                // 客戶事件紀錄
                 const events = generateCustomerEvents(c);
-                // 通路互動紀錄（複用 renderOnePageView 已算好的 ch）
                 const parseTS3 = (sv) => { const m = String(sv).match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/); if (m) return new Date(+m[1], +m[2]-1, +m[3]).getTime(); const d = new Date(sv); return isNaN(d) ? 0 : d.getTime(); };
                 const getStatusCls = (status) => {
                   if (status === '提醒' || status === '處理中') return 'bg-yellow-100 text-yellow-800';
@@ -12678,10 +12722,10 @@ const CUS360Demo = () => {
                   return 'bg-teal-500';
                 };
                 const CompactList = ({ items, emptyText }) => {
-                  if (!items || !items.length) return <div className="text-xs text-gray-400 py-1">{emptyText || '無紀錄'}</div>;
+                  if (!items || !items.length) return <div className="flex items-center justify-center py-4"><span className="text-sm text-gray-400">{emptyText || '無紀錄'}</span></div>;
                   const sorted = [...items].sort((a, b) => parseTS3(b.time) - parseTS3(a.time));
                   return (
-                    <div className="space-y-1 max-h-[180px] overflow-y-auto pr-0.5">
+                    <div className="flex-1 min-h-0 overflow-y-auto pr-0.5 space-y-1">
                       {sorted.map((it, idx) => {
                         const status = it.status || '已發生';
                         return (
@@ -12706,113 +12750,24 @@ const CUS360Demo = () => {
                     </div>
                   );
                 };
+                // grid is direct flex-1 child of absolute div → definite height → SUBCARD stretches → CompactList scrolls
                 return (
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className={SUBCARD}>
-                      <h4 className="font-semibold text-xs mb-1.5 text-gray-700">客戶事件紀錄</h4>
+                  <div className="flex-1 min-h-0 grid grid-cols-2 gap-2">
+                    <div className={`${SUBCARD} flex flex-col overflow-hidden`}>
+                      <h4 className="font-semibold text-xs mb-1.5 text-gray-700 flex-shrink-0">客戶事件紀錄</h4>
                       <CompactList items={events} emptyText="無事件紀錄" />
                     </div>
-                    <div className={SUBCARD}>
-                      <h4 className="font-semibold text-xs mb-1.5 text-gray-700">通路互動紀錄</h4>
+                    <div className={`${SUBCARD} flex flex-col overflow-hidden`}>
+                      <h4 className="font-semibold text-xs mb-1.5 text-gray-700 flex-shrink-0">通路互動紀錄</h4>
                       <CompactList items={ch} emptyText="無互動紀錄" />
                     </div>
                   </div>
                 );
               })()}
             </div>
-
-            {/* TAB 8: 標籤資訊（緊湊 inline） */}
-            <div className="space-y-2 flex-1">
-              <SecHeader Icon={Filter} title="標籤資訊" />
-              {(() => {
-                const sp2 = c.spendingCategories || {};
-                const pp2 = c.productPreferences || {};
-                const iScorer = (name) => {
-                  if (/子女教育基金|教育基金規劃/.test(name)) return (sp2.education || 0) * 0.6 + (sp2.childcare || 0) * 0.4;
-                  if (/旅遊|出國/.test(name)) return Math.max(sp2.travel || 0, sp2.overseas || 0) * 0.9 + (pp2.creditCard || 0) * 0.1;
-                  if (/信用卡/.test(name)) return pp2.creditCard || 0;
-                  if (/投資|理財/.test(name)) return pp2.investment || 0;
-                  if (/房貸/.test(name)) return (pp2.loans || 0) * 0.8 + (sp2.groceries || 0) * 0.2;
-                  if (/信貸/.test(name)) return (pp2.loans || 0) * 0.7;
-                  if (/留學/.test(name)) return sp2.education || 0;
-                  return 0.5;
-                };
-                const intentTagObjs = (c.tags || [])
-                  .filter(t => typeof t === 'string' && t.includes('意圖'))
-                  .map(name => ({ name, score: iScorer(name) }))
-                  .sort((a, b) => b.score - a.score);
-                const otherTags  = (c.tags || []).filter(t => typeof t === 'string' && !t.includes('意圖'));
-                const structuredByCat = {};
-                (c.structuredTags || []).forEach(t => {
-                  if (!structuredByCat[t.category]) structuredByCat[t.category] = [];
-                  structuredByCat[t.category].push(t.name);
-                });
-                return (
-                  <div className="grid grid-cols-2 gap-2 items-stretch">
-                    {intentTagObjs.length > 0 && (
-                      <div className={`${SUBCARD} h-full`}>
-                        <h4 className="font-semibold text-sm mb-1.5 text-gray-800">意圖標籤</h4>
-                        <div className="space-y-1">
-                          {intentTagObjs.map((tag, i) => {
-                            const isPriority = tag.score >= 0.8;
-                            const pct = Math.max(4, Math.round(tag.score * 100));
-                            return (
-                              <div
-                                key={i}
-                                className={`flex items-center gap-0 text-xs px-2 py-1 rounded-lg cursor-pointer hover:shadow-md transition-all group border ${isPriority ? 'bg-amber-50 border-amber-200 hover:border-amber-300' : 'bg-gray-50 border-gray-100 hover:border-teal-200'}`}
-                                onClick={() => setInsightModal({ type: 'intent', data: buildIntentInsight(tag, c), customer: c })}
-                              >
-                                <span className="text-gray-700 min-w-0 truncate font-medium">{tag.name}</span>
-                                <div className="flex items-center gap-1.5 ml-auto flex-shrink-0 transition-transform duration-200 ease-out group-hover:-translate-x-5">
-                                  {isPriority && <span className="px-1.5 py-0.5 bg-amber-500 text-white rounded text-[10px] font-bold">優先</span>}
-                                  <div className="w-10 bg-gray-200 rounded-full h-1.5">
-                                    <div className="h-1.5 rounded-full bg-teal-500" style={{ width: `${pct}%` }} />
-                                  </div>
-                                  <span className="text-gray-700 font-medium w-7 text-right tabular-nums">{pct}%</span>
-                                </div>
-                                <span className="w-3 text-center text-[11px] text-teal-500 flex-shrink-0 translate-x-3 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-200 ease-out">→</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                    {otherTags.length > 0 && (
-                      <div className={`${SUBCARD} h-full`}>
-                        <h4 className="font-semibold text-sm mb-1.5 text-gray-800">行為標籤</h4>
-                        <div className="flex flex-wrap gap-1">
-                          {otherTags.map((t, i) => <span key={i} className="px-2 py-0.5 bg-teal-50 text-teal-700 rounded-full text-xs">{t}</span>)}
-                        </div>
-                      </div>
-                    )}
-                    {Object.entries(structuredByCat).filter(([, ns]) => ns.length > 0).map(([cat, ns]) => (
-                      <div key={cat} className={`${SUBCARD} h-full`}>
-                        <h4 className="font-semibold text-sm mb-1.5 text-gray-800">{cat}</h4>
-                        <div className="flex flex-wrap gap-1">
-                          {ns.map((n, i) => <span key={i} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs">{n}</span>)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-            </div>
-
-          </div>{/* end left column */}
-
-          {/* 右欄：聯絡資訊 / 財務狀況 / 評價資訊 / 偏好資訊 */}
-          <div className="flex-1 min-w-0 flex flex-col gap-3">
-
-            {/* TAB 4: 財務狀況 */}
-            <div className="space-y-2">
-              <SecHeader Icon={TrendingUp} title="財務狀況" />
-              <div className={SUBCARD}>
-                <h4 className="font-semibold text-sm mb-1.5 text-gray-800">財務狀況視覺化分析</h4>
-                {renderFinancialCharts(true)}
-              </div>
-            </div>
-
-            {/* TAB 7: 評價資訊 */}
+          </div>
+          {/* 評價資訊 — 決定行高 */}
+          <div className="flex flex-col gap-2">
             <div className="space-y-2">
               <SecHeader Icon={Star} title="評價資訊" />
               <div className="space-y-2">
@@ -12851,13 +12806,102 @@ const CUS360Demo = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>{/* end Row B */}
+
+        {/* ── Row C: 標籤資訊 + 偏好資訊 ── */}
+        <div className="flex gap-3 items-stretch">
+          <div className="flex-1 min-w-0 flex flex-col gap-2">
+
+            {/* TAB 8: 標籤資訊（緊湊 inline） */}
+            <div className="space-y-2 flex-1">
+              <SecHeader Icon={Filter} title="標籤資訊" />
+              {(() => {
+                const sp2 = c.spendingCategories || {};
+                const pp2 = c.productPreferences || {};
+                const iScorer = (name) => {
+                  if (/子女教育基金|教育基金規劃/.test(name)) return (sp2.education || 0) * 0.6 + (sp2.childcare || 0) * 0.4;
+                  if (/旅遊|出國/.test(name)) return Math.max(sp2.travel || 0, sp2.overseas || 0) * 0.9 + (pp2.creditCard || 0) * 0.1;
+                  if (/信用卡/.test(name)) return pp2.creditCard || 0;
+                  if (/投資|理財/.test(name)) return pp2.investment || 0;
+                  if (/房貸/.test(name)) return (pp2.loans || 0) * 0.8 + (sp2.groceries || 0) * 0.2;
+                  if (/信貸/.test(name)) return (pp2.loans || 0) * 0.7;
+                  if (/留學/.test(name)) return sp2.education || 0;
+                  return 0.5;
+                };
+                const intentTagObjs = (c.tags || [])
+                  .filter(t => typeof t === 'string' && t.includes('意圖'))
+                  .map(name => ({ name, score: iScorer(name) }))
+                  .sort((a, b) => b.score - a.score);
+                const otherTags  = (c.tags || []).filter(t => typeof t === 'string' && !t.includes('意圖'));
+                const structuredByCat = {};
+                (c.structuredTags || []).forEach(t => {
+                  if (!structuredByCat[t.category]) structuredByCat[t.category] = [];
+                  structuredByCat[t.category].push(t.name);
+                });
+                const hasAnyTag = intentTagObjs.length > 0 || otherTags.length > 0 || Object.values(structuredByCat).some(ns => ns.length > 0);
+                if (!hasAnyTag) return <NoData />;
+                return (
+                  <div className="grid grid-cols-2 gap-2 items-stretch">
+                    {intentTagObjs.length > 0 && (
+                      <div className={`${SUBCARD} h-full`}>
+                        <h4 className="font-semibold text-sm mb-1.5 text-gray-800">意圖標籤</h4>
+                        <div className="space-y-1">
+                          {intentTagObjs.map((tag, i) => {
+                            const isPriority = tag.score >= 0.8;
+                            const pct = Math.max(4, Math.round(tag.score * 100));
+                            return (
+                              <div
+                                key={i}
+                                className={`flex items-center gap-0 text-xs px-2 py-1 rounded-lg cursor-pointer hover:shadow-md transition-all group border ${isPriority ? 'bg-amber-50 border-amber-200 hover:border-amber-300' : 'bg-gray-50 border-gray-100 hover:border-teal-200'}`}
+                                onClick={() => setInsightModal({ type: 'intent', data: buildIntentInsight(tag, c), customer: c })}
+                              >
+                                <span className="text-gray-700 min-w-0 truncate font-medium">{tag.name}</span>
+                                <div className="flex items-center gap-1.5 ml-auto flex-shrink-0 transition-transform duration-200 ease-out group-hover:-translate-x-2">
+                                  {isPriority && <span className="px-1.5 py-0.5 bg-amber-500 text-white rounded text-[10px] font-bold">優先</span>}
+                                  <div className="w-10 bg-gray-200 rounded-full h-1.5">
+                                    <div className="h-1.5 rounded-full bg-teal-500" style={{ width: `${pct}%` }} />
+                                  </div>
+                                  <span className="text-gray-700 font-medium w-7 text-right tabular-nums">{pct}%</span>
+                                </div>
+                                <span className="w-2 text-center text-[11px] text-teal-500 flex-shrink-0 translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-200 ease-out">→</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {otherTags.length > 0 && (
+                      <div className={`${SUBCARD} h-full`}>
+                        <h4 className="font-semibold text-sm mb-1.5 text-gray-800">行為標籤</h4>
+                        <div className="flex flex-wrap gap-1">
+                          {otherTags.map((t, i) => <span key={i} className="px-2 py-0.5 bg-teal-50 text-teal-700 rounded-full text-xs">{t}</span>)}
+                        </div>
+                      </div>
+                    )}
+                    {Object.entries(structuredByCat).filter(([, ns]) => ns.length > 0).map(([cat, ns]) => (
+                      <div key={cat} className={`${SUBCARD} h-full`}>
+                        <h4 className="font-semibold text-sm mb-1.5 text-gray-800">{cat}</h4>
+                        <div className="flex flex-wrap gap-1">
+                          {ns.map((n, i) => <span key={i} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs">{n}</span>)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+
+          </div>
+          {/* 偏好資訊 — Row C right */}
+          <div className="flex-1 min-w-0 flex flex-col gap-2">
 
             {/* TAB 9: 偏好資訊（緊湊 inline） */}
             <div className="space-y-2 flex-1">
               <SecHeader Icon={Users} title="偏好資訊" />
               {(() => {
                 const prefsData = generateCustomerBasicInfo(c).preferences;
-                if (!prefsData) return null;
+                if (!prefsData) return <NoData />;
                 return (
                   <div className="grid grid-cols-2 gap-2 items-stretch">
                     {prefsData.sections.map((section, sIdx) => {
@@ -12882,14 +12926,14 @@ const CUS360Demo = () => {
                                     onClick={() => setInsightModal({ type: 'product', data: insight, customer: c })}
                                   >
                                     <span className="text-gray-700 min-w-0 truncate font-medium">{p.product || p.label || p.name}</span>
-                                    <div className="flex items-center gap-1.5 ml-auto flex-shrink-0 transition-transform duration-200 ease-out group-hover:-translate-x-5">
+                                    <div className="flex items-center gap-1.5 ml-auto flex-shrink-0 transition-transform duration-200 ease-out group-hover:-translate-x-2">
                                       {isPriority && <span className="px-1.5 py-0.5 bg-amber-500 text-white rounded text-[10px] font-bold">優先</span>}
                                       <div className="w-10 bg-gray-200 rounded-full h-1.5">
                                         <div className="h-1.5 rounded-full bg-teal-500" style={{ width: `${Math.max(4, pct)}%` }} />
                                       </div>
                                       <span className="text-gray-700 font-medium w-7 text-right tabular-nums">{Math.round(pct)}%</span>
                                     </div>
-                                    <span className="w-3 text-center text-[11px] text-teal-500 flex-shrink-0 translate-x-3 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-200 ease-out">→</span>
+                                    <span className="w-2 text-center text-[11px] text-teal-500 flex-shrink-0 translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-200 ease-out">→</span>
                                   </div>
                                 );
                               })}
@@ -12911,14 +12955,14 @@ const CUS360Demo = () => {
                                     onClick={() => setInsightModal({ type: 'spending', data: spInsight, customer: c })}
                                   >
                                     <span className="text-gray-700 min-w-0 truncate">{label}</span>
-                                    <div className="flex items-center gap-1.5 ml-auto flex-shrink-0 transition-transform duration-200 ease-out group-hover:-translate-x-5">
+                                    <div className="flex items-center gap-1.5 ml-auto flex-shrink-0 transition-transform duration-200 ease-out group-hover:-translate-x-2">
                                       {isPriority && <span className="px-1.5 py-0.5 bg-amber-500 text-white rounded text-[10px] font-bold">優先</span>}
                                       <div className="w-10 bg-gray-200 rounded-full h-1.5">
                                         <div className="h-1.5 rounded-full bg-teal-500" style={{ width: `${Math.max(4, pct)}%` }} />
                                       </div>
                                       <span className="text-gray-700 font-medium w-7 text-right tabular-nums">{Math.round(pct)}%</span>
                                     </div>
-                                    <span className="w-3 text-center text-[11px] text-teal-500 flex-shrink-0 translate-x-3 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-200 ease-out">→</span>
+                                    <span className="w-2 text-center text-[11px] text-teal-500 flex-shrink-0 translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-200 ease-out">→</span>
                                   </div>
                                 );
                               })}
@@ -12979,8 +13023,8 @@ const CUS360Demo = () => {
               })()}
             </div>
 
-          </div>{/* end right column */}
-        </div>{/* end flex two-col */}
+          </div>
+        </div>{/* end Row C */}
 
         {renderInsightModal()}
 
@@ -13387,7 +13431,7 @@ const CUS360Demo = () => {
                   { label: "持有產品總數",       value: `${allProds.length} 項` },
                   { label: "近三個月信用卡消費",  value: `NT$ ${f.cardSpend3M.toLocaleString()}` },
                   { label: "近五筆轉帳合計",      value: `NT$ ${transferTotal.toLocaleString()}` },
-                  { label: "信用卡利用率",        value: `${f.creditUtilPct}%` },
+                  { label: "信用卡額度動用率",        value: `${f.creditUtilPct}%` },
                 ];
                 return (
                   <div className={SUBCARD}>
