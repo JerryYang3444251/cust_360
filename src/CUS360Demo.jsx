@@ -1092,6 +1092,12 @@ const CUS360Demo = () => {
       name: "王小明",
       nameEn: "WANG HSIAO-MING",
       age: 35,
+      industry: "K 金融及保險業",
+      occupation: "財富管理顧問",
+      employer: "台灣金融控股股份有限公司",
+      jobTitle: "資深財富管理顧問",
+      seniority: 12,
+      employmentType: "正職",
       vipLevel: "VVVIP",
       riskScore: "A+",
       riskLevel: "low",
@@ -1135,6 +1141,12 @@ const CUS360Demo = () => {
       name: "李美華",
       nameEn: "LI MEI-HUA",
       age: 42,
+      industry: "M 專業、科學及技術服務業",
+      occupation: "企業主管",
+      employer: "卓越管理顧問股份有限公司",
+      jobTitle: "執行長",
+      seniority: 17,
+      employmentType: "正職",
       vipLevel: "VVIP",
       riskScore: "A+",
       riskLevel: "low",
@@ -1171,6 +1183,12 @@ const CUS360Demo = () => {
       name: "陳大偉",
       nameEn: "CHEN DA-WEI",
       age: 28,
+      industry: "J 資訊及通訊傳播業",
+      occupation: "軟體工程師",
+      employer: "星辰科技股份有限公司",
+      jobTitle: "軟體工程師",
+      seniority: 4,
+      employmentType: "正職",
       vipLevel: "normal",
       riskScore: "B",
       riskLevel: "medium",
@@ -1207,6 +1225,12 @@ const CUS360Demo = () => {
       name: "張麗娟",
       nameEn: "CHANG LI-CHUAN",
       age: 51,
+      industry: "P 教育業",
+      occupation: "中等教育教師",
+      employer: "台北市立中正高中",
+      jobTitle: "資深教師",
+      seniority: 26,
+      employmentType: "正職",
       vipLevel: "VIP",
       riskScore: "A",
       riskLevel: "low",
@@ -1243,6 +1267,12 @@ const CUS360Demo = () => {
       name: "劉志明",
       nameEn: "LIU CHIH-MING",
       age: 46,
+      industry: "G 批發及零售業",
+      occupation: "業務人員",
+      employer: "明豐貿易有限公司",
+      jobTitle: "業務員",
+      seniority: 8,
+      employmentType: "約聘",
       vipLevel: "normal",
       riskScore: "C",
       riskLevel: "high",
@@ -1279,6 +1309,12 @@ const CUS360Demo = () => {
       name: "林小芳",
       nameEn: "LIN HSIAO-FANG",
       age: 33,
+      industry: "K 金融及保險業",
+      occupation: "銀行理財專員",
+      employer: "國泰世華商業銀行",
+      jobTitle: "理財專員",
+      seniority: 9,
+      employmentType: "正職",
       vipLevel: "VIP",
       riskScore: "A",
       riskLevel: "medium",
@@ -1315,6 +1351,12 @@ const CUS360Demo = () => {
       name: "張杰仁",
       nameEn: "CHANG CHIEH-JEN",
       age: 41,
+      industry: "J 資訊及通訊傳播業",
+      occupation: "資訊主管",
+      employer: "沛思數位科技股份有限公司",
+      jobTitle: "技術長",
+      seniority: 15,
+      employmentType: "正職",
       vipLevel: "VVIP",
       riskScore: "A+",
       riskLevel: "low",
@@ -1351,6 +1393,12 @@ const CUS360Demo = () => {
       name: "何雅婷",
       nameEn: "HO YA-TING",
       age: 29,
+      industry: "Q 醫療保健及社會工作服務業",
+      occupation: "護理人員",
+      employer: "台北榮民總醫院",
+      jobTitle: "護理師",
+      seniority: 5,
+      employmentType: "正職",
       vipLevel: "normal",
       riskScore: "B",
       riskLevel: "medium",
@@ -1387,6 +1435,12 @@ const CUS360Demo = () => {
       name: "吳宗憲",
       nameEn: "WU TSUNG-HSIEN",
       age: 58,
+      industry: "C 製造業",
+      occupation: "工廠管理人員",
+      employer: "台達電子工業股份有限公司",
+      jobTitle: "廠務部協理",
+      seniority: 32,
+      employmentType: "正職",
       vipLevel: "VIP",
       riskScore: "A",
       riskLevel: "low",
@@ -1423,6 +1477,12 @@ const CUS360Demo = () => {
       name: "蔡雅文",
       nameEn: "TSAI YA-WEN",
       age: 64,
+      industry: "K 金融及保險業",
+      occupation: "金融機構主管",
+      employer: "台新金融控股股份有限公司",
+      jobTitle: "董事",
+      seniority: 38,
+      employmentType: "正職",
       vipLevel: "VVIP",
       riskScore: "A+",
       riskLevel: "low",
@@ -1459,6 +1519,12 @@ const CUS360Demo = () => {
       name: "林冠哲",
       nameEn: "LIN KUAN-CHE",
       age: 39,
+      industry: "J 資訊及通訊傳播業",
+      occupation: "資訊主管",
+      employer: "博遠科技股份有限公司",
+      jobTitle: "產品長",
+      seniority: 14,
+      employmentType: "正職",
       vipLevel: "VVVIP",
       riskScore: "A",
       riskLevel: "low",
@@ -1496,6 +1562,12 @@ const CUS360Demo = () => {
       name: "周逸軒",
       nameEn: "CHOU YI-HSUAN",
       age: 45,
+      industry: "M 專業、科學及技術服務業",
+      occupation: "管理顧問",
+      employer: "宏達國際顧問集團",
+      jobTitle: "總監",
+      seniority: 20,
+      employmentType: "正職",
       vipLevel: "VVIP",
       riskScore: "A+",
       riskLevel: "low",
@@ -1545,6 +1617,12 @@ const CUS360Demo = () => {
       name: "林佳穎",
       nameEn: "LIN CHIA-YING",
       age: 29,
+      industry: "I 住宿及餐飲業",
+      occupation: "餐飲服務人員",
+      employer: "漢皇國際餐飲集團",
+      jobTitle: "外場主任",
+      seniority: 3,
+      employmentType: "兼職",
       vipLevel: "normal",
       riskScore: "C",
       riskLevel: "high",
@@ -1595,6 +1673,12 @@ const CUS360Demo = () => {
       name: "陳育庭",
       nameEn: "CHEN YU-TING",
       age: 40,
+      industry: "C 製造業",
+      occupation: "製程工程師",
+      employer: "聯華電子股份有限公司",
+      jobTitle: "資深製程工程師",
+      seniority: 14,
+      employmentType: "正職",
       vipLevel: "VIP",
       riskScore: "A",
       riskLevel: "medium",
@@ -1644,6 +1728,12 @@ const CUS360Demo = () => {
       name: "郭仁豪",
       nameEn: "KUO JEN-HAO",
       age: 38,
+      industry: "F 營造業",
+      occupation: "土木工程師",
+      employer: "中華工程股份有限公司",
+      jobTitle: "專案工程師",
+      seniority: 13,
+      employmentType: "正職",
       vipLevel: "VIP",
       riskScore: "A",
       riskLevel: "medium",
@@ -1681,6 +1771,12 @@ const CUS360Demo = () => {
       name: "曾雅霖",
       nameEn: "TSENG YA-LIN",
       age: 27,
+      industry: "G 批發及零售業",
+      occupation: "門市服務人員",
+      employer: "統一超商股份有限公司",
+      jobTitle: "門市人員",
+      seniority: 2,
+      employmentType: "兼職",
       vipLevel: "normal",
       riskScore: "C",
       riskLevel: "high",
@@ -1727,6 +1823,12 @@ const CUS360Demo = () => {
       name: "許建弘",
       nameEn: "HSU CHIEN-HUNG",
       age: 50,
+      industry: "G 批發及零售業",
+      occupation: "企業負責人",
+      employer: "弘泰國際股份有限公司",
+      jobTitle: "董事長",
+      seniority: 22,
+      employmentType: "正職",
       vipLevel: "VVIP",
       riskScore: "A",
       riskLevel: "low",
@@ -2313,7 +2415,12 @@ const CUS360Demo = () => {
       name: "林怡君",
       nameEn: "Lin Yi-Jun",
       age: 32,
-      industry: "外商行銷企劃",
+      industry: "M 專業、科學及技術服務業",
+      occupation: "行銷專員",
+      employer: "歐珀行銷顧問股份有限公司",
+      jobTitle: "行銷專員",
+      seniority: 7,
+      employmentType: "正職",
       nationality: "中華民國",
       maritalStatus: "已婚",
       vipLevel: "VIP",
@@ -2373,6 +2480,12 @@ const CUS360Demo = () => {
       name: "曾建文",
       nameEn: "",
       age: 52,
+      industry: "K 金融及保險業",
+      occupation: "投資公司主管",
+      employer: "鼎盛投資股份有限公司",
+      jobTitle: "執行董事",
+      seniority: 25,
+      employmentType: "正職",
       vipLevel: "VVIP",
       riskScore: "A+",
       riskLevel: "low",
@@ -6401,8 +6514,12 @@ const CUS360Demo = () => {
         {
           name: "客戶工作資訊",
           data: [
-            { label: "任職單位", value: "科技股份有限公司" },
-            { label: "職業別", value: "軟體工程師" },
+            { label: "行業別", value: "K 金融及保險業" },
+            { label: "職業別", value: "資深財富管理顧問" },
+            { label: "任職單位", value: "台灣金融控股股份有限公司" },
+            { label: "職稱", value: "資深財富管理顧問" },
+            { label: "年資", value: "12 年" },
+            { label: "聘僱類型", value: "正職" },
           ],
         },
       ],
@@ -8294,21 +8411,103 @@ const CUS360Demo = () => {
     };
   };
 
-  // 客戶行業映射 - 依據客戶 ID 進行確定性分配
-  const getCustomerIndustry = (customer) => {
-    // Use explicit industry field if set on the customer
-    if (customer && customer.industry) return customer.industry;
-    const industries = [
-      "科技/軟體", "製造業", "金融服務", "零售/電商", "醫療/健康",
-      "房地產", "教育", "物流/運輸", "能源", "媒體/傳播",
-      "餐飲", "旅遊/飯店", "保險", "農業", "建築",
-      "諮詢", "法律服務", "政府/公務", "非營利組織", "其他"
-    ];
+  // ── 客戶工作資訊輔助函式 ─────────────────────────────────────────────────
+  // 台灣主計總處行業標準分類大類（DGBAS）+ 勞動部職業別組合庫
+  const WORK_POOL = [
+    // A 農業
+    { industry: "A 農業", occupation: "農業技術人員", employers: ["行政院農業部農業試驗所", "台灣農業研究院"], titles: { VVVIP: "研究員", VVIP: "副研究員", VIP: "助理研究員", normal: "農業技術員" }, empType: "正職" },
+    // C 製造業
+    { industry: "C 製造業", occupation: "電子工程師", employers: ["台積電股份有限公司", "聯發科技股份有限公司", "鴻海精密工業股份有限公司"], titles: { VVVIP: "製造副總", VVIP: "技術協理", VIP: "資深電子工程師", normal: "電子工程師" }, empType: "正職" },
+    { industry: "C 製造業", occupation: "製程工程師", employers: ["聯華電子股份有限公司", "台積電股份有限公司", "日月光半導體製造股份有限公司"], titles: { VVVIP: "廠務處長", VVIP: "部門主管", VIP: "資深製程工程師", normal: "製程工程師" }, empType: "正職" },
+    { industry: "C 製造業", occupation: "生產管理人員", employers: ["台達電子工業股份有限公司", "正新橡膠工業股份有限公司"], titles: { VVVIP: "製造副總", VVIP: "廠長", VIP: "課長", normal: "生產管理員" }, empType: "正職" },
+    // D 電力及燃氣供應業
+    { industry: "D 電力及燃氣供應業", occupation: "電力工程師", employers: ["台灣電力股份有限公司", "中油股份有限公司"], titles: { VVVIP: "工程處長", VVIP: "主任工程師", VIP: "資深工程師", normal: "電力工程師" }, empType: "正職" },
+    // F 營造業
+    { industry: "F 營造業", occupation: "土木工程師", employers: ["中華工程股份有限公司", "榮工工程股份有限公司", "達欣工程股份有限公司"], titles: { VVVIP: "工程副總", VVIP: "專案協理", VIP: "資深工程師", normal: "土木工程師" }, empType: "正職" },
+    // G 批發及零售業
+    { industry: "G 批發及零售業", occupation: "業務人員", employers: ["統一超商股份有限公司", "全家便利商店股份有限公司", "遠東百貨股份有限公司"], titles: { VVVIP: "業務副總", VVIP: "區域業務主管", VIP: "資深業務專員", normal: "業務員" }, empType: "正職" },
+    { industry: "G 批發及零售業", occupation: "採購人員", employers: ["家樂福股份有限公司", "大潤發流通事業股份有限公司"], titles: { VVVIP: "採購長", VVIP: "採購協理", VIP: "資深採購專員", normal: "採購員" }, empType: "正職" },
+    // H 運輸及倉儲業
+    { industry: "H 運輸及倉儲業", occupation: "物流管理人員", employers: ["台灣宅配通股份有限公司", "統一速達股份有限公司"], titles: { VVVIP: "物流長", VVIP: "區域主管", VIP: "站長", normal: "物流人員" }, empType: "正職" },
+    // I 住宿及餐飲業
+    { industry: "I 住宿及餐飲業", occupation: "餐飲服務人員", employers: ["王品集團", "六福旅遊集團", "晶華國際酒店股份有限公司"], titles: { VVVIP: "品牌總監", VVIP: "店長", VIP: "副店長", normal: "外場服務員" }, empType: "兼職" },
+    // J 資訊及通訊傳播業
+    { industry: "J 資訊及通訊傳播業", occupation: "軟體工程師", employers: ["緯穎科技服務股份有限公司", "趨勢科技股份有限公司", "研華股份有限公司"], titles: { VVVIP: "技術長", VVIP: "架構師", VIP: "資深工程師", normal: "軟體工程師" }, empType: "正職" },
+    { industry: "J 資訊及通訊傳播業", occupation: "數位行銷人員", employers: ["Line Taiwan Limited", "Google Taiwan LLC", "Yahoo奇摩股份有限公司"], titles: { VVVIP: "行銷長", VVIP: "行銷協理", VIP: "資深行銷專員", normal: "行銷專員" }, empType: "正職" },
+    { industry: "J 資訊及通訊傳播業", occupation: "資料分析師", employers: ["91APP股份有限公司", "富邦媒體科技股份有限公司", "KKBOX Technologies"], titles: { VVVIP: "首席數據官", VVIP: "數據協理", VIP: "資深資料分析師", normal: "資料分析師" }, empType: "正職" },
+    // K 金融及保險業
+    { industry: "K 金融及保險業", occupation: "理財顧問", employers: ["富邦金融控股股份有限公司", "國泰金融控股股份有限公司", "中國信託金融控股股份有限公司"], titles: { VVVIP: "財務長", VVIP: "部門主管", VIP: "資深理財顧問", normal: "理財顧問" }, empType: "正職" },
+    { industry: "K 金融及保險業", occupation: "保險業務人員", employers: ["國泰人壽保險股份有限公司", "南山人壽保險股份有限公司", "富邦人壽保險股份有限公司"], titles: { VVVIP: "業務處長", VVIP: "資深業務主任", VIP: "業務主任", normal: "保險業務員" }, empType: "正職" },
+    // L 不動產業
+    { industry: "L 不動產業", occupation: "不動產經紀人", employers: ["信義房屋仲介股份有限公司", "永慶房屋仲介股份有限公司"], titles: { VVVIP: "業務副總", VVIP: "分店長", VIP: "資深業務", normal: "房產仲介" }, empType: "正職" },
+    // M 專業、科學及技術服務業
+    { industry: "M 專業、科學及技術服務業", occupation: "會計師", employers: ["勤業眾信聯合會計師事務所", "資誠聯合會計師事務所", "安侯建業聯合會計師事務所"], titles: { VVVIP: "合夥人", VVIP: "協理", VIP: "資深會計師", normal: "會計師" }, empType: "正職" },
+    { industry: "M 專業、科學及技術服務業", occupation: "管理顧問", employers: ["麥肯錫顧問公司台灣分公司", "波士頓顧問集團台灣辦公室", "奧緯顧問有限公司台灣分公司"], titles: { VVVIP: "資深合夥人", VVIP: "合夥人", VIP: "資深顧問", normal: "顧問" }, empType: "正職" },
+    { industry: "M 專業、科學及技術服務業", occupation: "行銷專員", employers: ["歐珀行銷顧問股份有限公司", "奧美廣告股份有限公司", "電通安吉斯集團"], titles: { VVVIP: "行銷長", VVIP: "行銷協理", VIP: "資深行銷專員", normal: "行銷專員" }, empType: "正職" },
+    // N 支援服務業
+    { industry: "N 支援服務業", occupation: "人力資源專員", employers: ["104人力銀行股份有限公司", "1111人力銀行股份有限公司"], titles: { VVVIP: "人資長", VVIP: "人資協理", VIP: "資深人資專員", normal: "人資專員" }, empType: "正職" },
+    // O 公共行政及國防；強制性社會安全
+    { industry: "O 公共行政及國防；強制性社會安全", occupation: "公務人員", employers: ["台北市政府", "行政院", "台灣省政府"], titles: { VVVIP: "局長", VVIP: "科長", VIP: "主任", normal: "公務員" }, empType: "正職" },
+    // P 教育業
+    { industry: "P 教育業", occupation: "教師", employers: ["國立台灣大學", "國立成功大學", "台北市立高中"], titles: { VVVIP: "教授", VVIP: "副教授", VIP: "講師", normal: "教師" }, empType: "正職" },
+    // Q 醫療保健及社會工作服務業
+    { industry: "Q 醫療保健及社會工作服務業", occupation: "護理人員", employers: ["台大醫院", "台北榮民總醫院", "長庚醫療財團法人"], titles: { VVVIP: "護理長", VVIP: "資深護理師", VIP: "護理師", normal: "護士" }, empType: "正職" },
+    { industry: "Q 醫療保健及社會工作服務業", occupation: "醫師", employers: ["台大醫院", "台北榮民總醫院", "馬偕紀念醫院"], titles: { VVVIP: "主任醫師", VVIP: "主治醫師", VIP: "主治醫師", normal: "住院醫師" }, empType: "正職" },
+    // R 藝術、娛樂及休閒服務業
+    { industry: "R 藝術、娛樂及休閒服務業", occupation: "創意設計師", employers: ["琉璃工房", "霹靂國際多媒體股份有限公司"], titles: { VVVIP: "創意總監", VVIP: "設計協理", VIP: "資深設計師", normal: "設計師" }, empType: "正職" },
+    // S 其他服務業
+    { industry: "S 其他服務業", occupation: "美容美髮師", employers: ["超越美容美髮有限公司", "髮型概念沙龍"], titles: { VVVIP: "總監造型師", VVIP: "資深造型師", VIP: "造型師", normal: "美容師" }, empType: "約聘" },
+  ];
+
+  // 依客戶資料確定性生成工作資訊（含行業別、職業別、任職單位、職稱、年資、聘僱類型）
+  const getCustomerWork = (customer) => {
+    if (!customer) return { industry: "—", occupation: "—", employer: "—", jobTitle: "—", seniority: 1, employmentType: "正職" };
+
+    // 若已有完整明確欄位，直接回傳
+    if (customer.industry && customer.occupation && customer.jobTitle) {
+      const maxSen = Math.min(Math.max(1, (customer.age || 25) - 22), 45);
+      return {
+        industry: customer.industry,
+        occupation: customer.occupation,
+        employer: customer.employer || "—",
+        jobTitle: customer.jobTitle,
+        seniority: Math.min(customer.seniority || 1, maxSen),
+        employmentType: customer.employmentType || "正職",
+      };
+    }
+
+    // 確定性雜湊
     const key = (customer && customer.id) || "demo";
     let hash = 0;
     for (let i = 0; i < key.length; i++)
       hash = (hash * 31 + key.charCodeAt(i)) % 1000000;
-    return industries[hash % industries.length];
+
+    const entry = WORK_POOL[hash % WORK_POOL.length];
+    const vip = customer.vipLevel || "normal";
+    const jobTitle = entry.titles[vip] || entry.titles.normal;
+    const employers = entry.employers;
+    const employer = employers[(hash + 13) % employers.length];
+
+    // 年資：依年齡合理推算（最小 1 年，最大 min(age-22, 45)）
+    const maxSeniority = Math.min(Math.max(1, (customer.age || 25) - 22), 45);
+    const seniorityBase = Math.max(1, Math.round(maxSeniority * 0.5));
+    const seniorityRange = Math.max(1, maxSeniority - seniorityBase);
+    const seniority = seniorityBase + ((hash + 37) % (seniorityRange + 1));
+
+    return {
+      industry: entry.industry,
+      occupation: entry.occupation,
+      employer,
+      jobTitle,
+      seniority,
+      employmentType: entry.empType,
+    };
+  };
+
+  // 客戶行業映射 - 依據客戶 ID 進行確定性分配（向後相容）
+  const getCustomerIndustry = (customer) => {
+    const w = getCustomerWork(customer);
+    return w.industry || "—";
   };
 
   // deterministic generators for demo transactions / interactions / series
@@ -10967,7 +11166,7 @@ const CUS360Demo = () => {
     const allCards = [spouseCard, ...childCards, managerCard].filter(Boolean);
     if (!allCards.length) return null;
     return (
-      <div className={SUBCARD}>
+      <div className={`${SUBCARD} h-full`}>
         <h4 className="font-semibold text-sm text-gray-800 mb-1.5">客戶關係人資訊</h4>
         <div className="space-y-3">{allCards}</div>
       </div>
@@ -11901,10 +12100,17 @@ const CUS360Demo = () => {
           },
           {
             name: "客戶工作資訊",
-            data: [
-              { label: "任職單位", value: "科技股份有限公司" },
-              { label: "職業別", value: "軟體工程師" },
-            ],
+            data: (() => {
+              const w = getCustomerWork(customer);
+              return [
+                { label: "行業別", value: w.industry || "—" },
+                { label: "職業別", value: w.occupation || "—" },
+                { label: "任職單位", value: w.employer || "—" },
+                { label: "職稱", value: w.jobTitle || "—" },
+                { label: "年資", value: w.seniority ? `${w.seniority} 年` : "—" },
+                { label: "聘僱類型", value: w.employmentType || "—" },
+              ];
+            })(),
           },
         ],
       },
@@ -12039,8 +12245,11 @@ const CUS360Demo = () => {
                   const spendMap = {
                     travel: "旅遊", dining: "餐飲", luxury: "精品", tech: "科技",
                     education: "教育", healthcare: "醫療", groceries: "生活消費",
+                    entertainment: "娛樂", fashion: "時尚", sports: "運動", beauty: "美妝",
+                    automotive: "汽車", home: "居家", petcare: "寵物", childcare: "育兒",
+                    utilities: "水電瓦斯", overseas: "海外消費", insurance: "保险",
                   };
-                  const prodMap = { creditCard: "高回饋卡", investment: "投資理財", loans: "貸款", deposits: "存款" };
+                  const prodMap = { creditCard: "高回饋卡", investment: "投資理財", loans: "貸款", deposits: "存款", insurance: "保險", wealth: "財富管理" };
                   const topSpend = Object.entries(sp).sort((a, b) => b[1] - a[1]).slice(0, 1).map(([k]) => spendMap[k] || k);
                   const topProd = Object.entries(pp).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k]) => prodMap[k] || k);
                   return [...new Set([...topSpend, ...topProd])].join("/") || "—";
@@ -12188,66 +12397,152 @@ const CUS360Demo = () => {
           ))}
         </div>
 
-        {/* ── 基本資訊 + 聯絡資訊（服務基本所需，置頂一列）────────────── */}
-        <div className="flex gap-3 items-stretch">
-          {/* 基本資訊：子卡片兩欄，關係人資訊全寬 */}
-          <div className="flex-1 min-w-0 space-y-2">
-            <SecHeader Icon={FileText} title="基本資訊" />
-            {(() => {
-              const d = allInfo.basic || { title: '', sections: [] };
-              return (
-                <div className="space-y-2">
-                  {/* 身份/證件 + 名稱工作 + 關係人 三欄並排 */}
-                  <div className="grid grid-cols-3 gap-2 items-stretch">
-                    <div className={SUBCARD}>
-                      <h4 className="font-semibold text-sm mb-1.5 text-gray-800">身份 / 證件資訊</h4>
-                      <div className="space-y-1 text-xs">
-                        {[
-                          { label: '個人國籍', value: c.nationality },
-                          { label: '學歷',     value: c.education },
-                          { label: '婚姻狀態', value: c.maritalStatus },
-                          { label: '證件類別', value: c.idType },
-                          { label: '證件號碼', value: showMaskedData ? maskId(c.idCard) : c.idCard },
-                        ].map(({ label, value }) => (
-                          <div key={label} className="flex justify-between border-b border-gray-50 pb-0.5 last:border-0">
-                            <span className="text-gray-500">{label}</span>
-                            <span className="font-medium text-gray-800">{value || '—'}</span>
-                          </div>
-                        ))}
+        {/* ── 優先行動建議 ─────────────────────────────────────────────── */}
+        {(() => {
+          const sp = c.spendingCategories || {};
+          const pp = c.productPreferences || {};
+          const intentScorer = (name) => {
+            if (/子女教育基金|教育基金規劃/.test(name)) return (sp.education || 0) * 0.6 + (sp.childcare || 0) * 0.4;
+            if (/旅遊|出國/.test(name)) return Math.max(sp.travel || 0, sp.overseas || 0) * 0.9 + (pp.creditCard || 0) * 0.1;
+            if (/信用卡/.test(name)) return pp.creditCard || 0;
+            if (/投資|理財/.test(name)) return pp.investment || 0;
+            if (/房貸/.test(name)) return (pp.loans || 0) * 0.8 + (sp.groceries || 0) * 0.2;
+            if (/信貸/.test(name)) return (pp.loans || 0) * 0.7;
+            if (/留學/.test(name)) return sp.education || 0;
+            return 0.5;
+          };
+          // 建立完整意圖標籤清單
+          const explicitIntents = (c.tags || [])
+            .filter(t => typeof t === 'string' && t.includes('意圖'))
+            .map(name => ({ name, score: intentScorer(name) }));
+          const allCandidates = explicitIntents.length > 0
+            ? [...explicitIntents].sort((a, b) => b.score - a.score)
+            : [
+                { name: '出國旅遊意圖', score: Math.max(sp.travel || 0, sp.overseas || 0) },
+                { name: '投資理財意圖', score: pp.investment || 0 },
+                { name: '信用卡申辦意圖', score: pp.creditCard || 0 },
+                { name: '房貸需求', score: pp.loans || 0 },
+                { name: '個人信貸意圖', score: (pp.loans || 0) * 0.7 },
+              ].filter(t => t.score > 0).sort((a, b) => b.score - a.score);
+
+          // 優先（score ≥ 0.8）先取，不足再以其他補足，共 6 個
+          const priority = allCandidates.filter(t => t.score >= 0.8);
+          const others   = allCandidates.filter(t => t.score < 0.8);
+          const display  = [...priority, ...others].slice(0, 3);
+          if (!display.length) return null;
+
+          return (
+            <div className={SUBCARD}>
+              <div className="flex items-center gap-2 mb-2.5">
+                <span className="text-sm font-bold text-gray-800">⚡ 行動建議方案</span>
+                <span className="text-[11px] text-gray-400">依客戶意圖排序・點擊卡片查看完整話術與推薦產品</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {display.map((tag, idx) => {
+                  const score = typeof tag.score === 'number' ? tag.score : parseFloat(tag.score || '0');
+                  const isPriority = score >= 0.8;
+                  const insight = buildIntentInsight(tag, c);
+                  const topProduct = insight.recs?.[0]?.name || '—';
+                  const productReason = insight.recs?.[0]?.reason || '';
+                  return (
+                    <div
+                      key={idx}
+                      className={`rounded-lg border cursor-pointer hover:shadow-md transition-all group flex flex-col ${
+                        isPriority
+                          ? 'bg-amber-50 border-amber-300 hover:border-amber-400'
+                          : 'bg-white border-gray-200 hover:border-teal-300'
+                      }`}
+                      onClick={() => setInsightModal({ type: 'intent', data: insight, customer: c })}
+                    >
+                      {/* 卡片頂部：意圖名稱 + 優先標章 */}
+                      <div className={`flex items-center gap-1.5 px-3 py-2 rounded-t-lg ${isPriority ? 'bg-amber-100' : 'bg-gray-50'}`}>
+                        {isPriority && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
+                        )}
+                        <span className="text-xs font-semibold text-gray-800 truncate flex-1">{tag.name}</span>
+                        {isPriority && (
+                          <span className="px-1.5 py-0.5 bg-amber-500 text-white rounded text-[10px] font-bold flex-shrink-0">優先</span>
+                        )}
+                      </div>
+                      {/* 卡片主體：推薦產品 */}
+                      <div className="px-3 py-2 flex-1">
+                        <div className="text-[10px] text-gray-400 mb-0.5">建議推薦產品</div>
+                        <div className="text-sm font-semibold text-teal-700 leading-snug">{topProduct}</div>
+                        {productReason && (
+                          <div className="text-[10px] text-gray-500 mt-1 line-clamp-2 leading-snug">{productReason}</div>
+                        )}
+                      </div>
+                      {/* 卡片底部：點擊提示 */}
+                      <div className={`px-3 py-1.5 rounded-b-lg text-[10px] font-medium flex items-center justify-between border-t ${
+                        isPriority ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-gray-100 text-teal-600 bg-gray-50'
+                      }`}>
+                        <span>查看話術與完整方案</span>
+                        <span className="opacity-60 group-hover:opacity-100 transition-opacity">→</span>
                       </div>
                     </div>
-                    <div className="flex flex-col gap-2">
-                      {d.sections.map((section, idx) => (
-                        <div key={idx} className={`${SUBCARD} flex-1`}>
-                          <h4 className="font-semibold text-sm mb-1.5 text-gray-800">{section.name}</h4>
-                          {renderSection(section, true)}
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── 基本資訊 + 聯絡資訊（服務基本所需，置頂一列）────────────── */}
+        {(() => {
+          const dBasic = allInfo.basic || { title: '', sections: [] };
+          const dContact = allInfo.contact || { title: '', sections: [] };
+          return (
+            <div className="flex gap-2 items-stretch">
+              {/* 基本資訊 ── flex-[3] ≈ 75% 寬 */}
+              <div className="flex-[3] min-w-0 flex flex-col gap-2">
+                <SecHeader Icon={FileText} title="基本資訊" />
+                <div className="grid grid-cols-3 gap-2 flex-1 items-stretch">
+                  {/* 欄 1: 身份 / 證件資訊 */}
+                  <div className={SUBCARD}>
+                    <h4 className="font-semibold text-sm mb-1.5 text-gray-800">身份 / 證件資訊</h4>
+                    <div className="space-y-1 text-xs">
+                      {[
+                        { label: '個人國籍', value: c.nationality },
+                        { label: '學歷',     value: c.education },
+                        { label: '婚姻狀態', value: c.maritalStatus },
+                        { label: '證件類別', value: c.idType },
+                        { label: '證件號碼', value: showMaskedData ? maskId(c.idCard) : c.idCard },
+                      ].map(({ label, value }) => (
+                        <div key={label} className="flex justify-between border-b border-gray-50 pb-0.5 last:border-0">
+                          <span className="text-gray-500">{label}</span>
+                          <span className="font-medium text-gray-800">{value || '—'}</span>
                         </div>
                       ))}
                     </div>
-                    <div>{renderRelationships()}</div>
                   </div>
+                  {/* 欄 2: 客戶名稱 + 工作資訊（堆疊） */}
+                  <div className="flex flex-col gap-2">
+                    {dBasic.sections.map((section, idx) => (
+                      <div key={idx} className={`${SUBCARD} flex-1`}>
+                        <h4 className="font-semibold text-sm mb-1.5 text-gray-800">{section.name}</h4>
+                        {renderSection(section, true)}
+                      </div>
+                    ))}
+                  </div>
+                  {/* 欄 3: 客戶關係人資訊 */}
+                  <div className="flex flex-col">{renderRelationships()}</div>
                 </div>
-              );
-            })()}
-          </div>
-          {/* 聯絡資訊：固定較窄寬度 */}
-          <div className="w-72 flex-shrink-0 space-y-2 flex flex-col">
-            <SecHeader Icon={Users} title="聯絡資訊" />
-            {(() => {
-              const d = allInfo.contact || { title: '', sections: [] };
-              return (
-                <div className="flex-1 space-y-2 flex flex-col">
-                  {d.sections.map((section, idx) => (
+              </div>
+              {/* 聯絡資訊 ── flex-[1] ≈ 25% 寬 */}
+              <div className="flex-[1] min-w-0 flex flex-col gap-2">
+                <SecHeader Icon={Users} title="聯絡資訊" />
+                <div className="flex flex-col gap-2 flex-1">
+                  {dContact.sections.map((section, idx) => (
                     <div key={idx} className={`${SUBCARD} flex-1`}>
                       <h4 className="font-semibold text-sm mb-1.5 text-gray-800">{section.name}</h4>
                       {renderSection(section, true)}
                     </div>
                   ))}
                 </div>
-              );
-            })()}
-          </div>
-        </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ── 業務往來（全寬）══════════════════════════════════════════ */}
         <div className="space-y-2">
@@ -12274,25 +12569,27 @@ const CUS360Demo = () => {
                 <h4 className="font-semibold text-sm mb-1.5 text-gray-800">客戶開辦業務</h4>
                 <CustomerProductTree key={c.id} products={allProds} />
               </div>
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2">
                 <div className={SUBCARD}>
                   <h4 className="font-semibold text-sm mb-1.5 text-gray-800">近五筆轉帳</h4>
                   <div className="space-y-1 text-xs">
                     {transfers5.map((t, i) => (
-                      <div key={i} className="flex justify-between border-b border-gray-50 py-0.5 last:border-0">
-                        <span className="text-gray-700 truncate flex-1 mr-2">{t.merchant} <span className="text-gray-400">{t.time}</span></span>
-                        <span className="font-medium tabular-nums flex-shrink-0">{t.amount}</span>
+                      <div key={i} className="grid border-b border-gray-50 py-0.5 last:border-0" style={{gridTemplateColumns:'5rem 1fr auto',gap:'0.5rem'}}>
+                        <span className="text-gray-700 truncate">{t.merchant}</span>
+                        <span className="text-gray-400 truncate">{t.time}</span>
+                        <span className="font-medium tabular-nums text-right">{t.amount}</span>
                       </div>
                     ))}
                   </div>
                 </div>
-                <div className={SUBCARD}>
+                <div className={`${SUBCARD} flex-1`}>
                   <h4 className="font-semibold text-sm mb-1.5 text-gray-800">近五筆信用卡授權明細</h4>
                   <div className="space-y-1 text-xs">
                     {cards5.map((t, i) => (
-                      <div key={i} className="flex justify-between border-b border-gray-50 py-0.5 last:border-0">
-                        <span className="text-gray-700 truncate flex-1 mr-2">{t.merchant} <span className="text-gray-400">{t.time}</span></span>
-                        <span className="font-medium tabular-nums flex-shrink-0">{t.amount}</span>
+                      <div key={i} className="grid border-b border-gray-50 py-0.5 last:border-0" style={{gridTemplateColumns:'5rem 1fr auto',gap:'0.5rem'}}>
+                        <span className="text-gray-700 truncate">{t.merchant}</span>
+                        <span className="text-gray-400 truncate">{t.time}</span>
+                        <span className="font-medium tabular-nums text-right">{t.amount}</span>
                       </div>
                     ))}
                   </div>
@@ -12303,10 +12600,10 @@ const CUS360Demo = () => {
         </div>
 
         {/* ── 其餘 8 個模組：兩欄獨立堆疊 ─────────────────────────────────── */}
-        <div className="flex gap-3 items-start">
+        <div className="flex gap-3 items-stretch">
 
           {/* 左欄：基本資訊 / 風險資訊 / 互動紀錄 / 標籤資訊 */}
-          <div className="flex-1 min-w-0 space-y-3">
+          <div className="flex-1 min-w-0 flex flex-col gap-3">
 
             {/* TAB 3: 風險資訊 */}
             <div className="space-y-2">
@@ -12362,23 +12659,88 @@ const CUS360Demo = () => {
               </div>
             </div>
 
-            {/* TAB 6: 互動紀錄 */}
+            {/* TAB 6: 互動紀錄 — 兩欄緊湊列表 */}
             <div className="space-y-2">
               <SecHeader Icon={Clock} title="互動紀錄" />
-              <div className={SUBCARD}>
-                <h4 className="font-semibold text-sm mb-1.5 text-gray-800">通路互動紀錄</h4>
-                <InteractionTimeline
-                  items={ch}
-                  onItemClick={(item) => { setSelectedInteractionItem(item); setShowEventModal(true); }}
-                />
-              </div>
+              {(() => {
+                // 客戶事件紀錄
+                const events = generateCustomerEvents(c);
+                // 通路互動紀錄（複用 renderOnePageView 已算好的 ch）
+                const parseTS3 = (sv) => { const m = String(sv).match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/); if (m) return new Date(+m[1], +m[2]-1, +m[3]).getTime(); const d = new Date(sv); return isNaN(d) ? 0 : d.getTime(); };
+                const getStatusCls = (status) => {
+                  if (status === '提醒' || status === '處理中') return 'bg-yellow-100 text-yellow-800';
+                  if (status === '已發生' || status === '已解決') return 'bg-green-100 text-green-800';
+                  return 'bg-teal-100 text-teal-800';
+                };
+                const getDotCls = (status) => {
+                  if (status === '提醒' || status === '處理中') return 'bg-yellow-400';
+                  if (status === '已發生' || status === '已解決') return 'bg-green-500';
+                  return 'bg-teal-500';
+                };
+                const CompactList = ({ items, emptyText }) => {
+                  if (!items || !items.length) return <div className="text-xs text-gray-400 py-1">{emptyText || '無紀錄'}</div>;
+                  const sorted = [...items].sort((a, b) => parseTS3(b.time) - parseTS3(a.time));
+                  return (
+                    <div className="space-y-1 max-h-[180px] overflow-y-auto pr-0.5">
+                      {sorted.map((it, idx) => {
+                        const status = it.status || '已發生';
+                        return (
+                          <div
+                            key={idx}
+                            className="flex items-start gap-2 px-2 py-1.5 rounded-md hover:bg-teal-50 cursor-pointer transition-colors group"
+                            onClick={() => { setSelectedInteractionItem(it); setShowEventModal(true); }}
+                          >
+                            <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${getDotCls(status)}`} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-xs font-medium text-gray-800 truncate">{it.channel}</span>
+                                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold flex-shrink-0 ${getStatusCls(status)}`}>{status}</span>
+                              </div>
+                              <div className="text-[11px] text-gray-500 truncate">{it.summary || it.detail}</div>
+                            </div>
+                            <div className="text-[10px] text-gray-400 flex-shrink-0 pt-0.5 whitespace-nowrap">{String(it.time).replace(/\s*上午.*|下午.*|\s*\d{1,2}:\d{2}(:\d{2})?$/, '')}</div>
+                            <span className="text-[10px] text-teal-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 pt-0.5">›</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                };
+                return (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className={SUBCARD}>
+                      <h4 className="font-semibold text-xs mb-1.5 text-gray-700">客戶事件紀錄</h4>
+                      <CompactList items={events} emptyText="無事件紀錄" />
+                    </div>
+                    <div className={SUBCARD}>
+                      <h4 className="font-semibold text-xs mb-1.5 text-gray-700">通路互動紀錄</h4>
+                      <CompactList items={ch} emptyText="無互動紀錄" />
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* TAB 8: 標籤資訊（緊湊 inline） */}
-            <div className="space-y-2">
+            <div className="space-y-2 flex-1">
               <SecHeader Icon={Filter} title="標籤資訊" />
               {(() => {
-                const intentTags = (c.tags || []).filter(t => typeof t === 'string' && t.includes('意圖'));
+                const sp2 = c.spendingCategories || {};
+                const pp2 = c.productPreferences || {};
+                const iScorer = (name) => {
+                  if (/子女教育基金|教育基金規劃/.test(name)) return (sp2.education || 0) * 0.6 + (sp2.childcare || 0) * 0.4;
+                  if (/旅遊|出國/.test(name)) return Math.max(sp2.travel || 0, sp2.overseas || 0) * 0.9 + (pp2.creditCard || 0) * 0.1;
+                  if (/信用卡/.test(name)) return pp2.creditCard || 0;
+                  if (/投資|理財/.test(name)) return pp2.investment || 0;
+                  if (/房貸/.test(name)) return (pp2.loans || 0) * 0.8 + (sp2.groceries || 0) * 0.2;
+                  if (/信貸/.test(name)) return (pp2.loans || 0) * 0.7;
+                  if (/留學/.test(name)) return sp2.education || 0;
+                  return 0.5;
+                };
+                const intentTagObjs = (c.tags || [])
+                  .filter(t => typeof t === 'string' && t.includes('意圖'))
+                  .map(name => ({ name, score: iScorer(name) }))
+                  .sort((a, b) => b.score - a.score);
                 const otherTags  = (c.tags || []).filter(t => typeof t === 'string' && !t.includes('意圖'));
                 const structuredByCat = {};
                 (c.structuredTags || []).forEach(t => {
@@ -12386,17 +12748,37 @@ const CUS360Demo = () => {
                   structuredByCat[t.category].push(t.name);
                 });
                 return (
-                  <div className="space-y-2">
-                    {intentTags.length > 0 && (
-                      <div className={SUBCARD}>
+                  <div className="grid grid-cols-2 gap-2 items-stretch">
+                    {intentTagObjs.length > 0 && (
+                      <div className={`${SUBCARD} h-full`}>
                         <h4 className="font-semibold text-sm mb-1.5 text-gray-800">意圖標籤</h4>
-                        <div className="flex flex-wrap gap-1">
-                          {intentTags.map((t, i) => <span key={i} className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full text-xs font-medium">{t}</span>)}
+                        <div className="space-y-1">
+                          {intentTagObjs.map((tag, i) => {
+                            const isPriority = tag.score >= 0.8;
+                            const pct = Math.max(4, Math.round(tag.score * 100));
+                            return (
+                              <div
+                                key={i}
+                                className={`flex items-center gap-0 text-xs px-2 py-1 rounded-lg cursor-pointer hover:shadow-md transition-all group border ${isPriority ? 'bg-amber-50 border-amber-200 hover:border-amber-300' : 'bg-gray-50 border-gray-100 hover:border-teal-200'}`}
+                                onClick={() => setInsightModal({ type: 'intent', data: buildIntentInsight(tag, c), customer: c })}
+                              >
+                                <span className="text-gray-700 min-w-0 truncate font-medium">{tag.name}</span>
+                                <div className="flex items-center gap-1.5 ml-auto flex-shrink-0 transition-transform duration-200 ease-out group-hover:-translate-x-5">
+                                  {isPriority && <span className="px-1.5 py-0.5 bg-amber-500 text-white rounded text-[10px] font-bold">優先</span>}
+                                  <div className="w-10 bg-gray-200 rounded-full h-1.5">
+                                    <div className="h-1.5 rounded-full bg-teal-500" style={{ width: `${pct}%` }} />
+                                  </div>
+                                  <span className="text-gray-700 font-medium w-7 text-right tabular-nums">{pct}%</span>
+                                </div>
+                                <span className="w-3 text-center text-[11px] text-teal-500 flex-shrink-0 translate-x-3 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-200 ease-out">→</span>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
                     {otherTags.length > 0 && (
-                      <div className={SUBCARD}>
+                      <div className={`${SUBCARD} h-full`}>
                         <h4 className="font-semibold text-sm mb-1.5 text-gray-800">行為標籤</h4>
                         <div className="flex flex-wrap gap-1">
                           {otherTags.map((t, i) => <span key={i} className="px-2 py-0.5 bg-teal-50 text-teal-700 rounded-full text-xs">{t}</span>)}
@@ -12404,7 +12786,7 @@ const CUS360Demo = () => {
                       </div>
                     )}
                     {Object.entries(structuredByCat).filter(([, ns]) => ns.length > 0).map(([cat, ns]) => (
-                      <div key={cat} className={SUBCARD}>
+                      <div key={cat} className={`${SUBCARD} h-full`}>
                         <h4 className="font-semibold text-sm mb-1.5 text-gray-800">{cat}</h4>
                         <div className="flex flex-wrap gap-1">
                           {ns.map((n, i) => <span key={i} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs">{n}</span>)}
@@ -12419,7 +12801,7 @@ const CUS360Demo = () => {
           </div>{/* end left column */}
 
           {/* 右欄：聯絡資訊 / 財務狀況 / 評價資訊 / 偏好資訊 */}
-          <div className="flex-1 min-w-0 space-y-3">
+          <div className="flex-1 min-w-0 flex flex-col gap-3">
 
             {/* TAB 4: 財務狀況 */}
             <div className="space-y-2">
@@ -12471,52 +12853,127 @@ const CUS360Demo = () => {
             </div>
 
             {/* TAB 9: 偏好資訊（緊湊 inline） */}
-            <div className="space-y-2">
+            <div className="space-y-2 flex-1">
               <SecHeader Icon={Users} title="偏好資訊" />
               {(() => {
                 const prefsData = generateCustomerBasicInfo(c).preferences;
                 if (!prefsData) return null;
                 return (
-                  <div className="space-y-2">
-                    {prefsData.sections.map((section, sIdx) => (
-                      <div key={sIdx} className={SUBCARD}>
-                        <h4 className="font-semibold text-sm mb-1.5 text-gray-800">{section.name}</h4>
-                        {section.preferences && section.preferences.length > 0 ? (
-                          <div className="space-y-1">
-                            {section.preferences.map((p, i) => {
-                              const raw = p.score || p.percentage || p.usage;
-                              const pct = raw ? parsePercent(raw) : null;
-                              const label = p.label || p.name || p.product || p.category || (p.channel ? channelLabel(p.channel) : '') || '';
-                              const val = p.value || p.status || '';
-                              return (
-                                <div key={i} className="flex items-center gap-2 text-xs border-b border-gray-50 pb-0.5 last:border-0">
-                                  <span className="text-gray-600 flex-1 truncate">{label}</span>
-                                  {pct !== null && pct > 0 ? (
-                                    <>
-                                      <div className="w-16 bg-gray-200 rounded-full h-1.5 flex-shrink-0">
+                  <div className="grid grid-cols-2 gap-2 items-stretch">
+                    {prefsData.sections.map((section, sIdx) => {
+                      const isProd  = section.name.includes('產品');
+                      const isSpend = section.name.includes('消費');
+                      const isChan  = section.name.includes('通路');
+                      return (
+                        <div key={sIdx} className={`${SUBCARD} h-full`}>
+                          <h4 className="font-semibold text-sm mb-1.5 text-gray-800">{section.name}</h4>
+
+                          {/* 產品偏好：優先 badge + 點擊開啟產品方案 */}
+                          {isProd && section.preferences && section.preferences.length > 0 && (
+                            <div className="space-y-1">
+                              {section.preferences.map((p, i) => {
+                                const pct = parsePercent(p.score || p.percentage || p.usage);
+                                const insight = buildProductInsight(p, c);
+                                const isPriority = insight.gap >= 0 && pct >= 70;
+                                return (
+                                  <div
+                                    key={i}
+                                    className={`flex items-center gap-0 text-xs px-2 py-1 rounded-lg cursor-pointer hover:shadow-md transition-all group border ${isPriority ? 'bg-amber-50 border-amber-200 hover:border-amber-300' : 'bg-gray-50 border-gray-100 hover:border-teal-200'}`}
+                                    onClick={() => setInsightModal({ type: 'product', data: insight, customer: c })}
+                                  >
+                                    <span className="text-gray-700 min-w-0 truncate font-medium">{p.product || p.label || p.name}</span>
+                                    <div className="flex items-center gap-1.5 ml-auto flex-shrink-0 transition-transform duration-200 ease-out group-hover:-translate-x-5">
+                                      {isPriority && <span className="px-1.5 py-0.5 bg-amber-500 text-white rounded text-[10px] font-bold">優先</span>}
+                                      <div className="w-10 bg-gray-200 rounded-full h-1.5">
                                         <div className="h-1.5 rounded-full bg-teal-500" style={{ width: `${Math.max(4, pct)}%` }} />
                                       </div>
-                                      <span className="text-gray-700 font-medium w-7 text-right flex-shrink-0 tabular-nums">{Math.round(pct)}%</span>
-                                    </>
-                                  ) : (
-                                    <span className="text-gray-800 font-medium flex-shrink-0">{val}</span>
-                                  )}
+                                      <span className="text-gray-700 font-medium w-7 text-right tabular-nums">{Math.round(pct)}%</span>
+                                    </div>
+                                    <span className="w-3 text-center text-[11px] text-teal-500 flex-shrink-0 translate-x-3 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-200 ease-out">→</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* 消費偏好：優先 badge + 點擊開啟消費洞察 */}
+                          {isSpend && section.preferences && section.preferences.length > 0 && (
+                            <div className="space-y-1">
+                              {section.preferences.map((p, i) => {
+                                const pct = parsePercent(p.score || p.percentage || p.usage);
+                                const spInsight = buildSpendingInsight(p, c);
+                                const isPriority = (spInsight.crossRef || spInsight.seasonal) && i < 3;
+                                const label = p.label || p.name || p.category || p.product || '';
+                                return (
+                                  <div
+                                    key={i}
+                                    className={`flex items-center gap-0 text-xs px-2 py-1 rounded-lg cursor-pointer hover:shadow-md transition-all group border ${isPriority ? 'bg-amber-50 border-amber-200 hover:border-amber-300' : 'bg-gray-50 border-gray-100 hover:border-teal-200'}`}
+                                    onClick={() => setInsightModal({ type: 'spending', data: spInsight, customer: c })}
+                                  >
+                                    <span className="text-gray-700 min-w-0 truncate">{label}</span>
+                                    <div className="flex items-center gap-1.5 ml-auto flex-shrink-0 transition-transform duration-200 ease-out group-hover:-translate-x-5">
+                                      {isPriority && <span className="px-1.5 py-0.5 bg-amber-500 text-white rounded text-[10px] font-bold">優先</span>}
+                                      <div className="w-10 bg-gray-200 rounded-full h-1.5">
+                                        <div className="h-1.5 rounded-full bg-teal-500" style={{ width: `${Math.max(4, pct)}%` }} />
+                                      </div>
+                                      <span className="text-gray-700 font-medium w-7 text-right tabular-nums">{Math.round(pct)}%</span>
+                                    </div>
+                                    <span className="w-3 text-center text-[11px] text-teal-500 flex-shrink-0 translate-x-3 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-200 ease-out">→</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* 通路偏好：僅顯示進度條，不可點擊 */}
+                          {isChan && section.preferences && section.preferences.length > 0 && (
+                            <div className="space-y-1">
+                              {section.preferences.map((p, i) => {
+                                const pct = parsePercent(p.score || p.percentage || p.usage);
+                                const label = p.channel ? channelLabel(p.channel) : (p.label || p.name || '');
+                                return (
+                                  <div key={i} className="flex items-center gap-2 text-xs border-b border-gray-50 pb-0.5 last:border-0">
+                                    <span className="text-gray-600 flex-1 truncate">{label}</span>
+                                    <div className="w-16 bg-gray-200 rounded-full h-1.5 flex-shrink-0">
+                                      <div className="h-1.5 rounded-full bg-teal-500" style={{ width: `${Math.max(4, pct)}%` }} />
+                                    </div>
+                                    <span className="text-gray-700 font-medium w-7 text-right flex-shrink-0 tabular-nums">{Math.round(pct)}%</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* 行銷同意 & 其他：純文字顯示 */}
+                          {!isProd && !isSpend && !isChan && section.preferences && section.preferences.length > 0 && (
+                            <div className="space-y-1 text-xs">
+                              {section.preferences.map((p, i) => {
+                                const label = p.label || p.name || p.category || '';
+                                const val = p.value || p.status || '';
+                                return (
+                                  <div key={i} className="flex justify-between border-b border-gray-50 pb-0.5 last:border-0">
+                                    <span className="text-gray-500">{label}</span>
+                                    <span className="font-medium text-gray-800">{val}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* items fallback */}
+                          {section.items && (
+                            <div className="space-y-1 text-xs">
+                              {section.items.map((it, i) => (
+                                <div key={i} className="flex justify-between border-b border-gray-50 pb-0.5 last:border-0">
+                                  <span className="text-gray-500">{it.label || it.name}</span>
+                                  <span className="font-medium text-gray-800">{it.value || it.status || '—'}</span>
                                 </div>
-                              );
-                            })}
-                          </div>
-                        ) : section.items ? (
-                          <div className="space-y-1 text-xs">
-                            {section.items.map((it, i) => (
-                              <div key={i} className="flex justify-between border-b border-gray-50 pb-0.5 last:border-0">
-                                <span className="text-gray-500">{it.label || it.name}</span>
-                                <span className="font-medium text-gray-800">{it.value || it.status || '—'}</span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : null}
-                      </div>
-                    ))}
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })()}
@@ -12526,6 +12983,151 @@ const CUS360Demo = () => {
         </div>{/* end flex two-col */}
 
         {renderInsightModal()}
+
+        {/* Floating Assistant */}
+        <>
+          {/* Toggle Button */}
+          <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-1">
+            <button
+              aria-label="開啟智能小助手"
+              onClick={() => setAssistantOpen((v) => !v)}
+              className="w-12 h-12 rounded-full bg-teal-600 text-white shadow-lg flex items-center justify-center hover:bg-teal-700"
+            >
+              <MessageCircle className="w-6 h-6" />
+            </button>
+            <div className="px-2 py-1 text-[11px] bg-white/90 text-gray-700 rounded-md shadow-sm border">
+              智能對話小助手
+            </div>
+          </div>
+
+          {assistantOpen && (
+            <div className="fixed bottom-24 right-5 z-50 w-[24rem] max-w-[92vw] bg-white border rounded-xl shadow-2xl flex flex-col overflow-hidden">
+              <div className="relative flex items-center justify-between px-3 py-2 bg-teal-600 text-white">
+                <div className="flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4" />
+                  <span className="text-sm font-semibold">智能對話小助手</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    className="p-1 rounded hover:bg-white/20"
+                    onClick={() => setShowResetConfirm((v) => !v)}
+                    aria-label="重置對話"
+                    title="重置對話"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </button>
+                  <button
+                    className="p-1 rounded hover:bg-white/20"
+                    onClick={() => setAssistantOpen(false)}
+                    aria-label="關閉"
+                    title="關閉"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                {showResetConfirm && (
+                  <div className="absolute right-2 top-12 z-50 w-56 bg-white text-gray-800 border rounded-lg shadow-xl p-3">
+                    <div className="text-sm font-semibold mb-2">重置對話？</div>
+                    <div className="text-xs text-gray-600 mb-3">此操作將清空目前的對話記錄並回到歡迎訊息。</div>
+                    <div className="flex justify-end gap-2">
+                      <button
+                        className="px-2 py-1 text-xs rounded border hover:bg-gray-50"
+                        onClick={() => setShowResetConfirm(false)}
+                      >
+                        取消
+                      </button>
+                      <button
+                        className="px-2 py-1 text-xs rounded bg-teal-600 text-white hover:bg-teal-700"
+                        onClick={() => { resetAssistantCore(); setShowResetConfirm(false); }}
+                      >
+                        重置
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div ref={assistantListRef} className="p-3 space-y-2 max-h-[320px] overflow-y-auto">
+                {assistantMessages.map((m, idx) => (
+                  <div key={idx} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`px-3 py-2 rounded-lg text-sm ${m.role === 'user' ? 'bg-teal-600 text-white rounded-br-none' : 'bg-gray-100 text-gray-800 rounded-bl-none'}`}>
+                      {m.typing ? (
+                        <div className="flex items-center gap-1 text-gray-500">
+                          <span>思考中</span>
+                          <span className="animate-bounce" style={{animationDelay:'0ms'}}>•</span>
+                          <span className="animate-bounce" style={{animationDelay:'150ms'}}>•</span>
+                          <span className="animate-bounce" style={{animationDelay:'300ms'}}>•</span>
+                        </div>
+                      ) : m.role === 'assistant' ? (
+                        <div className="space-y-1">
+                          {(m.content || '').split(/\n+/).map((line, i) => {
+                            const parts = line.split(/[:：]/);
+                            const isColonTitle = parts.length > 1 && parts[0].length <= 20 && /^(【.*】|開場|洞察|利益|產品串接|疑慮處理|行動|概況|摘要|風險提示)$/.test(parts[0].trim());
+                            const isEmojiHeader = /^[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}]/u.test(line.trim());
+                            if (isColonTitle) {
+                              return (
+                                <div key={i} className="whitespace-pre-wrap">
+                                  <span className="font-semibold text-gray-900">{parts[0].trim()}：</span>
+                                  <span>{line.slice(line.indexOf('：') >= 0 ? line.indexOf('：') + 1 : line.indexOf(':') + 1).trim()}</span>
+                                </div>
+                              );
+                            }
+                            if (isEmojiHeader) {
+                              return (
+                                <div key={i} className="whitespace-pre-wrap font-semibold text-gray-900">{line}</div>
+                              );
+                            }
+                            return (
+                              <div key={i} className="whitespace-pre-wrap">{line}</div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="whitespace-pre-wrap">{m.content}</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="px-2 pt-2 pb-1 flex gap-1.5 flex-wrap border-t border-gray-100">
+                {[
+                  { label: '客戶摘要', prompt: '客戶摘要' },
+                  { label: '問候話術', prompt: '問候話術' },
+                  { label: '產品推薦', prompt: '產品推薦' },
+                ].map(({ label, prompt }) => (
+                  <button
+                    key={prompt}
+                    onClick={() => sendAssistant(prompt)}
+                    className="px-2.5 py-1 text-xs rounded-full bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100 transition-colors whitespace-nowrap"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="p-2 flex items-center gap-2">
+                <input
+                  type="text"
+                  value={assistantInput}
+                  onChange={(e) => setAssistantInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      sendAssistant(assistantInput);
+                    }
+                  }}
+                  placeholder="輸入問題，例如：給我一段行銷話術建議"
+                  className="flex-1 px-3 py-2 border border-teal-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300"
+                />
+                <button
+                  className="px-3 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 flex items-center gap-1"
+                  onClick={() => { sendAssistant(assistantInput); }}
+                >
+                  <Send className="w-4 h-4" />
+                  送出
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       </div>
     );
   };
