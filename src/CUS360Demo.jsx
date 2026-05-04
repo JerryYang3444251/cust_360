@@ -7853,13 +7853,6 @@ const CUS360Demo = () => {
     return map[key] || key;
   };
 
-  // Customer-specific assistant configuration
-  const getCustomerAssistantConfig = (customer) => {
-    if (!customer) return null;
-    
-    return null;
-  };
-
   // === Quick-action generators ===
 
   const buildCustomerSummaryBlock = (customer) => {
@@ -7998,58 +7991,7 @@ const CUS360Demo = () => {
       : null;
     // Keep _forcedIntentName for backward compat
     const _forcedIntentName = _forcedType === 'intent' ? _forcedLabel : null;
-    
-    // Check for customer-specific configuration
-    const customConfig = getCustomerAssistantConfig(customer);
-    if (customConfig) {
-      // Generate response using customer-specific config variables
-      const out = [];
-      if (!_isProdRec) {
-        out.push('🧩 客戶摘要');
-        out.push(
-          [
-            `年齡／族群：${customConfig.age}／${customConfig.segment}`,
-            `收入 & 產業：${customConfig.income}；${customConfig.industry}`,
-            `偏好通路：${customConfig.preferredChannels.join('、')}`,
-            `過去使用產品：${customConfig.pastProducts.join('／')}`,
-            `行為洞察：\n\n${customConfig.behaviorInsights.join('\n')}`,
-          ].join('\n')
-        );
-      }
 
-      out.push('🎯 溝通目標');
-      out.push(customConfig.objective);
-      
-      out.push('👋 客製化開場白（主開場／簡版）');
-      out.push(`主開場：\n\n${customConfig.mainOpening}`);
-      out.push(`簡版開場：\n\n${customConfig.shortOpening}`);
-      
-    out.push(`💡 為何推薦\n${customConfig.whyRecommend.join('\n')}`);
-      
-      out.push('🗣️ 主推話術（可直接口說）');
-      out.push(customConfig.script);
-      
-      out.push('🤔 客戶可能回應 + 應對');
-      out.push(customConfig.objections.map(o => `${o.question}\n→ ${o.answer}`).join('\n'));
-      
-      out.push('🤝 成交引導（Closing）');
-      out.push(customConfig.closing);
-      
-      // Show plan simulation if available
-      if (customConfig.plans && customConfig.plans.length > 0) {
-        out.push('📊 個人化方案模擬（三種選擇）');
-        out.push(customConfig.plans.map(p => {
-          const badge = p.recommended ? ' ⭐ 建議方案' : '';
-          return `【${p.type}${badge}】\n每月投入：${p.monthlyAmount} ｜ 目標年限：${p.targetYears} 年\n預估累積：${p.estimatedTotal}\n說明：${p.note}`;
-        }).join('\n\n'));
-      }
-      
-      out.push('⚖️ 法遵提示');
-      out.push(customConfig.compliance);
-      
-      return out.join('\n\n');
-    }
-    
     const topChannel = getTopPreferenceForCustomer("通路偏好", "score", customer);
     const topProduct = getTopPreferenceForCustomer("產品偏好", "score", customer);
     const topConsumption = getTopPreferenceForCustomer("消費偏好", "score", customer);
