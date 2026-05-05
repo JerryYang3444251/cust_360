@@ -10619,17 +10619,20 @@ const CUS360Demo = () => {
                   </div>
                 </div>
                 {itemsAll.length === 0 ? <div className="text-xs text-gray-400">暫無資產資料</div> : (
-                  <div className="space-y-0.5">
-                    {itemsAll.map((it, i) => (
-                      <div key={`${it.label}-${i}`} className="flex items-center text-xs border-b border-gray-100 pb-0.5 last:border-0">
-                        <span className="flex items-center gap-1 text-gray-600 min-w-0 flex-1">
-                          <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: colors[i] }}></span>
-                          <span className="truncate">{it.label}</span>
-                        </span>
-                        <span className="font-medium text-gray-800 tabular-nums flex-shrink-0 ml-1 text-right">NT$ {it.value.toLocaleString()}</span>
-                        <span className="text-gray-400 tabular-nums flex-shrink-0 ml-2 text-right w-7">{data[i]?.value ?? 0}%</span>
-                      </div>
-                    ))}
+                  <div className="flex items-center gap-3">
+                    <DonutInteractive data={data} colors={colors} size={112} />
+                    <div className="flex-1 min-w-0 space-y-0.5">
+                      {itemsAll.map((it, i) => (
+                        <div key={`${it.label}-${i}`} className="flex items-center text-xs border-b border-gray-100 pb-0.5 last:border-0">
+                          <span className="flex items-center gap-1 text-gray-600 min-w-0 flex-1">
+                            <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: colors[i] }}></span>
+                            <span className="truncate">{it.label}</span>
+                          </span>
+                          <span className="font-medium text-gray-800 tabular-nums flex-shrink-0 text-right">NT$ {it.value.toLocaleString()}</span>
+                          <span className="text-gray-400 tabular-nums flex-shrink-0 ml-1 text-right w-7">{data[i]?.value ?? 0}%</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
