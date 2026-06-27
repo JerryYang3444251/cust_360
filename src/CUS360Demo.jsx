@@ -9826,11 +9826,13 @@ const CUS360Demo = () => {
     size = 96,
     innerRatio = 0.55,
     centerText = null,
+    animateOnce = false,
   }) => {
     const [hoverIdx, setHoverIdx] = React.useState(null);
     // Animation: 0→1 sweeps all segments from nothing to full size
     const [animPct, setAnimPct] = React.useState(0);
     const animRef = React.useRef(null);
+    const hasAnimatedRef = React.useRef(false);
     const startAnim = React.useCallback(() => {
       setAnimPct(0);
       const start = performance.now();
@@ -9845,6 +9847,11 @@ const CUS360Demo = () => {
       animRef.current = requestAnimationFrame(tick);
     }, []);
     React.useEffect(() => {
+      if (animateOnce && hasAnimatedRef.current) {
+        setAnimPct(1);
+        return;
+      }
+      hasAnimatedRef.current = true;
       startAnim();
       return () => cancelAnimationFrame(animRef.current);
     }, [data.map((d) => d.value).join(","), startAnim]);
@@ -10665,7 +10672,7 @@ const CUS360Demo = () => {
                 </div>
                 {itemsAll.length === 0 ? <div className="text-xs text-gray-400">暫無資產資料</div> : (
                   <div className="flex items-center gap-3">
-                    <DonutInteractive data={data} colors={colors} size={112} />
+                    <DonutInteractive data={data} colors={colors} size={112} animateOnce />
                     <div className="flex-1 min-w-0 space-y-0.5">
                       {itemsAll.map((it, i) => (
                         <div key={`${it.label}-${i}`} className="flex items-center text-xs border-b border-gray-100 pb-0.5 last:border-0">
@@ -10732,7 +10739,7 @@ const CUS360Demo = () => {
               <div className="rounded-lg p-3 bg-gray-50 flex items-center gap-4">
                 {itemsAll.length === 0 ? <div className="text-sm text-gray-400">暫無資產資料</div> : (
                   <div className="flex items-center gap-4 w-full">
-                    <DonutInteractive data={data} colors={colors} size={96} />
+                    <DonutInteractive data={data} colors={colors} size={96} animateOnce />
                     <div className="flex-1 min-w-0">
                       <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
                         {itemsAll.map((it, i) => (
@@ -12869,7 +12876,7 @@ const CUS360Demo = () => {
                   <h4 className="font-semibold text-sm mb-1.5 text-gray-800">客戶貢獻度</h4>
                   <div className="rounded-lg p-2 bg-gray-50 flex items-center gap-4">
                     <div className="flex-shrink-0">
-                      <DonutInteractive data={donutData} colors={contribColors.slice(0, contribItems.length)} size={120} centerText={{ line1: `${(total / 1000).toFixed(1)}K`, line2: '年貢獻' }} />
+                      <DonutInteractive data={donutData} colors={contribColors.slice(0, contribItems.length)} size={120} centerText={{ line1: `${(total / 1000).toFixed(1)}K`, line2: '年貢獻' }} animateOnce />
                     </div>
                     <div className="flex-1 space-y-1">
                       {contribItems.map((it, i) => (
@@ -14292,14 +14299,20 @@ const CUS360Demo = () => {
                       </div>
                       <div className="flex gap-2">
                         <button
-                          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg border border-dashed border-teal-200 bg-teal-50/60 hover:bg-teal-100/80 transition-all text-teal-700"
+                          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg border border-dashed transition-all hover:scale-[1.03] hover:shadow-sm"
+                          style={{ borderColor: 'var(--c-200)', backgroundColor: 'color-mix(in srgb, var(--c-50) 60%, transparent)', color: 'var(--c-700)' }}
+                          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--c-100) 80%, transparent)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--c-50) 60%, transparent)'; }}
                           onClick={() => { doLogin("manager"); }}
                         >
                           <Shield className="w-3 h-3 opacity-70" />
                           <span className="text-[11px] font-medium">主管（林經理）</span>
                         </button>
                         <button
-                          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg border border-dashed border-cyan-200 bg-cyan-50/60 hover:bg-cyan-100/80 transition-all text-cyan-700"
+                          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg border border-dashed transition-all hover:scale-[1.03] hover:shadow-sm"
+                          style={{ borderColor: 'var(--c2-400)', backgroundColor: 'color-mix(in srgb, var(--c2-400) 10%, transparent)', color: 'var(--c2-500)' }}
+                          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--c2-400) 20%, transparent)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--c2-400) 10%, transparent)'; }}
                           onClick={() => { doLogin("specialist"); }}
                         >
                           <Users className="w-3 h-3 opacity-70" />
