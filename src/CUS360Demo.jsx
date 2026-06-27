@@ -234,6 +234,8 @@ const AUMChart = ({
   monthLabels, fmtAUM,
   compact,
 }) => {
+  const primaryColor = 'var(--c-500)';
+  const secondaryColor = 'var(--c-300)';
   const containerRef = React.useRef(null);
   const [dims, setDims] = React.useState({ w: 560, h: 140 });
   const [hoverIdx, setHoverIdx] = React.useState(null);
@@ -293,10 +295,10 @@ const AUMChart = ({
         <h4 className={compact ? "font-semibold text-xs text-gray-800" : "text-lg font-semibold text-gray-800"}>過去 12 個月末 AUM</h4>
         <div className="flex gap-3">
           <div className="flex items-center gap-1.5 text-xs text-gray-600">
-            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: '#14b8a6' }}></span>存款
+            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: primaryColor }}></span>存款
           </div>
           <div className="flex items-center gap-1.5 text-xs text-gray-600">
-            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: '#0891b2' }}></span>財管
+            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: secondaryColor }}></span>財管
           </div>
         </div>
       </div>
@@ -304,17 +306,17 @@ const AUMChart = ({
         <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} className="block overflow-visible">
           <defs>
             <linearGradient id="aumGradLiq" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.9" />
-              <stop offset="100%" stopColor="#14b8a6" stopOpacity="0.5" />
+              <stop offset="0%" stopColor={primaryColor} stopOpacity="0.9" />
+              <stop offset="100%" stopColor={primaryColor} stopOpacity="0.5" />
             </linearGradient>
             <linearGradient id="aumGradInv" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#0891b2" stopOpacity="0.9" />
-              <stop offset="100%" stopColor="#0891b2" stopOpacity="0.5" />
+              <stop offset="0%" stopColor={secondaryColor} stopOpacity="0.9" />
+              <stop offset="100%" stopColor={secondaryColor} stopOpacity="0.5" />
             </linearGradient>
           </defs>
           {aumYTicks.map(t => (
             <g key={t.v}>
-              <line x1={PAD_X} x2={W - PAD_RIGHT} y1={t.y} y2={t.y} stroke="#f0fdfa" strokeWidth="1" />
+              <line x1={PAD_X} x2={W - PAD_RIGHT} y1={t.y} y2={t.y} stroke="var(--c-50)" strokeWidth="1" />
               <text x={PAD_X - 4} y={t.y + 4} fontSize="12" fill="#9ca3af" textAnchor="end">{t.v}{aumUnitLabelCalc}</text>
             </g>
           ))}
@@ -327,9 +329,9 @@ const AUMChart = ({
             return (
               <g key={i}>
                 <rect x={barX(i)} y={yInv} width={barW} height={Math.max(0, hInv)} rx={2}
-                  fill={isHov ? '#0891b2' : 'url(#aumGradInv)'} fillOpacity={isHov ? 1 : 0.85} />
+                  fill={isHov ? secondaryColor : 'url(#aumGradInv)'} fillOpacity={isHov ? 1 : 0.85} />
                 <rect x={barX(i)} y={yLiq} width={barW} height={Math.max(0, hLiq)} rx={2}
-                  fill={isHov ? '#14b8a6' : 'url(#aumGradLiq)'} fillOpacity={isHov ? 1 : 0.85} />
+                  fill={isHov ? primaryColor : 'url(#aumGradLiq)'} fillOpacity={isHov ? 1 : 0.85} />
                 <rect x={barX(i) - 2} y={PAD_TOP} width={barW + 4} height={innerH}
                   fill="transparent"
                   onMouseEnter={() => setHoverIdx(i)}
@@ -341,7 +343,7 @@ const AUMChart = ({
             const cx = PAD_X + i * slotW + slotW / 2;
             return (
               <text key={i} x={cx} y={CHART_BOTTOM + 26}
-                fontSize="12" fill={hoverIdx === i ? '#0f766e' : '#9ca3af'}
+                fontSize="12" fill={hoverIdx === i ? 'var(--c-700)' : '#9ca3af'}
                 textAnchor="end" fontWeight={hoverIdx === i ? 'bold' : 'normal'}
                 transform={`rotate(-45, ${cx}, ${CHART_BOTTOM + 4})`}>{lbl}</text>
             );
@@ -356,12 +358,12 @@ const AUMChart = ({
               <div className="bg-white border border-teal-100 rounded-lg shadow-md px-2 py-1.5 text-xs whitespace-nowrap">
                 <div className="font-semibold text-gray-700 mb-1">{monthLabels[hoverIdx]}</div>
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: '#14b8a6' }}></span>
+                  <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: primaryColor }}></span>
                   <span className="text-gray-600">存款</span>
                   <span className="font-medium ml-auto pl-3 text-teal-700">{fmtAUMCalc(d.liq)}{aumUnitLabelCalc}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: '#0891b2' }}></span>
+                  <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: secondaryColor }}></span>
                   <span className="text-gray-600">財管</span>
                   <span className="font-medium ml-auto pl-3 text-teal-700">{fmtAUMCalc(d.inv)}{aumUnitLabelCalc}</span>
                 </div>
@@ -385,7 +387,7 @@ const MonthlyBarHover = ({
   values = [],
   labels = [],
   height = 64,
-  color = "#0d9488",
+  color = "var(--c-600)",
 }) => {
   const ref = React.useRef(null);
   const [w, setW] = React.useState(320);
@@ -518,16 +520,59 @@ const MonthlyBarHover = ({
 const SpinnerBlock = ({ text = "載入中…" }) => (
   <>
     <svg className="animate-spin" width="48" height="48" viewBox="0 0 40 40" fill="none">
-      <circle cx="20" cy="20" r="16" stroke="#99f6e4" strokeWidth="4" />
-      <path d="M36 20a16 16 0 0 0-16-16" stroke="#0d9488" strokeWidth="4" strokeLinecap="round" />
+      <circle cx="20" cy="20" r="16" className="spinner-track" strokeWidth="4" />
+      <path d="M36 20a16 16 0 0 0-16-16" className="spinner-arc" strokeWidth="4" strokeLinecap="round" />
     </svg>
-    <div className="mt-4 text-base font-semibold text-teal-700">{text}</div>
+    <div className="mt-4 text-base font-semibold spinner-label">{text}</div>
     <div className="mt-1 text-xs text-gray-400">請稍候</div>
   </>
 );
 
 const CUS360Demo = () => {
   const [activeModule, setActiveModule] = useState("search");
+
+  // ========== COLOR THEME SYSTEM ==========
+  const [colorTheme, setColorTheme] = useState(() => {
+    try { return localStorage.getItem("cus360_theme") || "teal"; } catch { return "teal"; }
+  });
+
+  // Synchronously apply data-theme so CSS vars are available immediately for useMemo
+  // (useEffect runs AFTER render, which would cause a 1-frame lag)
+  document.documentElement.setAttribute("data-theme", colorTheme);
+
+  // Persist to localStorage via effect (side-effect, so still in useEffect)
+  React.useEffect(() => {
+    try { localStorage.setItem("cus360_theme", colorTheme); } catch {}
+  }, [colorTheme]);
+
+  // Read resolved CSS variable values for inline JS usage (charts, SVGs, etc.)
+  // Because we set data-theme synchronously above, getComputedStyle reads the CURRENT theme.
+  const themeColors = React.useMemo(() => {
+    const s = getComputedStyle(document.documentElement);
+    const g = (v, fb) => s.getPropertyValue(v).trim() || fb;
+    return {
+      primary: g("--chart-primary", "#14b8a6"),
+      secondary: g("--chart-secondary", "#0891b2"),
+      gradStart: g("--chart-gradient-start", "#14b8a6"),
+      gradEnd: g("--chart-gradient-end", "#0891b2"),
+      c50: g("--c-50", "#f0fdfa"),
+      c100: g("--c-100", "#ccfbf1"),
+      c200: g("--c-200", "#99f6e4"),
+      c300: g("--c-300", "#5eead4"),
+      c400: g("--c-400", "#2dd4bf"),
+      c500: g("--c-500", "#14b8a6"),
+      c600: g("--c-600", "#0d9488"),
+      c700: g("--c-700", "#0f766e"),
+      c800: g("--c-800", "#115e59"),
+      c900: g("--c-900", "#134e4a"),
+      c2_400: g("--c2-400", "#22d3ee"),
+      c2_500: g("--c2-500", "#06b6d4"),
+    };
+  }, [colorTheme]);
+
+  // Shared 4-color palette for donut charts and legends
+  const chartPalette4 = [themeColors.c600, themeColors.c2_500, themeColors.c300, themeColors.c2_400];
+
   // Theme tokens used across the demo (centralized for easy tweaks)
   const CARD = "bg-white p-4 rounded-lg shadow";
   const SUBCARD = "bg-white p-3 rounded-md shadow-sm";
@@ -936,7 +981,7 @@ const CUS360Demo = () => {
         <div className="grid grid-cols-6 gap-4">
           <div
             className="col-span-2 rounded-2xl shadow-md hover:shadow-xl transition-shadow overflow-hidden"
-            style={{ background: "linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 100%)", border: "1px solid #99f6e4" }}
+            style={{ background: `linear-gradient(135deg, var(--c-50) 0%, #e0f2fe 100%)`, border: `1px solid var(--c-200)` }}
           >
             <div className="p-4 h-full flex flex-col justify-between">
               <div>
@@ -961,7 +1006,7 @@ const CUS360Demo = () => {
             <div className="text-[11px] font-semibold text-gray-400 mb-1">收益趨勢（月）</div>
             <MonthlyBarHover
               values={revSeries}
-              color="#0d9488"
+              color={themeColors.c600}
               height={72}
               labels={monthLabels}
             />
@@ -974,7 +1019,7 @@ const CUS360Demo = () => {
               <div className="flex-shrink-0">
                 <DonutInteractive
                   data={Object.entries(productShare).map(([label, value]) => ({ label, value }))}
-                  colors={["#0d9488", "#06b6d4", "#34d399", "#7dd3fc"]}
+                  colors={chartPalette4}
                   size={140}
                 />
               </div>
@@ -982,7 +1027,7 @@ const CUS360Demo = () => {
                 <div className="grid grid-cols-2 gap-x-3 gap-y-2">
                   {Object.entries(productShare).map(([k, v], idx) => (
                     <div key={k} className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: ["#0d9488","#06b6d4","#34d399","#7dd3fc"][idx % 4] }} />
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: chartPalette4[idx % 4] }} />
                       <div>
                         <div className="text-[11px] text-gray-500 leading-none">{k}</div>
                         <div className="text-xl font-extrabold text-teal-700 leading-none mt-0.5">{v}%</div>
@@ -1018,7 +1063,7 @@ const CUS360Demo = () => {
               values={Array.from({ length: monthCount }, (_, i) =>
                 Math.round(1000 + 200 * Math.sin((i / 12) * 2 * Math.PI) + i * 10)
               )}
-              color="#0f766e"
+              color={themeColors.c700}
               height={72}
               labels={monthLabels}
             />
@@ -1084,7 +1129,7 @@ const CUS360Demo = () => {
                     count: counts[i],
                   };
                 });
-                const colors = ["#0d9488", "#06b6d4", "#34d399", "#7dd3fc"];
+                const colors = chartPalette4;
                 return (
                   <div className="flex items-center gap-3">
                     <DonutInteractive
@@ -1119,7 +1164,7 @@ const CUS360Demo = () => {
                 (_, i) =>
                   (getCustomerFinance(mockCustomers[i % mockCustomers.length]).monthlyIncome || 0) + i * 500
               )}
-              color="#0ea5a3"
+              color={themeColors.c600}
               height={72}
               labels={["1月", "2月", "3月"]}
             />
@@ -9578,7 +9623,7 @@ const CUS360Demo = () => {
   // Hover-only sparkline (no direct numeric labels; tooltip on hover)
   const SparklineHover = ({
     values = [],
-    stroke = "#0d9488",
+    stroke = "var(--c-600)",
     height = 64,
     labels = [],
   }) => {
@@ -9816,10 +9861,10 @@ const CUS360Demo = () => {
       return (
         <div className="relative" style={{ width: size, height: size }}>
           <svg width={size} height={size} viewBox="0 0 42 42">
-            <circle cx={cx} cy={cy} r={outerR} fill={colors[0] || '#14b8a6'} />
+            <circle cx={cx} cy={cy} r={outerR} fill={colors[0] || 'var(--c-500)'} />
             <circle cx={cx} cy={cy} r={innerR} fill="white" />
             {centerText && (
-              <text x="21" y="18.5" textAnchor="middle" dominantBaseline="middle" fontSize="4.2" fontWeight="bold" fill="#0f766e">{centerText.line1}</text>
+              <text x="21" y="18.5" textAnchor="middle" dominantBaseline="middle" fontSize="4.2" fontWeight="bold" fill="var(--c-700)">{centerText.line1}</text>
             )}
             {centerText && (
               <text x="21" y="24" textAnchor="middle" dominantBaseline="middle" fontSize="3" fill="#6b7280">{centerText.line2}</text>
@@ -9882,7 +9927,7 @@ const CUS360Demo = () => {
               dominantBaseline="middle"
               fontSize="4.2"
               fontWeight="bold"
-              fill="#0f766e"
+              fill="var(--c-700)"
             >
               {centerText.line1}
             </text>
@@ -10550,7 +10595,7 @@ const CUS360Demo = () => {
         const investProds  = assetProds.filter(p => p.l1 === '財管');
         const DEP_W = { '台幣活期存款': 40, '台幣活期儲蓄存款': 30, '台幣定期存款': 30, '外幣活期存款': 12, '外幣定期存款': 18 };
         const INV_W = { '股票型': 25, '固定收益型': 20, '平衡型': 20, '組合型': 15, '貨幣市場型': 15, '期貨信託型': 10, '國內ETF': 18, '境外ETF': 18, '海外債': 22, '結構型': 10, '安養信託': 18, '保險金信託': 12, '不動產信託': 18, '價金信託': 12, '其他信託': 8 };
-        const L4_PALETTE = { '存款': ['#14b8a6', '#0d9488', '#5eead4', '#99f6e4'], '財管': ['#06b6d4', '#0891b2', '#22d3ee', '#67e8f9', '#a5f3fc', '#0e7490'] };
+        const L4_PALETTE = { '存款': [themeColors.c500, themeColors.c600, themeColors.c300, themeColors.c200], '財管': [themeColors.c2_500, themeColors.secondary, themeColors.c2_400, themeColors.c300, themeColors.c200, themeColors.c700] };
         const allocatePool = (prods, poolAmt, weightMap, palette) => {
           if (!prods.length || poolAmt <= 0) return [];
           const totalW = prods.reduce((acc, p) => acc + (weightMap[p.l4] || 15), 0) || 1;
@@ -10560,7 +10605,7 @@ const CUS360Demo = () => {
           return items.filter(x => x.value > 0);
         };
         const itemsAll = assetAllocTab === 'l1'
-          ? [depositProds.length > 0 && { label: '存款', value: f.liquid, color: '#14b8a6' }, investProds.length > 0 && { label: '財管', value: f.invest, color: '#06b6d4' }].filter(Boolean)
+          ? [depositProds.length > 0 && { label: '存款', value: f.liquid, color: themeColors.c500 }, investProds.length > 0 && { label: '財管', value: f.invest, color: themeColors.c2_500 }].filter(Boolean)
           : [...allocatePool(depositProds, f.liquid, DEP_W, L4_PALETTE['存款']), ...allocatePool(investProds, f.invest, INV_W, L4_PALETTE['財管'])];
         const colors = itemsAll.map(x => x.color);
         const assetTotal = itemsAll.reduce((acc, x) => acc + x.value, 0) || 1;
@@ -10598,7 +10643,7 @@ const CUS360Demo = () => {
                     <span className="text-gray-500">近 3 月平均收入</span>
                     <span className="font-semibold text-teal-600 tabular-nums">NT$ {lastMonthAvg.toLocaleString()}</span>
                   </div>
-                  <MonthlyBarHover values={series} labels={series.map((_, i) => `${i + 1}月`)} height={40} color="#0ea5a4" />
+                  <MonthlyBarHover values={series} labels={series.map((_, i) => `${i + 1}月`)} height={40} color={themeColors.c600} />
                   <div className="space-y-0.5">
                     {incomeSources.map((src, i) => (
                       <div key={i} className="flex justify-between items-center text-xs border-b border-gray-100 pb-0.5 last:border-0">
@@ -10663,7 +10708,7 @@ const CUS360Demo = () => {
                   <div className="text-sm text-gray-500">最近走勢 (月)</div>
                 </div>
                 <div>
-                  <MonthlyBarHover values={series} labels={series.map((_, i) => `${i + 1}月`)} height={64} color="#0ea5a4" />
+                  <MonthlyBarHover values={series} labels={series.map((_, i) => `${i + 1}月`)} height={64} color={themeColors.c600} />
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   {incomeSources.map((src, i) => (
@@ -10798,8 +10843,8 @@ const CUS360Demo = () => {
           '其他信託':      { annualBase:  3.0, vol: 0.9 },
         };
         const COLOR_PALETTE = [
-          '#14b8a6', '#0891b2', '#06b6d4', '#0d9488', '#0e7490',
-          '#5eead4', '#22d3ee', '#0f766e', '#67e8f9', '#99f6e4',
+          themeColors.c500, themeColors.secondary, themeColors.c2_500, themeColors.c600, themeColors.c700,
+          themeColors.c300, themeColors.c2_400, themeColors.c800, themeColors.c200, themeColors.c100,
         ];
 
         const roiSeries = heldProducts.map((p, idx) => {
@@ -10920,7 +10965,7 @@ const CUS360Demo = () => {
                     return (
                     <g key={t.v}>
                       <line x1={PAD_X2} x2={W2 - PAD_RIGHT2} y1={ty} y2={ty}
-                        stroke={t.v === 0 ? '#6b7280' : '#f0fdfa'}
+                        stroke={t.v === 0 ? '#6b7280' : 'var(--c-50)'}
                         strokeWidth={1}
                         strokeDasharray={t.v === 0 ? '4 3' : undefined} />
                       <text x={PAD_X2 - 4} y={ty + 4} fontSize="12" textAnchor="end"
@@ -10933,7 +10978,7 @@ const CUS360Demo = () => {
                   })}
                   {hoverMonth !== null && (
                     <line x1={roiToX2(hoverMonth)} x2={roiToX2(hoverMonth)} y1={PAD_TOP2} y2={CHART_BOTTOM2}
-                      stroke="#d1fae5" strokeWidth="1" strokeDasharray="3 2" />
+                      stroke="var(--c-100)" strokeWidth="1" strokeDasharray="3 2" />
                   )}
                   {roiSeries.map(sr => {
                     const pts = sr.values.map((v, i) => ({ x: roiToX2(i), y: roiToY2(v) }));
@@ -10951,7 +10996,7 @@ const CUS360Demo = () => {
                     return (
                       <text key={i} x={cx2} y={CHART_BOTTOM2 + 26}
                         fontSize="12"
-                        fill={hoverMonth === i ? '#0f766e' : '#9ca3af'}
+                        fill={hoverMonth === i ? 'var(--c-700)' : '#9ca3af'}
                         textAnchor="end" fontWeight={hoverMonth === i ? 'bold' : 'normal'}
                         transform={`rotate(-45, ${cx2}, ${CHART_BOTTOM2 + 4})`}>{lbl}</text>
                     );
@@ -10968,7 +11013,7 @@ const CUS360Demo = () => {
                           <div key={sr.label} className="flex items-center gap-1.5">
                             <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: sr.color }}></span>
                             <span className="text-gray-600">{sr.label}</span>
-                            <span className="font-medium ml-auto pl-3" style={{ color: sr.values[hoverMonth] >= 0 ? '#0d9488' : '#ef4444' }}>
+                            <span className="font-medium ml-auto pl-3" style={{ color: sr.values[hoverMonth] >= 0 ? themeColors.c600 : '#ef4444' }}>
                               {sr.values[hoverMonth] >= 0 ? '+' : ''}{sr.values[hoverMonth].toFixed(2)}%
                             </span>
                           </div>
@@ -12411,7 +12456,7 @@ const CUS360Demo = () => {
     const loanInterest  = Math.round((fRating.loan || 0) * 0.03);
     const investFees    = Math.round((fRating.invest || 0) * 0.0015);
     const total = Math.max(1, cardFees + depositMargin + wealthFees + loanInterest + investFees);
-    const contribColors = ["#14b8a6", "#06b6d4", "#34d399", "#0ea5a4", "#7dd3fc"];
+    const contribColors = [themeColors.c500, themeColors.c2_500, themeColors.c300, themeColors.c600, themeColors.c2_400];
     const contribItems = [
       { label: '信用卡手續費 / 年費估值', value: cardFees },
       { label: '存款利差貢獻',            value: depositMargin },
@@ -14019,13 +14064,7 @@ const CUS360Demo = () => {
                               loanInterest +
                               investmentFees
                           );
-                          const contribColors = [
-                            "#14b8a6",
-                            "#06b6d4",
-                            "#34d399",
-                            "#0ea5a4",
-                            "#7dd3fc",
-                          ];
+                          const contribColors = [themeColors.c500, themeColors.c2_500, themeColors.c300, themeColors.c600, themeColors.c2_400];
                           const contribItems = [
                             { label: "信用卡手續費 / 年費估值", value: cardFees },
                             { label: "存款利差貢獻", value: depositMargin },
@@ -14169,14 +14208,14 @@ const CUS360Demo = () => {
         {/* Login gate */}
         {!isLoggedIn && (
           <div className="fixed inset-0 z-50 overflow-y-auto"
-            style={{ background: "linear-gradient(135deg, #0f4c5c 0%, #0d7377 40%, #14a085 100%)" }}>
+            style={{ background: `linear-gradient(135deg, var(--c-900) 0%, var(--c-700) 40%, var(--c-500) 100%)` }}>
             {/* Decorative blobs */}
             <div className="fixed top-[-80px] left-[-80px] w-72 h-72 rounded-full opacity-20 pointer-events-none"
-              style={{ background: "radial-gradient(circle, #5eead4, transparent)" }} />
+              style={{ background: `radial-gradient(circle, var(--c-300), transparent)` }} />
             <div className="fixed bottom-[-60px] right-[-60px] w-96 h-96 rounded-full opacity-15 pointer-events-none"
-              style={{ background: "radial-gradient(circle, #22d3ee, transparent)" }} />
+              style={{ background: `radial-gradient(circle, var(--c2-400), transparent)` }} />
             <div className="fixed top-1/3 right-1/4 w-48 h-48 rounded-full opacity-10 pointer-events-none"
-              style={{ background: "radial-gradient(circle, #a7f3d0, transparent)" }} />
+              style={{ background: `radial-gradient(circle, var(--c-200), transparent)` }} />
 
             <div className="min-h-full flex items-center justify-center py-8 px-4">
               <div className="relative w-full max-w-sm">
@@ -14186,7 +14225,7 @@ const CUS360Demo = () => {
 
                   {/* Header band */}
                   <div className="px-8 pt-5 pb-4 text-center"
-                    style={{ background: "linear-gradient(135deg, #0d7377 0%, #14a085 100%)" }}>
+                    style={{ background: `linear-gradient(135deg, var(--c-700) 0%, var(--c-500) 100%)` }}>
                     <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-2 shadow-lg"
                       style={{ background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.3)" }}>
                       <TrendingUp className="w-6 h-6 text-white" />
@@ -14232,7 +14271,7 @@ const CUS360Demo = () => {
 
                     <button
                       className="w-full py-2 rounded-xl text-white text-sm font-semibold shadow-md transition-all active:scale-[0.98]"
-                      style={{ background: "linear-gradient(135deg, #0d7377, #14a085)" }}
+                      style={{ background: `linear-gradient(135deg, var(--c-700), var(--c-500))` }}
                       onClick={() => {
                         if (loginUser === "demo" && loginPass === "demo") {
                           doLogin("manager");
@@ -14273,6 +14312,25 @@ const CUS360Demo = () => {
                     </div>
                   </div>
                   )}
+                </div>
+
+                {/* Color Theme Picker */}
+                <div className="mt-3 flex items-center justify-center gap-2">
+                  <span className="text-[10px] text-white/60 font-medium">配色主題</span>
+                  {[
+                    { id: "teal", label: "Teal", color: "#14b8a6" },
+                    { id: "blue", label: "Blue", color: "#3b82f6" },
+                    { id: "gold", label: "Gold", color: "#f59e0b" },
+                    { id: "red", label: "Red", color: "#ef4444" },
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      title={t.label}
+                      onClick={() => setColorTheme(t.id)}
+                      className={`w-6 h-6 rounded-full border-2 transition-all ${colorTheme === t.id ? "border-white scale-110 shadow-lg" : "border-white/30 hover:border-white/60"}`}
+                      style={{ background: t.color }}
+                    />
+                  ))}
                 </div>
 
                 {/* Footer text */}

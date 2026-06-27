@@ -8,3 +8,103 @@ body {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
   background-color: #f3f4f6; /* equivalent to Tailwind bg-gray-100 */
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THEME COLOR SYSTEM — CSS Custom Properties
+   These vars are read by getThemeColors() in CUS360Demo.jsx and also
+   used by the Tailwind CDN config to dynamically theme all teal-* utilities.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Default / Teal theme */
+:root,
+[data-theme="teal"] {
+  --c-50:  #f0fdfa;
+  --c-100: #ccfbf1;
+  --c-200: #99f6e4;
+  --c-300: #5eead4;
+  --c-400: #2dd4bf;
+  --c-500: #14b8a6;
+  --c-600: #0d9488;
+  --c-700: #0f766e;
+  --c-800: #115e59;
+  --c-900: #134e4a;
+  --c2-400: #22d3ee;
+  --c2-500: #06b6d4;
+  --chart-primary: #14b8a6;
+  --chart-secondary: #0891b2;
+  --chart-gradient-start: #14b8a6;
+  --chart-gradient-end: #0891b2;
+}
+
+/* Blue theme */
+[data-theme="blue"] {
+  --c-50:  #eff6ff;
+  --c-100: #dbeafe;
+  --c-200: #bfdbfe;
+  --c-300: #93c5fd;
+  --c-400: #60a5fa;
+  --c-500: #3b82f6;
+  --c-600: #2563eb;
+  --c-700: #1d4ed8;
+  --c-800: #1e40af;
+  --c-900: #1e3a5f;
+  --c2-400: #a78bfa;
+  --c2-500: #8b5cf6;
+  --chart-primary: #3b82f6;
+  --chart-secondary: #8b5cf6;
+  --chart-gradient-start: #3b82f6;
+  --chart-gradient-end: #8b5cf6;
+}
+
+/* Gold theme */
+[data-theme="gold"] {
+  --c-50:  #fffbeb;
+  --c-100: #fef3c7;
+  --c-200: #fde68a;
+  --c-300: #fcd34d;
+  --c-400: #fbbf24;
+  --c-500: #f59e0b;
+  --c-600: #d97706;
+  --c-700: #b45309;
+  --c-800: #92400e;
+  --c-900: #78350f;
+  --c2-400: #fb923c;
+  --c2-500: #f97316;
+  --chart-primary: #f59e0b;
+  --chart-secondary: #f97316;
+  --chart-gradient-start: #f59e0b;
+  --chart-gradient-end: #f97316;
+}
+
+/* Red theme */
+[data-theme="red"] {
+  --c-50:  #fef2f2;
+  --c-100: #fee2e2;
+  --c-200: #fecaca;
+  --c-300: #fca5a5;
+  --c-400: #f87171;
+  --c-500: #ef4444;
+  --c-600: #dc2626;
+  --c-700: #b91c1c;
+  --c-800: #991b1b;
+  --c-900: #7f1d1d;
+  --c2-400: #fb923c;
+  --c2-500: #f97316;
+  --chart-primary: #ef4444;
+  --chart-secondary: #f97316;
+  --chart-gradient-start: #ef4444;
+  --chart-gradient-end: #f97316;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Loading Spinner — uses theme colors via CSS vars
+   ═══════════════════════════════════════════════════════════════════════════ */
+.spinner-track {
+  stroke: var(--c-200);
+}
+.spinner-arc {
+  stroke: var(--c-600);
+}
+.spinner-label {
+  color: var(--c-700);
+}
