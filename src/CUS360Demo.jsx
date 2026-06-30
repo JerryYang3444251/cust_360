@@ -10672,7 +10672,7 @@ const CUS360Demo = () => {
                 </div>
                 {itemsAll.length === 0 ? <div className="text-xs text-gray-400">暫無資產資料</div> : (
                   <div className="flex items-center gap-3">
-                    <DonutInteractive data={data} colors={colors} size={112} animateOnce />
+                    <DonutInteractive data={data} colors={colors} size={112} />
                     <div className="flex-1 min-w-0 space-y-0.5">
                       {itemsAll.map((it, i) => (
                         <div key={`${it.label}-${i}`} className="flex items-center text-xs border-b border-gray-100 pb-0.5 last:border-0">
@@ -10739,7 +10739,7 @@ const CUS360Demo = () => {
               <div className="rounded-lg p-3 bg-gray-50 flex items-center gap-4">
                 {itemsAll.length === 0 ? <div className="text-sm text-gray-400">暫無資產資料</div> : (
                   <div className="flex items-center gap-4 w-full">
-                    <DonutInteractive data={data} colors={colors} size={96} animateOnce />
+                    <DonutInteractive data={data} colors={colors} size={96} />
                     <div className="flex-1 min-w-0">
                       <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
                         {itemsAll.map((it, i) => (
@@ -12876,7 +12876,7 @@ const CUS360Demo = () => {
                   <h4 className="font-semibold text-sm mb-1.5 text-gray-800">客戶貢獻度</h4>
                   <div className="rounded-lg p-2 bg-gray-50 flex items-center gap-4">
                     <div className="flex-shrink-0">
-                      <DonutInteractive data={donutData} colors={contribColors.slice(0, contribItems.length)} size={120} centerText={{ line1: `${(total / 1000).toFixed(1)}K`, line2: '年貢獻' }} animateOnce />
+                      <DonutInteractive data={donutData} colors={contribColors.slice(0, contribItems.length)} size={120} centerText={{ line1: `${(total / 1000).toFixed(1)}K`, line2: '年貢獻' }} />
                     </div>
                     <div className="flex-1 space-y-1">
                       {contribItems.map((it, i) => (

@@ -71,7 +71,7 @@ electron-preload.js
 
 ## 敏感資料遮罩
 
-遮罩規則依 SENSITIVE_DATA_GUIDELINES.md，符合個資法 / PCI DSS：
+遮罩規則詳見系統規格書（`Cust 360 System Spec.md` §8.5），符合個資法 / PCI DSS：
 
 | 資料類型 | 規則 | 範例 |
 |----------|------|------|
@@ -146,18 +146,23 @@ app.listen(8787);
 
 *© 2026 IBM · Demo 用途，不含真實客戶資料*
 
-```
+---
 
-### 5. Testing Prompts
+## 智能小助手測試提示
 
-Try:
+可嘗試下列問句測試 AI 助手功能：
+
 - `給我一段行銷話術建議`
 - `提供風險提示`
 - `請先摘要再給話術`
 
-### 6. Troubleshooting
+---
 
-- Empty response: Check console for `[Assistant] LLM call failed` warning.
-- 401 errors: Verify key validity; ensure no extra spaces.
-- CORS issues: Use backend proxy if the endpoint blocks direct browser calls.
+## 疑難排解
+
+| 問題 | 解法 |
+|------|------|
+| 助手回應空白 | 檢查 console 是否有 `[Assistant] LLM call failed` 警告 |
+| 401 錯誤 | 確認 API Key 有效且無多餘空格 |
+| CORS 問題 | 使用後端 proxy 轉發（見上方範例） |
 
