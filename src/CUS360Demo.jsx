@@ -15,6 +15,8 @@ import {
   Send,
   X,
   RotateCcw,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 
 // ── CustomerProductTree ────────────────────────────────────────────────────
@@ -7557,6 +7559,7 @@ const CUS360Demo = () => {
 
   const [pendingAnchor, setPendingAnchor] = useState(null); // { anchorId } — scroll after tab render
   const [insightModal, setInsightModal] = useState(null); // { type, data } — insight popup
+  const [actionFeedback, setActionFeedback] = useState({}); // { "customerId-idx": "up"|"down" } — feedback on action cards
   const [filters, setFilters] = useState({
     vipLevel: "",
     riskLevel: "",
@@ -12584,7 +12587,7 @@ const CUS360Demo = () => {
                       }`}
                       onClick={() => setInsightModal({ type: 'intent', data: insight, customer: c })}
                     >
-                      {/* 卡片頂部：意圖名稱 + 優先標章 */}
+                      {/* 卡片頂部：意圖名稱 + 優先標章 + 反饋按鈕 */}
                       <div className={`flex items-center gap-1.5 px-2 py-1 rounded-t-lg ${isPriority ? 'bg-amber-100' : 'bg-gray-50'}`}>
                         {isPriority && (
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
@@ -12593,6 +12596,23 @@ const CUS360Demo = () => {
                         {isPriority && (
                           <span className="px-1.5 py-0.5 bg-amber-500 text-white rounded text-[10px] font-bold flex-shrink-0">優先</span>
                         )}
+                        {/* 反饋按鈕 */}
+                        <div className="flex items-center gap-0.5 flex-shrink-0 ml-1">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setActionFeedback(prev => ({ ...prev, [`${c.id}-${idx}`]: prev[`${c.id}-${idx}`] === 'up' ? null : 'up' })); }}
+                            className={`p-0.5 rounded transition-all ${actionFeedback[`${c.id}-${idx}`] === 'up' ? 'text-green-600 bg-green-100 scale-110' : 'text-gray-400 hover:text-green-500 hover:bg-green-50'}`}
+                            title="推薦有效"
+                          >
+                            <ThumbsUp className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setActionFeedback(prev => ({ ...prev, [`${c.id}-${idx}`]: prev[`${c.id}-${idx}`] === 'down' ? null : 'down' })); }}
+                            className={`p-0.5 rounded transition-all ${actionFeedback[`${c.id}-${idx}`] === 'down' ? 'text-red-600 bg-red-100 scale-110' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`}
+                            title="推薦無效"
+                          >
+                            <ThumbsDown className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
                       {/* 卡片主體：推薦產品 */}
                       <div className="px-2 py-1 flex-1">
