@@ -11222,7 +11222,6 @@ const CUS360Demo = () => {
     if (!allCards.length) return null;
     return (
       <div className={`${SUBCARD} h-full`}>
-        <h4 className="font-semibold text-sm text-gray-800 mb-1.5">客戶關係人資訊</h4>
         <div className="space-y-1.5">{allCards}</div>
       </div>
     );
@@ -12634,16 +12633,16 @@ const CUS360Demo = () => {
           );
         })()}
 
-        {/* ── 基本資訊 + 聯絡資訊（服務基本所需，置頂一列）────────────── */}
+        {/* ── 基本資訊 + 客戶關係人資訊 + 聯絡資訊（服務基本所需，置頂一列）── */}
         {(() => {
           const dBasic = allInfo.basic || { title: '', sections: [] };
           const dContact = allInfo.contact || { title: '', sections: [] };
           return (
             <div className="flex gap-2 items-stretch">
-              {/* 基本資訊 ── flex-[3] ≈ 75% 寬 */}
-              <div className="flex-[3] min-w-0 flex flex-col gap-2">
+              {/* 基本資訊 ── flex-[2] */}
+              <div className="flex-[2] min-w-0 flex flex-col gap-2">
                 <SecHeader Icon={FileText} title="基本資訊" />
-                <div className="grid grid-cols-3 gap-2 flex-1 items-stretch">
+                <div className="grid grid-cols-2 gap-2 flex-1 items-stretch">
                   {/* 欄 1: 身份 / 證件資訊 */}
                   <div className={SUBCARD}>
                     <h4 className="font-semibold text-sm mb-1.5 text-gray-800">身份 / 證件資訊</h4>
@@ -12671,13 +12670,16 @@ const CUS360Demo = () => {
                       </div>
                     ))}
                   </div>
-                  {/* 欄 3: 客戶關係人資訊 */}
-                  <div className="flex flex-col">{renderRelationships()}</div>
                 </div>
               </div>
-              {/* 聯絡資訊 ── flex-[1] ≈ 25% 寬 */}
+              {/* 客戶關係人資訊 ── flex-[1] 獨立區塊 */}
               <div className="flex-[1] min-w-0 flex flex-col gap-2">
-                <SecHeader Icon={Users} title="聯絡資訊" />
+                <SecHeader Icon={Users} title="客戶關係人資訊" />
+                <div className="flex flex-col gap-2 flex-1">{renderRelationships()}</div>
+              </div>
+              {/* 聯絡資訊 ── flex-[1] */}
+              <div className="flex-[1] min-w-0 flex flex-col gap-2">
+                <SecHeader Icon={FileText} title="聯絡資訊" />
                 <div className="flex flex-col gap-2 flex-1">
                   {dContact.sections.map((section, idx) => (
                     <div key={idx} className={`${SUBCARD} flex-1`}>
@@ -13812,7 +13814,12 @@ const CUS360Demo = () => {
                   ))}
                 </div>
               </div>
-              {renderRelationships()}
+              {renderRelationships() && (
+                <div className={SUBCARD}>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">客戶關係人資訊</h3>
+                  {renderRelationships()}
+                </div>
+              )}
             </>
           )}
 
