@@ -39,6 +39,11 @@ build_out.txt
 stdout.txt
 stderr.txt
 
+# Local dev server helpers
+dev_pid.txt
+dev_out.log
+dev_err.log
+
 # Generated analysis/report outputs
 *_analysis*.html
 *_analysis*.txt

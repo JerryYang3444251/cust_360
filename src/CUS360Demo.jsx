@@ -17,6 +17,8 @@ import {
   RotateCcw,
   ThumbsUp,
   ThumbsDown,
+  Sparkles,
+  RefreshCw,
 } from "lucide-react";
 
 // ── CustomerProductTree ────────────────────────────────────────────────────
@@ -529,6 +531,11 @@ const SpinnerBlock = ({ text = "載入中…" }) => (
     <div className="mt-1 text-xs text-gray-400">請稍候</div>
   </>
 );
+
+// 已生成過 AI 摘要的客戶集合（module scope）：
+// 對齊實際系統設計 —— 開啟客戶資訊時僅發查一次 API，故每位客戶的串流動畫僅播放一次；
+// 之後任何 re-render / remount（切換分頁或單頁檢視）都直接顯示結果，不再重播。
+const aiSummarizedCustomers = new Set();
 
 const CUS360Demo = () => {
   const [activeModule, setActiveModule] = useState("search");
@@ -7607,8 +7614,13 @@ const CUS360Demo = () => {
     // prepare full response then stream by sections
     const llmText = await callLLM(text, selectedCustomer);
     const resp = llmText || generateAssistantReply(text, selectedCustomer);
+    // 活動話術：以逐字 streaming 氣泡呈現（仿 AI 摘要卡動畫），整段一次串流
+    if (text.startsWith('活動話術:')) {
+      setAssistantMessages((prev) => [...prev, { role: 'assistant', content: resp, stream: true }]);
+      return;
+    }
     const parts = resp.split(/\n{2,}/);
-    const isHeader = (s) => /^[🧩🎯👋✅🗣️🤔🤝⚖️]/.test((s || '').trim());
+    const isHeader = (s) => /^[🧩🎯👋✅🗣️🤔🤝⚖️📋🎁🚫🔗📝💳🔢⚠️💡]/.test((s || '').trim());
     const blocks = [];
     for (let i = 0; i < parts.length; i++) {
       const cur = (parts[i] || '').trim();
@@ -8019,6 +8031,176 @@ const CUS360Demo = () => {
     ].join('\n\n');
   };
 
+  // ── AI Profile Narrative ─────────────────────────────────────────────
+  // 產出一段「敘事式」客戶 profile 摘要，供櫃員 / 電銷人員在服務當下快速吸收重點。
+  // 由既有的模擬資料訊號組成，模擬 LLM 讀取客戶 360 資料後產生的自然語言總結。
+  const buildProfileNarrative = (customer) => {
+    if (!customer) return "目前未選擇客戶，請先於左側選擇或搜尋客戶後，系統將自動生成 360 度客戶摘要。";
+    const vip = customer.vipLevel || "normal";
+    const vipLabel = getTierDisplayLabel(vip);
+    const isVIP = vip === "VVVIP" || vip === "VVIP" || vip === "VIP";
+    const gender = customer.gender === "male" ? "先生" : customer.gender === "female" ? "女士" : "";
+    const lastName = (customer.name || "").charAt(0);
+    const honorific = lastName ? `${lastName}${gender || "客戶"}` : (customer.name || "該客戶");
+    // 帳戶狀態（與系統其他處一致的三態：active / inactive / closed｜失效戶）
+    const acctRaw = customer.accountStatus || "active";
+    const acctActive = acctRaw === "active";
+    const acctInactive = acctRaw === "inactive"; // 久未往來戶（非失效）
+    const acctClosed = acctRaw === "closed" || acctRaw === "結清" || acctRaw === "失效戶"; // 結清或失效戶
+
+    // 生命週期族群（對應實際模擬資料的 lifecycleStage 取值）
+    const ls = customer.lifecycleStage || "";
+    const seg = ls.includes("debt") ? "償債／債務管理期"
+      : ls.includes("retire") ? "退休準備期"
+      : ls.includes("high_net_worth") ? "高淨值族群"
+      : (ls.includes("net_worth") || ls.includes("affluent")) ? "富裕族群"
+      : ls.includes("family") ? "家庭責任期"
+      : ls.includes("established_professional") ? "事業穩固期上班族"
+      : ls.includes("professional") ? "事業衝刺期上班族"
+      : isVIP ? "重點經營 VIP" : "一般往來客戶";
+
+    // 財務規模數字在介面 Quick Stats 即可快速看到，摘要不重述（聚焦銷售可用訊號）。
+
+    // 偏好通路 / 產品
+    const topChannel = getTopPreferenceForCustomer("通路偏好", "score", customer);
+    const chText = topChannel ? channelLabel(topChannel.channel || topChannel.name) : (customer.preferredChannels?.[0] || "臨櫃");
+    const pp = customer.productPreferences || {};
+    const nameMap = { creditCard: "信用卡", loans: "貸款", investment: "投資理財", deposits: "存款" };
+    const pastPref = Object.entries(pp).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k]) => nameMap[k] || k).join("、");
+
+    // 意圖與行為洞察
+    const intent = getTopIntentTag(customer);
+    const intentName = intent ? intent.name : "";
+    const tags = (customer.tags || []).filter(t => typeof t === "string" && !/有效戶|帳戶/.test(t)).slice(0, 3);
+
+    // ── 銷售導向精煉摘要（100~150 字）────────────────────────────────
+    // 聚焦：客群定位、偏好、需求意圖、重大注意事項與切入建議。
+    // 資產負債等數字在介面上即可快速看到，此處不重述。
+
+    // 偏好（通路 + 產品）
+    const prefText = `偏好${chText}往來${pastPref ? `，常用${pastPref}` : ""}`;
+
+    // 需求意圖
+    const intentText = intentName
+      ? `目前釋出「${intentName}」需求訊號`
+      : pastPref
+        ? `無強烈新需求，往來集中於${pastPref}`
+        : "尚無明顯需求訊號，宜以關係維護為主";
+
+    // 重大注意事項（帳戶狀態 / 風險 / 信用觀察 / 債務管理）
+    const isDebtStage = ls.includes("debt");
+    const hasHardAlert = customer.tags?.some(t => /黑名單|催收|逾期|扣押|警示/.test(t));
+    const hasCreditWatch = customer.tags?.some(t => /信用使用偏高|信用狀態觀察|循環利息/.test(t));
+    const cautionText = acctClosed
+      ? "【注意】帳戶已結清或失效，接觸前須先確認狀態與往來限制"
+      : acctInactive
+        ? "【注意】屬久未往來戶，建議先喚醒關係、確認近況再談需求"
+        : customer.riskLevel === "high"
+          ? "【注意】屬高風險層級，推薦產品前務必先查核授信與異常警示"
+          : hasHardAlert
+            ? "【注意】具警示標籤，接觸前請先確認往來限制"
+            : isDebtStage
+              ? "【注意】現處償債／債務管理階段，宜以協助財務調整為主，暫緩高負擔產品"
+              : hasCreditWatch
+                ? "【注意】信用使用偏高，推薦增貸或分期前請留意其負擔能力"
+                : "無重大警示，往來穩健可正常服務";
+
+    // 切入建議
+    const angleText = acctClosed
+      ? "本次以確認帳戶狀態、釐清往來限制為優先，暫緩推銷新品"
+      : acctInactive
+        ? `建議以${chText}主動關懷、重啟互動為先，再視回應帶入${intentName || pastPref || "適合的"}方案`
+        : customer.riskLevel === "high" || isDebtStage
+          ? "本次以協助處理現有問題、穩固關係為優先，暫緩推銷新品"
+          : isVIP
+            ? `建議以${chText}主動聯繫、稱呼「${honorific}」，順勢帶入${intentName || pastPref || "理財規劃"}方案`
+            : `建議以${chText}關懷，適時帶入${intentName || pastPref || "適合的入門"}產品`;
+
+    const narrative =
+      `${honorific}為${vipLabel}等級${seg}。${prefText}；${intentText}` +
+      `${tags.length ? `，具「${tags.join("、")}」特徵` : ""}。` +
+      `${cautionText}。${angleText}。`;
+
+    return narrative;
+  };
+
+  // ── 依 id 反查活動（供智能助手活動話術／細節說明使用）──
+  const findCampaignById = (id) => {
+    if (!id) return null;
+    for (const key of Object.keys(INTENT_CAMPAIGNS)) {
+      const found = (INTENT_CAMPAIGNS[key] || []).find((cp) => cp.id === id);
+      if (found) return found;
+    }
+    return null;
+  };
+
+  // 由活動 id 反查對應意圖名稱（供 pickCampaign 取得 matchReasons）
+  const intentNameFromCampaignId = (id) => {
+    const map = {
+      'TRV-COBRAND': '出國旅遊意圖', 'TRV-PRIVATE': '出國旅遊意圖',
+      'CC-NEWCARD': '信用卡申辦意圖',
+      'INV-FEE': '投資理財意圖', 'INV-TRUST': '投資理財意圖',
+      'LN-MORTGAGE': '房貸需求', 'PLN-FLEX': '個人信貸意圖', 'EDU-STUDY': '留學意圖',
+    };
+    return map[id] || '';
+  };
+
+  // 產出「活動話術」全文（口語、可直接對客戶說），對齊活動卡三段式
+  const buildCampaignScript = (camp, customer) => {
+    if (!camp) return '找不到對應的行銷活動。';
+    const name = customer?.name || '客戶';
+    const vip = customer?.vipLevel || 'normal';
+    const isVip = vip === 'VIP' || vip === 'VVIP' || vip === 'VVVIP';
+    const call = isVip && customer?.name ? `${customer.name}` : `${name}`;
+    const binding = camp.productBinding || {};
+    const prodLine = binding.type === 'single'
+      ? `這檔活動搭配「${binding.products?.[0]?.name || ''}」，${binding.products?.[0]?.reason || ''}`
+      : `可搭配的產品有${(binding.products || []).map((p) => `「${p.name}」`).join('、')}，我可以依您的使用習慣幫您挑最適合的一個`;
+    const out = [];
+    out.push(`🗣️ 活動話術：${camp.name}`);
+    out.push(`開場：${call}您好，我這邊有一檔「${camp.name}」的活動想跟您分享，${camp.sellingPoint}`);
+    out.push(`💡 為何推薦給您\n${camp.offer}\n這正好對應您近期的需求，機會難得。`);
+    out.push(`🔗 產品串接\n${prodLine}。`);
+    out.push(`✅ 參加方式\n只要符合：${(camp.eligibility || []).join('、')}。${camp.enrollment || ''}`);
+    out.push(`🤔 客戶可能疑慮 + 應對\n「條件會不會很複雜？」→ 其實只要${(camp.eligibility || [])[0] || '完成登錄'}就符合，我可以一步步協助您。\n「回饋什麼時候拿到？」→ ${camp.fulfillment || '依活動辦法於達標後回饋'}。`);
+    out.push(`🤝 成交引導\n如果您覺得合適，我現在就可以幫您${binding.type === 'single' ? '確認資格並協助登錄' : '從幾個方案中挑一個最適合的辦理'}，過程很快，方便嗎？`);
+    out.push(`⚖️ 法遵提示\n本活動優惠以官方公告與條款為準；${(camp.notes || [])[0] || '相關權益依活動辦法辦理'}。`);
+    return out.join('\n\n');
+  };
+
+  // 產出「活動細節說明」（擬真銀行活動 spec，供行員完整掌握）
+  const buildCampaignDetail = (camp, customer) => {
+    if (!camp) return '找不到對應的行銷活動。';
+    const binding = camp.productBinding || {};
+    const prodBlock = binding.type === 'single'
+      ? `類型：指定單一產品（優惠與該產品強綁定）\n・${binding.products?.[0]?.name || ''}：${binding.products?.[0]?.reason || ''}`
+      : `類型：品類通用（下列產品可擇一辦理）\n${(binding.products || []).map((p, i) => `${i + 1}. ${p.name}：${p.reason}`).join('\n')}`;
+    const intentName = intentNameFromCampaignId(camp.id);
+    const matchReasons = intentName && customer
+      ? (pickCampaign(intentName, customer, '依客戶行為與偏好推導', 0.8).matchReasons || [])
+      : [];
+    const out = [];
+    out.push(`📋 活動細節說明：${camp.name}`);
+    out.push([
+      `活動代號：${camp.id}`,
+      `活動名稱：${camp.name}`,
+      `活動期間：${camp.period || '—'}`,
+      `適用對象：${(camp.tiers || []).join(' / ')} 等級`,
+    ].join('\n'));
+    out.push(`🎁 優惠內容\n${camp.offer}\n賣點：${camp.sellingPoint}`);
+    out.push(`✅ 參加條件\n${(camp.eligibility || []).map((e) => `• ${e}`).join('\n')}`);
+    if (camp.exclusions?.length) out.push(`🚫 排除／不適用項目\n${camp.exclusions.map((e) => `• ${e}`).join('\n')}`);
+    out.push(`🔗 關聯推薦產品\n${prodBlock}`);
+    out.push(`📝 登錄方式\n${camp.enrollment || '—'}`);
+    out.push(`💳 回饋／權益核發\n${camp.fulfillment || '—'}`);
+    out.push(`🔢 名額與上限\n${camp.quota || '—'}`);
+    if (camp.notes?.length) out.push(`⚠️ 注意事項\n${camp.notes.map((n) => `• ${n}`).join('\n')}`);
+    if (matchReasons.length) out.push(`🎯 為何匹配此客戶\n${matchReasons.map((r) => `• ${r}`).join('\n')}`);
+    if (camp.repPitch) out.push(`🤝 行員重點提示\n${camp.repPitch}`);
+    out.push(`⚖️ 法遵提示\n本說明為內部行銷參考，實際優惠、條件與名額以官方公告與活動辦法為準；涉及投資或授信商品者，應依適合度評估與風險揭露辦理。`);
+    return out.join('\n\n');
+  };
+
   // Generate a concise assistant reply using available customer signals
   const generateAssistantReply = (prompt, customer) => {
     if (!customer) return "目前未選擇客戶。請先在左側選擇或搜尋客戶。";
@@ -8027,6 +8209,8 @@ const CUS360Demo = () => {
     const _trimmed = (prompt || '').trim();
     if (_trimmed === '客戶摘要') return buildCustomerSummaryBlock(customer);
     if (_trimmed === '問候話術') return buildGreetingScript(customer);
+    if (_trimmed.startsWith('活動話術:')) return buildCampaignScript(findCampaignById(_trimmed.slice(5).trim()), customer);
+    if (_trimmed.startsWith('活動細節說明:')) return buildCampaignDetail(findCampaignById(_trimmed.slice(7).trim()), customer);
     const _isProdRec = _trimmed === '產品推薦' || _trimmed.startsWith('產品推薦:');
     // Parse prefix: '產品推薦:intent:XXX' | '產品推薦:product:XXX' | '產品推薦:spending:XXX' | '產品推薦:XXX' (legacy intent)
     const _prodRecPayload = _trimmed.startsWith('產品推薦:') ? _trimmed.slice(5).trim() : null;
@@ -11417,6 +11601,314 @@ const CUS360Demo = () => {
     return {};
   })();
 
+  // 依當季推導季節 key（與 SEASON_HINTS 對齊）
+  const CURRENT_SEASON = (() => {
+    const m = new Date().getMonth() + 1;
+    if (m >= 6 && m <= 8) return 'summer';
+    if (m >= 11 || m <= 1) return 'yearend';
+    if (m >= 3 && m <= 5) return 'spring';
+    return 'autumn';
+  })();
+
+  // VIP 等級排序（判斷是否達活動門檻）
+  const VIP_RANK = { normal: 0, VIP: 1, VVIP: 2, VVVIP: 3 };
+
+  // ── 行銷活動庫 ──
+  // 每檔活動 = 一個可獨立行銷的優惠方案。
+  // productBinding.type: 'single' → 綁定單一指定產品（優惠與該產品強綁，products 僅 1 個）
+  //                       'multi'  → 品類通用優惠（可列多個候選產品供客戶任選）
+  const INTENT_CAMPAIGNS = {
+    travel: [
+      {
+        id: 'TRV-COBRAND',
+        name: '環球旅程・海外消費 6% 回饋',
+        offer: '活動期間持「翔泰航空聯名卡」海外實體通路刷卡最高 6% 回饋（一般 3%＋加碼 3%），每期回饋上限 NT$3,000。',
+        sellingPoint: '出國越刷越省，回饋業界前段班。',
+        eligibility: ['持有本行翔泰航空聯名卡', '活動期間登錄', '單筆海外消費滿 NT$3,000'],
+        period: '2026/01/01 – 2026/06/30',
+        tiers: ['normal', 'VIP', 'VVIP', 'VVVIP'],
+        season: 'summer',
+        baseScore: 0.8,
+        productBinding: {
+          type: 'single',
+          note: '本優惠僅適用指定聯名卡刷卡',
+          products: [
+            { name: '翔泰航空聯名卡', reason: '海外刷卡 6% 回饋、贈機場貴賓室，契合出國消費場景' },
+          ],
+        },
+        exclusions: ['海外預借現金', '各類稅費、規費、罰款', '電子票證儲值', '以紅利/現金回饋折抵之交易'],
+        enrollment: '活動期間至網銀／行動銀行「優惠登錄」專區完成登錄，或致電客服代為登錄。',
+        fulfillment: '加碼回饋於消費當期次月結帳日以「刷卡金」回饋，並顯示於帳單。',
+        quota: '不限名額；每卡每期加碼回饋上限 NT$3,000。',
+        notes: ['一般 3% 回饋為原卡權益，加碼 3% 需完成登錄', '退貨或爭議款將回收對應回饋', '回饋計算以清算金額（非授權金額）為準'],
+        repPitch: '客戶常出國，這檔登錄後海外刷卡等於 6% 回饋，是同業少見的高標。',
+      },
+      {
+        id: 'TRV-PRIVATE',
+        name: '尊榮旅程・私人銀行禮遇專案',
+        offer: 'VVIP 以上客戶專屬：全球機場貴賓室無限次、旅平險升等，並贈行程規劃管家服務。',
+        sellingPoint: '不只回饋，更是尊榮旅行體驗。',
+        eligibility: ['VVIP 等級（含）以上', '活動期間登錄'],
+        period: '2026/01/01 – 2026/12/31',
+        tiers: ['VVIP', 'VVVIP'],
+        season: null,
+        baseScore: 0.9,
+        productBinding: {
+          type: 'single',
+          note: '禮遇綁定無限卡權益',
+          products: [
+            { name: '世界無限卡', reason: 'VIP 專屬權益，貴賓室與旅程禮遇整合於單一卡片' },
+          ],
+        },
+        exclusions: ['旅平險升等須於出發前完成登錄', '管家服務需提前 7 個工作日預約'],
+        enrollment: '由專屬理專／客戶經理協助登錄，或於尊榮客戶專線申請。',
+        fulfillment: '貴賓室與禮遇權益即時生效；行程管家於預約確認後 1 個工作日內指派。',
+        quota: '限 VVIP 以上客戶，禮遇名額依季度控管，額滿為止。',
+        notes: ['貴賓室使用需出示對應卡片與登機證', '旅平險升等以保單條款為準', '禮遇不得折現或轉讓'],
+        repPitch: '這位是高端客戶，訴求不是回饋而是尊榮體驗，主打貴賓室無限次與管家服務。',
+      },
+    ],
+    creditcard: [
+      {
+        id: 'CC-NEWCARD',
+        name: '新卡首刷禮・紅利回饋加倍',
+        offer: '核卡後 60 天內新增消費滿 NT$6,000 送 NT$1,200 刷卡金，前 3 個月一般消費紅利回饋加倍。',
+        sellingPoint: '新辦就送等值現金，回饋前三個月天天加倍。',
+        eligibility: ['近半年未持有本行同系列卡', '完成線上申辦', '首刷於活動期間內'],
+        period: '2026/01/01 – 2026/12/31',
+        tiers: ['normal', 'VIP', 'VVIP', 'VVVIP'],
+        season: null,
+        baseScore: 0.75,
+        productBinding: {
+          type: 'multi',
+          note: '首刷禮適用以下任一新申辦卡別',
+          products: [
+            { name: '現金回饋卡', reason: '日常消費最高 2.5% 回饋，回本最快' },
+            { name: '旅遊聯名卡', reason: '常出國者首選，海外回饋加碼' },
+            { name: '網購優惠卡', reason: '線上通路指定回饋，適合高網購族群' },
+          ],
+        },
+        exclusions: ['稅費、規費、公用事業代收', '電子票證儲值與紅利折抵', '預借現金'],
+        enrollment: '線上申辦核卡後系統自動納入活動，無需另行登錄。',
+        fulfillment: '首刷禮於達標後次月回饋 NT$1,200 刷卡金；加倍紅利於當期帳單反映。',
+        quota: '每一身分證字號限領一次首刷禮；活動總量 3,000 份，額滿止。',
+        notes: ['「新戶」定義為近半年未持本行同系列卡', '未於 60 天內達標則不符首刷禮資格', '刷卡金不得兌現'],
+        repPitch: '客戶尚未持本行卡，這檔等於新辦就送 1,200 元，可依其消費習慣挑一張最適卡別。',
+      },
+    ],
+    invest: [
+      {
+        id: 'INV-FEE',
+        name: '財富新局・信託手續費 3 折',
+        offer: '新承作指定信託／基金，申購手續費 3 折起；單筆滿 NT$300 萬再享專屬理專資產健檢。',
+        sellingPoint: '手續費省一大截，還附專人資產健檢。',
+        eligibility: ['VIP 等級（含）以上', '新資金投入', '完成風險屬性評估（KYC）'],
+        period: '2026/01/01 – 2026/03/31',
+        tiers: ['VIP', 'VVIP', 'VVVIP'],
+        season: null,
+        baseScore: 0.7,
+        productBinding: {
+          type: 'multi',
+          note: '手續費優惠適用以下指定商品',
+          products: [
+            { name: '穩健型平衡基金', reason: '股債搭配，波動較低，適合分批布局' },
+            { name: '全球股票型基金', reason: '長期成長潛力，可定期定額參與' },
+          ],
+        },
+        exclusions: ['轉換／贖回不適用手續費優惠', '既有部位加碼不列入「新資金」', '貨幣市場型基金'],
+        enrollment: '臨櫃或透過理專下單時系統自動套用優惠折數，須先完成 KYC。',
+        fulfillment: '手續費於申購時即以折後金額收取；資產健檢由理專於 5 個工作日內安排。',
+        quota: '優惠期間內不限次數；資產健檢每季一次。',
+        notes: ['基金投資有風險，過往績效不代表未來', '需完成風險屬性評估且商品風險等級相符', '手續費折數以申購當下公告為準'],
+        repPitch: '客戶有投資偏好且達 VIP，主打手續費 3 折加免費資產健檢，切入資產配置對話。',
+      },
+      {
+        id: 'INV-TRUST',
+        name: '傳承規劃・家族信託尊享方案',
+        offer: 'VVVIP 專屬：客製化家族信託架構規劃，首年信託管理費減免，含法稅顧問諮詢 2 次。',
+        sellingPoint: '為高資產家庭量身打造的傳承與稅務規劃。',
+        eligibility: ['VVVIP 等級', '資產規模達門檻', '完成需求訪談'],
+        period: '2026/01/01 – 2026/12/31',
+        tiers: ['VVVIP'],
+        season: null,
+        baseScore: 0.95,
+        productBinding: {
+          type: 'single',
+          note: '方案綁定家族信託商品',
+          products: [
+            { name: '家族傳承信託', reason: '整合資產傳承、稅務與受益人規劃於單一信託架構' },
+          ],
+        },
+        exclusions: ['不含境外資產之法律訴訟服務', '稅務申報代辦另行報價'],
+        enrollment: '由私人銀行家 (RM) 安排需求訪談後啟動客製規劃流程。',
+        fulfillment: '首年信託管理費減免自簽約日起算；法稅顧問諮詢於簽約後預約。',
+        quota: '限 VVVIP，依資產規模與 RM 評估個案受理。',
+        notes: ['信託架構需經法遵與信託部門審核', '相關稅務效果應諮詢專業顧問', '方案條件依個案量身訂定'],
+        repPitch: '極高資產客戶，切入點是傳承與稅務痛點，強調客製信託與法稅顧問資源。',
+      },
+    ],
+    mortgage: [
+      {
+        id: 'LN-MORTGAGE',
+        name: '安心成家・房貸利率優惠',
+        offer: '首年利率 1.68% 起，前 2 年免提前清償違約金；線上申請再折 NT$3,000 開辦費。',
+        sellingPoint: '前期月付壓力低，提前還款也不罰。',
+        eligibility: ['年滿 20 歲且有穩定收入', '擔保品位於受理區域', '通過徵信審核'],
+        period: '2026/01/01 – 2026/06/30',
+        tiers: ['normal', 'VIP', 'VVIP', 'VVVIP'],
+        season: null,
+        baseScore: 0.7,
+        productBinding: {
+          type: 'single',
+          note: '優惠利率綁定指定房貸專案',
+          products: [
+            { name: '安心成家房貸', reason: '首年低利、彈性還款，契合購屋資金需求' },
+          ],
+        },
+        exclusions: ['首年優惠利率後依約定指標利率加碼計息', '線上開辦費折抵限新申貸戶'],
+        enrollment: '線上或臨櫃提出申貸，備妥擔保品與收入證明送件徵審。',
+        fulfillment: '核准撥款後利率優惠即生效；開辦費折抵於對保時反映。',
+        quota: '依徵審結果核給額度與成數，個案審核。',
+        notes: ['實際利率與額度依徵信、擔保品鑑價結果而定', '本廣告內容不構成核貸承諾', '借款人須衡量還款能力，並注意信用風險'],
+        repPitch: '客戶有購屋/房貸需求，主打首年 1.68% 起與前 2 年免違約金，先提供試算建立信任。',
+      },
+    ],
+    creditloan: [
+      {
+        id: 'PLN-FLEX',
+        name: '輕鬆貸・個人信貸利率優惠專案',
+        offer: '一般用途信用貸款利率 2.88% 起（依信用評分分級定價），免保人、線上申辦最快 1 個工作日核貸，活動期間免收開辦費（一般 NT$5,000）。',
+        sellingPoint: '免擔保、免保人，快速核撥，開辦費全免。',
+        eligibility: ['年滿 20 歲且有穩定收入', '本國國民或有居留權', '通過本行徵信與信用評分審核'],
+        period: '2026/01/01 – 2026/09/30',
+        tiers: ['normal', 'VIP', 'VVIP', 'VVVIP'],
+        season: null,
+        baseScore: 0.7,
+        productBinding: {
+          type: 'single',
+          note: '優惠條件綁定個人信用貸款專案',
+          products: [
+            { name: '個人信用貸款', reason: '無擔保、免保人，利率依信用評分分級，適合短中期資金週轉' },
+          ],
+        },
+        exclusions: ['循環動用型信貸不適用固定利率優惠', '既有本行信貸轉貸不列入開辦費減免', '代償他行債務另依專案規範'],
+        enrollment: '線上或臨櫃提出申請，備妥身分證明與收入證明送件徵審。',
+        fulfillment: '核准對保後撥款；開辦費減免於對保時直接反映，利率優惠自撥款日起算。',
+        quota: '依徵審結果核給額度與利率，個案審核。',
+        notes: ['實際利率、額度依信用評分與徵審結果分級核定', '本廣告內容不構成核貸承諾', '借款人須衡量還款能力，並注意信用風險與逾期影響信用紀錄'],
+        repPitch: '客戶有短中期資金需求但非購屋，主打免擔保免保人、快速核撥與開辦費全免，切勿與房貸混淆。',
+      },
+    ],
+    edu: [
+      {
+        id: 'EDU-STUDY',
+        name: '啟程留學・教育金與換匯優惠專案',
+        offer: '留學教育貸款利率 2.5% 起、寬限期最長 4 年（在學期間可只繳息）；搭配外幣存款帳戶預存學費享換匯手續費優惠。',
+        sellingPoint: '在學只繳息、還款無壓力，並鎖定學費匯率。',
+        eligibility: ['申請人或子女錄取國內外正式學制學校', '年滿 20 歲且有穩定收入或提供保證人', '通過徵信審核'],
+        period: '2026/01/01 – 2026/12/31',
+        tiers: ['normal', 'VIP', 'VVIP', 'VVVIP'],
+        season: null,
+        baseScore: 0.6,
+        productBinding: {
+          type: 'multi',
+          note: '留學方案可搭配以下產品',
+          products: [
+            { name: '留學教育貸款', reason: '專為海外就學設計，寬限期彈性、在學可只繳息' },
+            { name: '外幣存款帳戶', reason: '可預先換匯鎖定學費匯率，降低匯率波動風險' },
+          ],
+        },
+        exclusions: ['短期語言遊學（非正式學制）另依專案評估', '寬限期利息仍須按期繳納'],
+        enrollment: '備妥入學許可／錄取通知與相關證明，線上或臨櫃提出申請。',
+        fulfillment: '核准對保後依學費繳納時程分次撥款；外幣換匯優惠於臨櫃或網銀交易時套用。',
+        quota: '依徵審結果核給額度，個案審核。',
+        notes: ['實際利率與額度依徵信及擔保／保證條件而定', '匯率以交易當下本行牌告為準', '借款人須衡量還款能力並注意信用風險'],
+        repPitch: '客戶有子女教育或海外就學規劃，主打在學只繳息＋鎖定學費匯率，貸款與外幣帳戶一起談。',
+      },
+    ],
+    default: [
+      {
+        id: 'DEF-CONSULT',
+        name: '專屬理財諮詢・預約禮',
+        offer: '完成一次理專面談並填寫需求問卷，即贈精選好禮並取得客製化理財建議書。',
+        sellingPoint: '免費一對一諮詢，帶走專屬理財藍圖。',
+        eligibility: ['本行往來客戶', '活動期間完成預約'],
+        period: '2026/01/01 – 2026/12/31',
+        tiers: ['normal', 'VIP', 'VVIP', 'VVVIP'],
+        season: null,
+        baseScore: 0.5,
+        productBinding: {
+          type: 'multi',
+          note: '諮詢後可依需求選擇',
+          products: [
+            { name: '理財型活儲帳戶', reason: '資金停泊兼顧收益與流動性' },
+            { name: '定期定額基金', reason: '小額起步，培養投資習慣' },
+          ],
+        },
+        exclusions: ['已於近 3 個月完成面談者不重複贈禮'],
+        enrollment: '透過分行或客服預約理專面談時間並填寫需求問卷。',
+        fulfillment: '面談完成後現場致贈好禮；理財建議書於 3 個工作日內提供。',
+        quota: '每位客戶限領一次；好禮數量有限，送完為止。',
+        notes: ['建議書為參考性質，實際投資需自行評估', '好禮不得折現或更換'],
+        repPitch: '暫無明確意圖時的萬用切入：免費諮詢＋贈禮，先建立互動再挖掘需求。',
+      },
+    ],
+  };
+
+  const campaignKeyFromIntent = (name) => {
+    if (/旅遊|出國/.test(name)) return 'travel';
+    if (/投資|理財/.test(name)) return 'invest';
+    if (/信用卡/.test(name)) return 'creditcard';
+    if (/留學/.test(name)) return 'edu';
+    if (/房貸|購屋|房屋貸款/.test(name)) return 'mortgage';
+    if (/信貸|信用貸款|個人信貸/.test(name)) return 'creditloan';
+    if (/貸款/.test(name)) return 'mortgage';
+    return 'default';
+  };
+
+  // AI 最適挑選：過濾不符資格 → 依匹配分數排序 → 回傳主推 + 其他候選
+  const pickCampaign = (name, customer, dataBasis, intentScore) => {
+    const pool = INTENT_CAMPAIGNS[campaignKeyFromIntent(name)] || INTENT_CAMPAIGNS.default;
+    const vip = customer?.vipLevel || 'normal';
+    const custRank = VIP_RANK[vip] ?? 0;
+
+    const scored = pool
+      .map((cp) => {
+        const minRank = Math.min(...cp.tiers.map((t) => VIP_RANK[t] ?? 0));
+        const eligible = custRank >= minRank;
+        const vipFit = !eligible ? 0 : (cp.tiers.includes(vip) ? 1 : 0.4);
+        const seasonFit = !cp.season ? 0.6 : (cp.season === CURRENT_SEASON ? 1 : 0.2);
+        const match = intentScore * 0.5 + vipFit * 0.25 + seasonFit * 0.15 + (cp.baseScore || 0.5) * 0.1;
+        if (cp.productBinding?.type === 'single' && cp.productBinding.products.length !== 1) {
+          console.warn(`[campaign] ${cp.id} 為 single 綁定，關聯產品應為 1 個，實際 ${cp.productBinding.products.length}`);
+        }
+        return { ...cp, eligible, matchScore: Math.min(1, match) };
+      })
+      .filter((cp) => cp.eligible)
+      .sort((a, b) => b.matchScore - a.matchScore);
+
+    const primary = scored[0] || null;
+    const alternatives = scored.slice(1);
+    const matchReasons = primary ? [
+      `命中「${name}」，${dataBasis}`,
+      primary.tiers.includes(vip)
+        ? `完全符合活動適用等級（${vip}）`
+        : `達活動參加門檻（客戶 ${vip}）`,
+      primary.season === CURRENT_SEASON
+        ? '正逢活動旺季，接觸時機最佳'
+        : '客戶行為軌跡顯示需求升溫，適合主動接觸',
+    ] : [];
+
+    return { primary, alternatives, matchReasons };
+  };
+
+  // 是否有符合客戶資格的活動（供卡片清單過濾用；無 → 不顯示該意圖）
+  const hasEligibleCampaign = (name, customer) => {
+    const pool = INTENT_CAMPAIGNS[campaignKeyFromIntent(name)] || INTENT_CAMPAIGNS.default;
+    const custRank = VIP_RANK[customer?.vipLevel || 'normal'] ?? 0;
+    return pool.some((cp) => custRank >= Math.min(...cp.tiers.map((t) => VIP_RANK[t] ?? 0)));
+  };
+
   const buildIntentInsight = (tag, customer) => {
     const name = tag.name || '';
     const score = typeof tag.score === 'number' ? tag.score : parseFloat(tag.score || '0');
@@ -11426,9 +11918,10 @@ const CUS360Demo = () => {
     const isHighVip = vip === 'VVVIP' || vip === 'VVIP';
     const recs = (() => {
       if (/旅遊|出國/.test(name)) return [
-        { name: '旅遊聯名信用卡', reason: '刷卡回饋最高，海外手續費優惠，適合出國消費場景' },
+        isHighVip
+          ? { name: '世界無限卡', reason: 'VIP 專屬，整合機場貴賓室與旅程禮遇於單一卡片' }
+          : { name: '翔泰航空聯名卡', reason: '海外刷卡最高 6% 回饋、贈機場貴賓室，適合出國消費場景' },
         { name: '外幣活期存款帳戶', reason: '可預先換匯鎖定匯率，節省出國換匯成本' },
-        isHighVip ? { name: '機場貴賓室尊享卡', reason: 'VIP 客戶專屬，提升旅行體驗' } : null,
       ].filter(Boolean);
       if (/信用卡/.test(name)) return [
         { name: '高回饋現金回饋卡', reason: '日常消費最高回饋，與現有消費習慣高度吻合' },
@@ -11443,7 +11936,7 @@ const CUS360Demo = () => {
         { name: '理財型房貸', reason: '彈性動用額度，兼顧資產流動性' },
       ];
       if (/信貸/.test(name)) return [
-        { name: '個人信用貸款', reason: '快速核撥，利率依信用評級調整' },
+        { name: '個人信用貸款', reason: '無擔保、免保人，快速核撥，利率依信用評分分級' },
       ];
       if (/留學/.test(name)) return [
         { name: '留學教育貸款', reason: '專為海外就學設計，還款期間彈性' },
@@ -11455,24 +11948,32 @@ const CUS360Demo = () => {
       if (/旅遊|出國/.test(name)) return `旅遊消費比例 ${Math.round((sp.travel || 0) * 100)}%、海外消費比例 ${Math.round((sp.overseas || 0) * 100)}%`;
       if (/信用卡/.test(name)) return `信用卡產品偏好 ${Math.round((pp.creditCard || 0) * 100)}%`;
       if (/投資|理財/.test(name)) return `投資產品偏好 ${Math.round((pp.investment || 0) * 100)}%`;
+      if (/留學/.test(name)) return `教育相關支出與跨境需求偏好 ${Math.round((sp.education || 0) * 100)}%`;
       if (/房貸/.test(name)) return `貸款產品偏好 ${Math.round((pp.loans || 0) * 100)}%`;
+      if (/信貸/.test(name)) return `授信行為與資金週轉訊號（貸款偏好 ${Math.round((pp.loans || 0) * 100)}%）`;
       return '依客戶行為模型推導';
     })();
     const timing = (() => {
       if (/旅遊|出國/.test(name) && SEASON_HINTS.travel) return SEASON_HINTS.travel + '，建議盡快聯繫';
       if (/信用卡/.test(name)) return '信用卡需求通常源於近期消費，建議本週內聯繫';
       if (/投資|理財/.test(name)) return '理財意圖持續升溫，建議月底前安排諮詢';
+      if (/留學/.test(name)) return '留學申請有時程壓力，建議及早規劃學費與資金';
       if (/房貸/.test(name)) return '房貸決策週期長，建議先提供試算，建立信任';
+      if (/信貸/.test(name)) return '資金週轉具即時性，建議把握需求高峰主動聯繫';
       return '建議近期主動安排問候';
     })();
     const opening = (() => {
       if (/旅遊|出國/.test(name)) return '「不知道您最近有沒有出國的計畫？我剛好有一個旅遊相關的方案想跟您分享。」';
       if (/信用卡/.test(name)) return '「我有一張回饋設計很符合您消費習慣的卡，想花幾分鐘跟您介紹一下。」';
       if (/投資|理財/.test(name)) return '「最近市場有一些不錯的機會，我整理了一份符合您風險屬性的方案，方便聽我說說嗎？」';
+      if (/留學/.test(name)) return '「不知道您或家人近期有沒有留學規劃？我這邊有教育貸款和換匯的方案可以幫您先評估。」';
       if (/房貸/.test(name)) return '「不知道您對房屋貸款有沒有規劃？我可以先幫您試算看看，完全沒有壓力。」';
+      if (/信貸/.test(name)) return '「如果近期有資金週轉的需要，我們有一檔免保人、快速核撥的信貸方案，想跟您說明一下。」';
       return '「最近剛好有一個方案想和您分享，不知道您現在方便嗎？」';
     })();
-    return { title: name, score, dataBasis, timing, opening, recs };
+    const { primary: campaign, alternatives, matchReasons } = pickCampaign(name, customer, dataBasis, score);
+    const matchScore = campaign ? campaign.matchScore : score;
+    return { title: name, score, matchScore, dataBasis, timing, opening, recs, campaign, alternatives, matchReasons };
   };
 
   const buildProductInsight = (item, customer) => {
@@ -11565,43 +12066,100 @@ const CUS360Demo = () => {
     };
     let body = null;
     if (type === 'intent') {
-      const { title, score, dataBasis, timing, opening, recs } = data;
+      const { title, opening, campaign, alternatives, matchReasons, matchScore } = data;
+      const matchPct = Math.round((matchScore || 0) * 100);
+      const binding = campaign?.productBinding;
       body = (
         <div className="space-y-4">
-          <div className="flex items-center gap-3">
+          {/* 標題列：意圖 + 活動匹配度 */}
+          <div className="flex items-center gap-3 flex-wrap">
             <span className="px-3 py-1 rounded-full bg-teal-600 text-white font-semibold text-sm">{title}</span>
-            <span className="text-gray-500 text-sm">信心度 {Math.round(score * 100)}%</span>
-            {score >= 0.8 && <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-semibold">高優先</span>}
+            <span className="text-gray-500 text-sm">活動匹配度 {matchPct}%</span>
+            {matchScore >= 0.8 && <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-semibold">高優先</span>}
+            {alternatives?.length > 0 && (
+              <span className="ml-auto text-[11px] text-gray-400">AI 已從 {alternatives.length + 1} 檔符合資格活動中挑選最適</span>
+            )}
           </div>
+
+          {/* ① 推薦原因 */}
           <div className="bg-teal-50 rounded-lg p-3 text-sm">
-            <div className="font-semibold text-teal-800 mb-1">數據依據</div>
-            <div className="text-teal-700">{dataBasis}</div>
+            <div className="font-semibold text-teal-800 mb-1.5">① 推薦原因</div>
+            <ul className="space-y-1 text-teal-700">
+              {matchReasons.map((r, i) => (
+                <li key={i} className="flex gap-1.5"><span className="text-teal-500">•</span><span>{r}</span></li>
+              ))}
+            </ul>
           </div>
-          <div className="bg-amber-50 rounded-lg p-3 text-sm">
-            <div className="font-semibold text-amber-800 mb-1">建議時機</div>
-            <div className="text-amber-700">{timing}</div>
-          </div>
-          <div>
-            <div className="font-semibold text-gray-700 mb-2 text-sm">推薦產品</div>
+
+          {/* ② 活動內容 */}
+          <div className="bg-gray-50 rounded-lg p-3 text-sm border border-gray-100">
+            <div className="font-semibold text-gray-800 mb-2">② 活動內容</div>
             <div className="space-y-2">
-              {recs.map((r, i) => (
+              <div>
+                <div className="text-[11px] text-gray-400">活動名稱</div>
+                <div className="font-semibold text-gray-800">{campaign.name}
+                  {campaign.period && <span className="ml-2 text-[11px] font-normal text-gray-400">（{campaign.period}）</span>}
+                </div>
+              </div>
+              <div>
+                <div className="text-[11px] text-gray-400">優惠內容</div>
+                <div className="text-gray-700">{campaign.offer}</div>
+              </div>
+              <div>
+                <div className="text-[11px] text-gray-400">賣點簡述</div>
+                <div className="text-gray-700">{campaign.sellingPoint}</div>
+              </div>
+              <div>
+                <div className="text-[11px] text-gray-400">參加條件</div>
+                <ul className="mt-0.5 space-y-0.5">
+                  {campaign.eligibility.map((e, i) => (
+                    <li key={i} className="flex gap-1.5 text-gray-700"><span className="text-green-500">✓</span><span>{e}</span></li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* 關聯推薦產品（與活動條件強綁定） */}
+          <div className="bg-white rounded-lg p-3 text-sm border border-gray-200">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="font-semibold text-gray-700">關聯推薦產品</span>
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${binding?.type === 'single' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                {binding?.type === 'single' ? '指定單一產品' : '可選其一'}
+              </span>
+            </div>
+            {binding?.note && <div className="text-[11px] text-gray-400 mb-1.5">{binding.note}</div>}
+            <div className="space-y-2">
+              {binding?.products.map((p, i) => (
                 <div key={i} className="flex gap-2 p-2 bg-gray-50 rounded-lg">
-                  <span className="text-teal-600 font-bold text-sm shrink-0">{i + 1}.</span>
+                  <span className="text-teal-600 font-bold text-sm shrink-0">
+                    {binding.type === 'single' ? '●' : `${i + 1}.`}
+                  </span>
                   <div>
-                    <div className="font-medium text-gray-800 text-sm">{r.name}</div>
-                    <div className="text-xs text-gray-500">{r.reason}</div>
+                    <div className="font-medium text-gray-800 text-sm">{p.name}</div>
+                    <div className="text-xs text-gray-500">{p.reason}</div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
+
+          {/* ③ 建議話術 */}
           <div className="bg-blue-50 rounded-lg p-3 text-sm">
-            <div className="font-semibold text-blue-800 mb-1">建議開場白</div>
+            <div className="font-semibold text-blue-800 mb-1">③ 建議話術</div>
             <div className="text-blue-700 italic">{opening}</div>
           </div>
+
+          {/* 其他符合資格活動（AI 多檔挑選佐證） */}
+          {alternatives?.length > 0 && (
+            <div className="text-[11px] text-gray-400">
+              其他符合資格活動：{alternatives.map(a => a.name).join('、')}
+            </div>
+          )}
+
           <div className="flex gap-2 pt-1">
-            <button onClick={() => sendToAssistant('問候話術')} className="flex-1 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700">生成問候話術</button>
-            <button onClick={() => sendToAssistant(`產品推薦:${title}`)} className="flex-1 py-2 bg-teal-100 text-teal-800 rounded-lg text-sm font-medium hover:bg-teal-200">產品推薦分析</button>
+            <button onClick={() => sendToAssistant(`活動話術:${campaign?.id || ''}`)} className="flex-1 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700">話術生成</button>
+            <button onClick={() => sendToAssistant(`活動細節說明:${campaign?.id || ''}`)} className="flex-1 py-2 bg-teal-100 text-teal-800 rounded-lg text-sm font-medium hover:bg-teal-200">活動細節說明</button>
           </div>
         </div>
       );
@@ -11757,6 +12315,7 @@ const CUS360Demo = () => {
                   {section.name && section.name.includes("意圖標籤") ? (
                     <div className="space-y-3">
                       {[...section.tags]
+                        .filter((t) => hasEligibleCampaign(t.name || '', customer))
                         .sort((a, b) => {
                           const scoreA = typeof a.score === 'number' ? a.score : (a.score ? parseFloat(a.score) : 0);
                           const scoreB = typeof b.score === 'number' ? b.score : (b.score ? parseFloat(b.score) : 0);
@@ -12398,6 +12957,191 @@ const CUS360Demo = () => {
     };
   };
 
+  // ── 可重用逐字 streaming 元件（沿用 AI 摘要卡的 thinking→typing→done 動畫）──
+  // 供智能助手「活動話術」氣泡逐字生成使用；每則訊息掛載時播放一次。
+  const StreamingText = ({ text, onDone, onTick, playedRef }) => {
+    const already = playedRef?.current === true;
+    const [phase, setPhase] = React.useState(already ? "done" : "thinking"); // thinking | typing | done
+    const [shownText, setShownText] = React.useState(already ? (text || "") : "");
+
+    React.useEffect(() => {
+      if (already) { setPhase("done"); setShownText(text || ""); return; }
+      let cancelled = false;
+      const timers = [];
+      const fullText = text || "";
+      setPhase("thinking");
+      setShownText("");
+      const thinkDelay = 700 + Math.floor(Math.random() * 500);
+      timers.push(setTimeout(() => {
+        if (cancelled) return;
+        setPhase("typing");
+        let i = 0;
+        const step = () => {
+          if (cancelled) return;
+          const chunk = 1 + Math.floor(Math.random() * 3);
+          i = Math.min(fullText.length, i + chunk);
+          setShownText(fullText.slice(0, i));
+          if (onTick) onTick();
+          if (i >= fullText.length) {
+            setPhase("done");
+            if (playedRef) playedRef.current = true;
+            if (onDone) onDone();
+            return;
+          }
+          const lastCh = fullText[i - 1];
+          const pause = /[。，、！？：\n]/.test(lastCh)
+            ? 70 + Math.floor(Math.random() * 90)
+            : 12 + Math.floor(Math.random() * 20);
+          timers.push(setTimeout(step, pause));
+        };
+        step();
+      }, thinkDelay));
+      return () => { cancelled = true; timers.forEach(clearTimeout); };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    if (phase === "thinking") {
+      return (
+        <div className="flex items-center gap-1 text-gray-500">
+          <span className="inline-flex items-center gap-1 text-[11px]">
+            <Sparkles className="w-3 h-3 text-indigo-500" /> 生成中
+          </span>
+          <span className="animate-bounce" style={{ animationDelay: "0ms" }}>•</span>
+          <span className="animate-bounce" style={{ animationDelay: "150ms" }}>•</span>
+          <span className="animate-bounce" style={{ animationDelay: "300ms" }}>•</span>
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-1 whitespace-pre-wrap">
+        <span>{shownText}</span>
+        {phase === "typing" && (
+          <span className="inline-block w-1.5 h-4 -mb-0.5 ml-0.5 bg-indigo-500 animate-pulse align-middle" />
+        )}
+      </div>
+    );
+  };
+
+  // ─── AI 客戶摘要卡（模擬 LLM 即時逐字生成）
+  // 場景：櫃員 / 電銷人員在服務當下，快速吸收海量客戶資訊中的重點。
+  // 讀取模擬客戶資料 → 組出敘事式 profile → 以逐字 streaming 呈現，模擬 LLM 生成過程。
+  // 設計對齊實際系統：開啟客戶資訊時只發查一次 API，故串流動畫每位客戶僅觸發一次，
+  // 之後重新渲染（例如切換分頁 / 單頁檢視）直接顯示已生成結果，不再重播動畫。
+  // （已生成集合 aiSummarizedCustomers 定義於 module scope，確保跨 remount 保留狀態）
+  const AICustomerSummaryCard = ({ customer, compact = false }) => {
+    const custId = customer?.id || null;
+    const alreadyDone = custId ? aiSummarizedCustomers.has(custId) : false;
+    // 若此客戶已生成過，直接以完成狀態呈現，不重播動畫
+    const [phase, setPhase] = React.useState(alreadyDone ? "done" : "thinking"); // thinking | typing | done
+    const [shownText, setShownText] = React.useState(
+      alreadyDone && customer ? buildProfileNarrative(customer) : ""
+    );
+
+    React.useEffect(() => {
+      if (!customer) return;
+      // 已生成過（本次開啟客戶期間）→ 直接顯示結果，不再觸發動畫（模擬僅發查一次 API）
+      if (aiSummarizedCustomers.has(custId)) {
+        setPhase("done");
+        setShownText(buildProfileNarrative(customer));
+        return;
+      }
+      let cancelled = false;
+      const timers = [];
+      setPhase("thinking");
+      setShownText("");
+      const fullText = buildProfileNarrative(customer);
+
+      // 1) 模擬 LLM「讀取資料 / 思考」延遲（0.8~1.4s，帶隨機性更擬真）
+      const thinkDelay = 800 + Math.floor(Math.random() * 600);
+      timers.push(setTimeout(() => {
+        if (cancelled) return;
+        setPhase("typing");
+        // 2) 逐字輸出，速度隨機微抖動，模擬 token streaming
+        let i = 0;
+        const step = () => {
+          if (cancelled) return;
+          const chunk = 1 + Math.floor(Math.random() * 3); // 每次輸出 1~3 個字
+          i = Math.min(fullText.length, i + chunk);
+          setShownText(fullText.slice(0, i));
+          if (i >= fullText.length) {
+            setPhase("done");
+            if (custId) aiSummarizedCustomers.add(custId); // 標記此客戶已生成，避免重播
+            return;
+          }
+          const lastCh = fullText[i - 1];
+          const pause = /[。，、！？\n]/.test(lastCh)
+            ? 90 + Math.floor(Math.random() * 120)
+            : 18 + Math.floor(Math.random() * 26);
+          timers.push(setTimeout(step, pause));
+        };
+        step();
+      }, thinkDelay));
+
+      return () => {
+        cancelled = true;
+        timers.forEach(clearTimeout);
+      };
+    }, [custId]);
+
+    if (!customer) return null;
+
+    return (
+      <div className="rounded-lg border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-teal-50 shadow-sm overflow-hidden">
+        {/* 標題列 */}
+        <div className="flex items-center justify-between px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-teal-600 text-white">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4" />
+            <span className="text-sm font-bold">AI 客戶摘要</span>
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/20 text-[10px] font-semibold tracking-wide">
+              <Sparkles className="w-3 h-3" /> 本資訊由生成式 AI 產生，請查核重要資訊
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {phase === "thinking" && (
+              <span className="text-[11px] text-white/90 inline-flex items-center gap-1">
+                讀取客戶資料中
+                <span className="inline-flex gap-0.5">
+                  <span className="w-1 h-1 bg-white rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="w-1 h-1 bg-white rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="w-1 h-1 bg-white rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                </span>
+              </span>
+            )}
+            {phase === "typing" && (
+              <span className="text-[11px] text-white/90 inline-flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-emerald-300 rounded-full animate-pulse" />
+                生成中…
+              </span>
+            )}
+            {phase === "done" && (
+              <span className="text-[11px] text-white/90 inline-flex items-center gap-1" title="本次已生成（模擬僅發查一次 API）">
+                <RefreshCw className="w-3 h-3" /> 已生成
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* 內文 */}
+        <div className={`px-4 py-3 ${compact ? "text-xs" : "text-sm"} leading-relaxed text-gray-700 whitespace-pre-line min-h-[64px]`}>
+          {phase === "thinking" ? (
+            <div className="space-y-2 animate-pulse">
+              <div className="h-3 bg-gray-200 rounded w-11/12" />
+              <div className="h-3 bg-gray-200 rounded w-full" />
+              <div className="h-3 bg-gray-200 rounded w-4/5" />
+            </div>
+          ) : (
+            <span>
+              {shownText}
+              {phase === "typing" && (
+                <span className="inline-block w-1.5 h-4 -mb-0.5 ml-0.5 bg-indigo-500 animate-pulse align-middle" />
+              )}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   // ─── One-Page Mode (銀行櫃員速覽) ────────────────────────────────────────
   const renderOnePageView = () => {
     if (!selectedCustomer) return null;
@@ -12514,6 +13258,9 @@ const CUS360Demo = () => {
           {!hasAnyFlag && <span className="text-xs text-green-600">所有往來狀態正常，可正常服務</span>}
         </div>
 
+        {/* AI 生成客戶摘要（單頁檢視） */}
+        <AICustomerSummaryCard customer={c} compact />
+
         {/* ── Quick Stats ──────────────────────────────────────────────── */}
         <div className="grid grid-cols-4 gap-2">
           {[
@@ -12560,7 +13307,9 @@ const CUS360Demo = () => {
           // 優先（score ≥ 0.8）先取，不足再以其他補足，共 6 個
           const priority = allCandidates.filter(t => t.score >= 0.8);
           const others   = allCandidates.filter(t => t.score < 0.8);
-          const display  = [...priority, ...others].slice(0, 3);
+          const display  = [...priority, ...others]
+            .filter(t => hasEligibleCampaign(t.name, c))
+            .slice(0, 3);
           if (!display.length) return null;
 
           return (
@@ -12571,11 +13320,11 @@ const CUS360Demo = () => {
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {display.map((tag, idx) => {
-                  const score = typeof tag.score === 'number' ? tag.score : parseFloat(tag.score || '0');
-                  const isPriority = score >= 0.8;
                   const insight = buildIntentInsight(tag, c);
-                  const topProduct = insight.recs?.[0]?.name || '—';
-                  const productReason = insight.recs?.[0]?.reason || '';
+                  const matchScore = insight.matchScore ?? (typeof tag.score === 'number' ? tag.score : parseFloat(tag.score || '0'));
+                  const isPriority = matchScore >= 0.8;
+                  const campName = insight.campaign?.name || '—';
+                  const campSell = insight.campaign?.sellingPoint || '';
                   return (
                     <div
                       key={idx}
@@ -12613,16 +13362,17 @@ const CUS360Demo = () => {
                           </button>
                         </div>
                       </div>
-                      {/* 卡片主體：推薦產品 */}
+                      {/* 卡片主體：匹配之行銷活動 */}
                       <div className="px-2 py-1 flex-1">
-                        <div className="text-[10px] text-gray-400 mb-0">建議推薦產品</div>
-                        <div className="text-xs font-semibold text-teal-700 leading-snug">{topProduct}</div>
+                        <div className="text-[10px] text-gray-400 mb-0">匹配優惠活動</div>
+                        <div className="text-xs font-semibold text-teal-700 leading-snug line-clamp-2">{campName}</div>
+                        {campSell && <div className="text-[10px] text-gray-500 leading-snug mt-0.5 line-clamp-2">{campSell}</div>}
                       </div>
                       {/* 卡片底部：點擊提示 */}
                       <div className={`px-2 py-0.5 rounded-b-lg text-[10px] font-medium flex items-center justify-between border-t ${
                         isPriority ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-gray-100 text-teal-600 bg-gray-50'
                       }`}>
-                        <span>查看話術與完整方案</span>
+                        <span>查看完整方案建議</span>
                         <span className="opacity-60 group-hover:opacity-100 transition-opacity">→</span>
                       </div>
                     </div>
@@ -12955,6 +13705,7 @@ const CUS360Demo = () => {
                 const intentTagObjs = (c.tags || [])
                   .filter(t => typeof t === 'string' && t.includes('意圖'))
                   .map(name => ({ name, score: iScorer(name) }))
+                  .filter(t => hasEligibleCampaign(t.name, c))
                   .sort((a, b) => b.score - a.score);
                 const otherTags  = (c.tags || []).filter(t => typeof t === 'string' && !t.includes('意圖'));
                 const structuredByCat = {};
@@ -13215,7 +13966,13 @@ const CUS360Demo = () => {
                 {assistantMessages.map((m, idx) => (
                   <div key={idx} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`px-3 py-2 rounded-lg text-sm ${m.role === 'user' ? 'bg-teal-600 text-white rounded-br-none' : 'bg-gray-100 text-gray-800 rounded-bl-none'}`}>
-                      {m.typing ? (
+                      {m.stream ? (
+                        <StreamingText
+                          text={m.content}
+                          playedRef={(m._playedRef = m._playedRef || { current: false })}
+                          onTick={() => { const el = assistantListRef.current; if (el) el.scrollTop = el.scrollHeight; }}
+                        />
+                      ) : m.typing ? (
                         <div className="flex items-center gap-1 text-gray-500">
                           <span>思考中</span>
                           <span className="animate-bounce" style={{animationDelay:'0ms'}}>•</span>
@@ -13473,6 +14230,9 @@ const CUS360Demo = () => {
             </div>
           </div>
 
+          {/* AI 生成客戶摘要（分頁檢視） */}
+          <AICustomerSummaryCard customer={selectedCustomer} />
+
           {/* Quick Stats */}
           <div className="grid grid-cols-4 gap-3">
             <div className={SUBCARD}>
@@ -13673,7 +14433,13 @@ const CUS360Demo = () => {
                   {assistantMessages.map((m, idx) => (
                     <div key={idx} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`px-3 py-2 rounded-lg text-sm ${m.role === 'user' ? 'bg-teal-600 text-white rounded-br-none' : 'bg-gray-100 text-gray-800 rounded-bl-none'}`}>
-                        {m.typing ? (
+                        {m.stream ? (
+                          <StreamingText
+                            text={m.content}
+                            playedRef={(m._playedRef = m._playedRef || { current: false })}
+                            onTick={() => { const el = assistantListRef.current; if (el) el.scrollTop = el.scrollHeight; }}
+                          />
+                        ) : m.typing ? (
                           <div className="flex items-center gap-1 text-gray-500">
                             <span>思考中</span>
                             <span className="animate-bounce" style={{animationDelay:'0ms'}}>•</span>
