@@ -7559,7 +7559,7 @@ const CUS360Demo = () => {
   const [showMaskedData, setShowMaskedData] = useState(true);
   const [activeTab, setActiveTab] = useState("basic");
   const [assetAllocTab, setAssetAllocTab] = useState("l1");
-  const [viewMode, setViewMode] = useState("tabs"); // "tabs" | "onepage"
+  const [viewMode, setViewMode] = useState("onepage"); // "tabs" | "onepage"
 
   // Reset asset alloc tab to 概覽 whenever a new customer is selected
   useEffect(() => { if (selectedCustomer) setAssetAllocTab("l1"); }, [selectedCustomer]);
@@ -13004,7 +13004,7 @@ const CUS360Demo = () => {
       return (
         <div className="flex items-center gap-1 text-gray-500">
           <span className="inline-flex items-center gap-1 text-[11px]">
-            <Sparkles className="w-3 h-3 text-indigo-500" /> 生成中
+            <Sparkles className="w-3 h-3" style={{ color: 'var(--c-500)' }} /> 生成中
           </span>
           <span className="animate-bounce" style={{ animationDelay: "0ms" }}>•</span>
           <span className="animate-bounce" style={{ animationDelay: "150ms" }}>•</span>
@@ -13016,7 +13016,7 @@ const CUS360Demo = () => {
       <div className="space-y-1 whitespace-pre-wrap">
         <span>{shownText}</span>
         {phase === "typing" && (
-          <span className="inline-block w-1.5 h-4 -mb-0.5 ml-0.5 bg-indigo-500 animate-pulse align-middle" />
+          <span className="inline-block w-1.5 h-4 -mb-0.5 ml-0.5 animate-pulse align-middle" style={{ background: 'var(--c-500)' }} />
         )}
       </div>
     );
@@ -13086,9 +13086,9 @@ const CUS360Demo = () => {
     if (!customer) return null;
 
     return (
-      <div className="rounded-lg border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-teal-50 shadow-sm overflow-hidden">
+      <div className="rounded-lg border shadow-sm overflow-hidden" style={{ borderColor: 'var(--c-200)', background: 'linear-gradient(to bottom right, var(--c-50), #ffffff, var(--c-50))' }}>
         {/* 標題列 */}
-        <div className="flex items-center justify-between px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-teal-600 text-white">
+        <div className="flex items-center justify-between px-3 py-1.5 text-white" style={{ background: 'linear-gradient(to right, var(--c-600), var(--c-500))' }}>
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4" />
             <span className="text-sm font-bold">AI 客戶摘要</span>
@@ -13133,7 +13133,7 @@ const CUS360Demo = () => {
             <span>
               {shownText}
               {phase === "typing" && (
-                <span className="inline-block w-1.5 h-4 -mb-0.5 ml-0.5 bg-indigo-500 animate-pulse align-middle" />
+                <span className="inline-block w-1.5 h-4 -mb-0.5 ml-0.5 animate-pulse align-middle" style={{ background: 'var(--c-500)' }} />
               )}
             </span>
           )}
@@ -15124,10 +15124,10 @@ const CUS360Demo = () => {
                 <div className="mt-3 flex items-center justify-center gap-2">
                   <span className="text-[10px] text-white/60 font-medium">配色主題</span>
                   {[
-                    { id: "teal", label: "Teal", color: "#14b8a6" },
-                    { id: "blue", label: "Blue", color: "#3b82f6" },
-                    { id: "gold", label: "Gold", color: "#f59e0b" },
-                    { id: "red", label: "Red", color: "#ef4444" },
+                    { id: "teal", label: "Teal", color: "#468d86" },
+                    { id: "blue", label: "Blue", color: "#0f62fe" },
+                    { id: "gold", label: "Gold", color: "#ac8438" },
+                    { id: "red", label: "Red", color: "#a84a4a" },
                   ].map((t) => (
                     <button
                       key={t.id}

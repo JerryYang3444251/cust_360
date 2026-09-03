@@ -15,85 +15,85 @@ body {
    used by the Tailwind CDN config to dynamically theme all teal-* utilities.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Default / Teal theme */
+/* Default / Teal theme — 低飽和柔和青綠，漸層平順 */
 :root,
 [data-theme="teal"] {
-  --c-50:  #f0fdfa;
-  --c-100: #ccfbf1;
-  --c-200: #99f6e4;
-  --c-300: #5eead4;
-  --c-400: #2dd4bf;
-  --c-500: #14b8a6;
-  --c-600: #0d9488;
-  --c-700: #0f766e;
-  --c-800: #115e59;
-  --c-900: #134e4a;
-  --c2-400: #22d3ee;
-  --c2-500: #06b6d4;
-  --chart-primary: #14b8a6;
-  --chart-secondary: #0891b2;
-  --chart-gradient-start: #14b8a6;
-  --chart-gradient-end: #0891b2;
+  --c-50:  #f2f7f6;
+  --c-100: #dcecea;
+  --c-200: #bcdad6;
+  --c-300: #93c2bc;
+  --c-400: #63a49d;
+  --c-500: #468d86;
+  --c-600: #3a746e;
+  --c-700: #315e59;
+  --c-800: #2a4c48;
+  --c-900: #223c39;
+  --c2-400: #5fb0c4;
+  --c2-500: #4795a9;
+  --chart-primary: #468d86;
+  --chart-secondary: #4795a9;
+  --chart-gradient-start: #468d86;
+  --chart-gradient-end: #4795a9;
 }
 
-/* Blue theme */
+/* Blue theme — IBM Carbon Blue（維持 IBM 企業識別色，核心 blue-60 #0f62fe） */
 [data-theme="blue"] {
-  --c-50:  #eff6ff;
-  --c-100: #dbeafe;
-  --c-200: #bfdbfe;
-  --c-300: #93c5fd;
-  --c-400: #60a5fa;
-  --c-500: #3b82f6;
-  --c-600: #2563eb;
-  --c-700: #1d4ed8;
-  --c-800: #1e40af;
-  --c-900: #1e3a5f;
-  --c2-400: #a78bfa;
-  --c2-500: #8b5cf6;
-  --chart-primary: #3b82f6;
-  --chart-secondary: #8b5cf6;
-  --chart-gradient-start: #3b82f6;
-  --chart-gradient-end: #8b5cf6;
+  --c-50:  #edf5ff;
+  --c-100: #d0e2ff;
+  --c-200: #a6c8ff;
+  --c-300: #78a9ff;
+  --c-400: #4589ff;
+  --c-500: #0f62fe;
+  --c-600: #0043ce;
+  --c-700: #002d9c;
+  --c-800: #001d6c;
+  --c-900: #001141;
+  --c2-400: #4589ff;
+  --c2-500: #0f62fe;
+  --chart-primary: #0f62fe;
+  --chart-secondary: #4589ff;
+  --chart-gradient-start: #0f62fe;
+  --chart-gradient-end: #4589ff;
 }
 
-/* Gold theme */
+/* Gold theme — 低飽和柔和琥珀 / 橙灰，漸層平順 */
 [data-theme="gold"] {
-  --c-50:  #fffbeb;
-  --c-100: #fef3c7;
-  --c-200: #fde68a;
-  --c-300: #fcd34d;
-  --c-400: #fbbf24;
-  --c-500: #f59e0b;
-  --c-600: #d97706;
-  --c-700: #b45309;
-  --c-800: #92400e;
-  --c-900: #78350f;
-  --c2-400: #fb923c;
-  --c2-500: #f97316;
-  --chart-primary: #f59e0b;
-  --chart-secondary: #f97316;
-  --chart-gradient-start: #f59e0b;
-  --chart-gradient-end: #f97316;
+  --c-50:  #faf6ee;
+  --c-100: #f3e9d4;
+  --c-200: #e6d1a8;
+  --c-300: #d4b578;
+  --c-400: #c19a4f;
+  --c-500: #ac8438;
+  --c-600: #8f6d2e;
+  --c-700: #745827;
+  --c-800: #5d4722;
+  --c-900: #49381d;
+  --c2-400: #d09a5c;
+  --c2-500: #b57e42;
+  --chart-primary: #ac8438;
+  --chart-secondary: #b57e42;
+  --chart-gradient-start: #ac8438;
+  --chart-gradient-end: #b57e42;
 }
 
-/* Red theme */
+/* Red theme — 低飽和柔和磚紅 / 玫瑰灰，漸層平順 */
 [data-theme="red"] {
-  --c-50:  #fef2f2;
-  --c-100: #fee2e2;
-  --c-200: #fecaca;
-  --c-300: #fca5a5;
-  --c-400: #f87171;
-  --c-500: #ef4444;
-  --c-600: #dc2626;
-  --c-700: #b91c1c;
-  --c-800: #991b1b;
-  --c-900: #7f1d1d;
-  --c2-400: #fb923c;
-  --c2-500: #f97316;
-  --chart-primary: #ef4444;
-  --chart-secondary: #f97316;
-  --chart-gradient-start: #ef4444;
-  --chart-gradient-end: #f97316;
+  --c-50:  #faf1f1;
+  --c-100: #f3dada;
+  --c-200: #e6b7b7;
+  --c-300: #d38d8d;
+  --c-400: #bd6363;
+  --c-500: #a84a4a;
+  --c-600: #8c3c3c;
+  --c-700: #723232;
+  --c-800: #5c2a2a;
+  --c-900: #4a2222;
+  --c2-400: #cc7f5f;
+  --c2-500: #b26445;
+  --chart-primary: #a84a4a;
+  --chart-secondary: #b26445;
+  --chart-gradient-start: #a84a4a;
+  --chart-gradient-end: #b26445;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
